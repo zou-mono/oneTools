@@ -1,12 +1,14 @@
+from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
-from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, QDialogButtonBox
+from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, QDialogButtonBox, QStyleFactory
 from PyQt5 import QtWidgets, QtGui
 from frmUI import Ui_Dialog
 from suplicmap_tilemap import get_json
 import sys
 import json
 import os
-
+from UICore.Gv import SplitterState, Dock
+from widgets.CollapsibleSplitter import CollapsibleSplitter
 
 class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self):
@@ -43,6 +45,22 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.rbtn_spiderAndHandle.toggled.connect(lambda: self.rbtn_toggled(self.rbtn_spiderAndHandle))
 
         self.rbtn_spiderAndHandle.setChecked(True)
+
+        self.splitter = CollapsibleSplitter(self)
+        self.splitter.setGeometry(QRect(10, 5, 601, 881))
+        self.splitter.setOrientation(Qt.Vertical)
+        self.splitter.setObjectName("splitter")
+
+        self.splitter.addWidget(self.frame)
+        self.splitter.addWidget(self.textEdit)
+
+        self.splitter.setProperty("Stretch", SplitterState.expanded)
+        self.splitter.setProperty("Dock", Dock.down)
+        self.splitter.setProperty("WidgetToHide", self.textEdit)
+        self.splitter.setSizes([750, self.height() - 750])
+
+        self.btn_obtain.clicked.connect(self.btn_obtain_clicked)
+        self.cmb_level.currentIndexChanged.connect(self.cmb_selectionchange)
 
     def rbtn_toggled(self, btn):
         if self.rbtn_onlySpider.isChecked() or self.rbtn_spiderAndHandle.isChecked():
@@ -107,6 +125,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    style = QStyleFactory.create("windows")
+    app.setStyle(style)
     # MainWindow = QDialog()
     window = Ui_Window()
     window.show()
