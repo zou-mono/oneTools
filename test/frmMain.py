@@ -63,12 +63,14 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         # self.adjustSize()
         self.resize(self.width(), self.frame.height() + self.textEdit.height() + 40)
 
-        self.splitter.setProperty("Stretch", SplitterState.collapsed)
+        self.splitter.setProperty("Stretch", SplitterState.expanded)
         self.splitter.setProperty("Dock", Dock.down)
         self.splitter.setProperty("WidgetToHide", self.textEdit)
         self.splitter.setProperty("ExpandParentForm", True)
 
+        self.frame.setMaximumHeight(self.frame.height())
         self.splitter.setSizes([self.frame.height(), self.textEdit.height()])
+
         # self.splitter.setSizes([750, self.height() - 750])
 
         self.btn_obtain.clicked.connect(self.btn_obtain_clicked)
