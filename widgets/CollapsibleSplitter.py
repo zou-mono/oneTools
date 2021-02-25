@@ -10,7 +10,6 @@ class CollapsibleSplitter(QSplitter):
         self.parent = parent
         self.setOpaqueResize(True)
         self.minDistanceToEdge = 20  # 到边缘的最小距离
-        self.handlePos = self.sizes()
         self.splitterState = SplitterState.expanded
         self.bSplitterButton = False
         self.setHandleWidth(10)
@@ -64,11 +63,14 @@ class CollapsibleSplitter(QSplitter):
     def setupUi(self):
         # self.bSplitterButton = bSplitterButton
         # self.widgetToHide = widgetToHide
+        self.handlePos = self.sizes()
 
         if self.widget(0).objectName() == self.widgetToHide.objectName():
             self.otherWidget = self.widget(1)
         else:
             self.otherWidget = self.widget(0)
+
+        self.hide_num = self.indexOf(self.widgetToHide)
 
         #  控制最小边缘距离
         if self.dock == Dock.up or self.dock == Dock.down:
@@ -103,19 +105,12 @@ class CollapsibleSplitter(QSplitter):
         # if not all(self.splitter.sizes()):
         #     self.splitter.setSizes([1, 1])
         self.setChildrenCollapsible(True)
-        hide_num = self.indexOf(self.widgetToHide)
-        print(self.sizes())
+
+        # print(self.sizes())
         if SplitterState == SplitterState.expanded:
             self.handlePos = self.sizes()  # 记下展开时的位置，如果再次展开回到这个位置
 
             if self.bExpandParentForm:
-                # if self.dock == Dock.up or self.dock == Dock.left:
-                #     self.hideLen = self.sizes()[0] if hide_num == 0 else self.sizes()[1]
-                # else:
-                #     self.hideLen = self.sizes()[1] if hide_num == 0 else self.sizes()[0]
-                # print(self.hideLen)
-
-                # self.hideLen = self.sizes()[0] if hide_num == 0 else self.sizes()[1]
                 if self.dock == Dock.left or self.dock == Dock.right:
                     self.hideLen = self.widgetToHide.width()
                     self.window().resize(self.window().width() - self.hideLen, self.window().height())
@@ -123,12 +118,10 @@ class CollapsibleSplitter(QSplitter):
                     self.hideLen = self.widgetToHide.height()
                     self.window().resize(self.window().width(), self.window().height() - self.hideLen)
 
-            if self.dock == Dock.up or self.dock == Dock.left:
-                self.setSizes([0, 1]) if hide_num == 0 else self.setSizes([1, 0])
+            if self.dock == Dock.up and self.dock == Dock.left:
+                self.setSizes([0, 1])
             else:
-                self.setSizes([1, 0]) if hide_num == 0 else self.setSizes([0, 1])
-
-            print(self.hideLen)
+                self.setSizes([1, 0])
 
             self.splitterState = SplitterState.collapsed
         else:
@@ -136,9 +129,9 @@ class CollapsibleSplitter(QSplitter):
                 self.setSizes(self.handlePos)  # 1, 0
             else:
                 if self.dock == Dock.up or self.dock == Dock.left:
-                    otherLen = self.sizes()[1] if hide_num == 0 else self.sizes()[0]
+                    otherLen = self.sizes()[1]
                 else:
-                    otherLen = self.sizes()[0] if hide_num == 0 else self.sizes()[1]
+                    otherLen = self.sizes()[0]
 
                 if self.dock == Dock.left or self.dock == Dock.right:
                     # otherLen = self.sizes()[1] if hide_num == 0 else self.sizes()[0]
@@ -150,7 +143,6 @@ class CollapsibleSplitter(QSplitter):
                     self.setSizes([self.hideLen, otherLen])
                 else:
                     self.setSizes([otherLen, self.hideLen])
-
 
             self.splitterState = SplitterState.expanded
 

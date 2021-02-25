@@ -25,12 +25,16 @@ class Window(QMainWindow):
         self.splitter.setGeometry(0, 0, 800, 600)
         self.splitter.setHandleWidth(10)
 
-        self.textEdit1 = QtWidgets.QTextEdit(self.splitter)
+        self.textEdit1 = QtWidgets.QTextEdit()
         self.textEdit1.setObjectName("textEdit1")
         self.textEdit1.setText("textEdit1")
-        self.textEdit2 = QtWidgets.QTextEdit(self.splitter)
+        self.textEdit2 = QtWidgets.QTextEdit()
         self.textEdit2.setObjectName("textEdit2")
         self.textEdit2.setText("textEdit2")
+
+        self.splitter.addWidget(self.textEdit1)
+        self.splitter.addWidget(self.textEdit2)
+
 
         # self.widgetToHide = self.textEdit1
         # self.otherWidget = self.textEdit2
@@ -39,11 +43,11 @@ class Window(QMainWindow):
         # self.splitter.setOrientation(Qt.Vertical)
         self.splitter.setProperty("SplitterButton", self.bSplitterButton)
         self.splitter.setProperty("Stretch", SplitterState.expanded)
-        self.splitter.setProperty("Dock", Dock.left)
-        self.splitter.setProperty("WidgetToHide", self.textEdit1)
+        self.splitter.setProperty("Dock", Dock.right)
+        self.splitter.setProperty("WidgetToHide", self.textEdit2)
         self.splitter.setProperty("ExpandParentForm", True)
 
-        self.splitter.setupUi()
+        # self.splitter.setupUi()
 
         if self.bSplitterButton:
             if self.splitter.orientation() == Qt.Vertical:
