@@ -16,7 +16,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         super(Ui_Window, self).__init__()
         self.setupUi(self)
         self.setFixedWidth(self.width() + 5)
-        self.frame.setFixedHeight(self.frame.height() + 90)
+        # self.frame.setFixedHeight(self.frame.height())
+        # self.textEdit.setFixedHeight(self.textEdit.height())
 
         self.txt_address.setText(
             "http://suplicmap.pnr.sz/tileszmap_1/rest/services/SZIMAGE/SZAVI2019_20ZWDL/ImageServer")
@@ -49,13 +50,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.rbtn_spiderAndHandle.setChecked(True)
 
         self.splitter = CollapsibleSplitter(self)
-        self.splitter.setGeometry(QRect(0, 0, self.frame.width(), self.frame.height() + 80))
+        self.splitter.setGeometry(QRect(0, 0, self.frame.width(), self.frame.height() + self.textEdit.height() + 50))
         self.splitter.setOrientation(Qt.Vertical)
         self.splitter.setObjectName("splitter")
-        # sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Expanding)
-        # self.splitter.setSizePolicy(sizePolicy)
-
-        # self.setCentralWidget(self.splitter)
 
         self.splitter.addWidget(self.frame)
         self.splitter.addWidget(self.textEdit)
@@ -64,8 +61,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         hlayout = QtWidgets.QVBoxLayout(self)
         hlayout.addWidget(self.splitter)
         # self.adjustSize()
+        self.resize(self.width(), self.frame.height() + self.textEdit.height() + 40)
 
-        self.splitter.setProperty("Stretch", SplitterState.expanded)
+        self.splitter.setProperty("Stretch", SplitterState.collapsed)
         self.splitter.setProperty("Dock", Dock.down)
         self.splitter.setProperty("WidgetToHide", self.textEdit)
         self.splitter.setProperty("ExpandParentForm", True)
@@ -142,6 +140,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    print("start")
     style = QStyleFactory.create("windows")
     app.setStyle(style)
     # MainWindow = QDialog()

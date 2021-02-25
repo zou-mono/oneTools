@@ -73,6 +73,8 @@ class CollapsibleSplitter(QSplitter):
         if self.splitterState == SplitterState.collapsed:
             self.handleSplitterButton(SplitterState=SplitterState.expanded)
 
+        # self.widgetToHide.set
+
         #  控制最小边缘距离
         if self.dock == Dock.up or self.dock == Dock.down:
             self.setOrientation(Qt.Vertical)
