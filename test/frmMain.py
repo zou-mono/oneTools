@@ -15,9 +15,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self):
         super(Ui_Window, self).__init__()
         self.setupUi(self)
-        # self.resize(620, 696)
-        # self.setFixedWidth(self.width())
-        # self.frame.setFixedHeight(self.frame.height())
+        self.setFixedWidth(self.width() + 5)
+        self.frame.setFixedHeight(self.frame.height() + 90)
 
         self.txt_address.setText(
             "http://suplicmap.pnr.sz/tileszmap_1/rest/services/SZIMAGE/SZAVI2019_20ZWDL/ImageServer")
@@ -50,23 +49,28 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.rbtn_spiderAndHandle.setChecked(True)
 
         self.splitter = CollapsibleSplitter(self)
-        self.splitter.setGeometry(QRect(10, 5, 601, 881))
+        self.splitter.setGeometry(QRect(0, 0, self.frame.width(), self.frame.height() + 80))
         self.splitter.setOrientation(Qt.Vertical)
         self.splitter.setObjectName("splitter")
+        # sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Expanding)
+        # self.splitter.setSizePolicy(sizePolicy)
 
         # self.setCentralWidget(self.splitter)
 
         self.splitter.addWidget(self.frame)
         self.splitter.addWidget(self.textEdit)
+        # self.resize(self.width(), self.frame.height() + self.textEdit.height())
 
-        # hlayout = QtWidgets.QVBoxLayout(self)
-        # hlayout.addWidget(self.splitter)
+        hlayout = QtWidgets.QVBoxLayout(self)
+        hlayout.addWidget(self.splitter)
         # self.adjustSize()
 
-        self.splitter.setProperty("Stretch", SplitterState.collapsed)
+        self.splitter.setProperty("Stretch", SplitterState.expanded)
         self.splitter.setProperty("Dock", Dock.down)
         self.splitter.setProperty("WidgetToHide", self.textEdit)
         self.splitter.setProperty("ExpandParentForm", True)
+
+        self.splitter.setSizes([self.frame.height(), self.textEdit.height()])
         # self.splitter.setSizes([750, self.height() - 750])
 
         self.btn_obtain.clicked.connect(self.btn_obtain_clicked)

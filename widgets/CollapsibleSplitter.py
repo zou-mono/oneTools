@@ -63,27 +63,15 @@ class CollapsibleSplitter(QSplitter):
     def setupUi(self):
         self.handlePos = self.sizes()
 
-        if self.splitterState == SplitterState.collapsed:
-            self.handleSplitterButton(SplitterState=SplitterState.expanded)
-            # if self.bExpandParentForm:
-            #     if self.dock == Dock.left or self.dock == Dock.right:
-            #         self.hideLen = self.widgetToHide.width()
-            #         self.window().resize(self.window().width() - self.hideLen, self.window().height())
-            #     else:
-            #         self.hideLen = self.widgetToHide.height()
-            #         self.window().resize(self.window().width(), self.window().height() - self.hideLen)
-            #
-            # if self.dock == Dock.up and self.dock == Dock.left:
-            #     self.setSizes([0, 1])
-            # else:
-            #     self.setSizes([1, 0])
-
         if self.widget(0).objectName() == self.widgetToHide.objectName():
             self.otherWidget = self.widget(1)
         else:
             self.otherWidget = self.widget(0)
 
         self.hide_num = self.indexOf(self.widgetToHide)
+
+        if self.splitterState == SplitterState.collapsed:
+            self.handleSplitterButton(SplitterState=SplitterState.expanded)
 
         #  控制最小边缘距离
         if self.dock == Dock.up or self.dock == Dock.down:
