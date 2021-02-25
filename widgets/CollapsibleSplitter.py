@@ -7,12 +7,14 @@ from UICore.Gv import Dock, SplitterState
 class CollapsibleSplitter(QSplitter):
     def __init__(self, parent, *args):
         super(CollapsibleSplitter, self).__init__(parent, *args)
+        self.parent = parent
         self.setOpaqueResize(True)
         self.minDistanceToEdge = 20  # 到边缘的最小距离
         self.handlePos = self.sizes()
         self.splitterState = SplitterState.expanded
         self.bSplitterButton = False
         self.setHandleWidth(10)
+        self.bExpandParentForm = False
 
         self.splitterMoved.connect(self.splitterMoveHandle)
 
@@ -23,6 +25,14 @@ class CollapsibleSplitter(QSplitter):
     @SplitterButton.setter
     def SplitterButton(self, value):
         self.bSplitterButton = value
+
+    @pyqtProperty(bool)
+    def ExpandParentForm(self):
+        return self.bExpandParentForm
+
+    @ExpandParentForm.setter
+    def ExpandParentForm(self, value):
+        self.bExpandParentForm = value
 
     @pyqtProperty(SplitterState)
     def Stretch(self):
@@ -45,7 +55,7 @@ class CollapsibleSplitter(QSplitter):
         return self.widgetToHide
 
     @WidgetToHide.setter
-    def WidgetToHide(self, value):
+    def WidgetToHide(self, value: QWidget):
         self.widgetToHide = value
 
     def showEvent(self, a0: QShowEvent) -> None:
@@ -93,17 +103,55 @@ class CollapsibleSplitter(QSplitter):
         # if not all(self.splitter.sizes()):
         #     self.splitter.setSizes([1, 1])
         self.setChildrenCollapsible(True)
+        hide_num = self.indexOf(self.widgetToHide)
+        print(self.sizes())
         if SplitterState == SplitterState.expanded:
             self.handlePos = self.sizes()  # 记下展开时的位置，如果再次展开回到这个位置
-            hide_num = self.indexOf(self.widgetToHide)
-            if self.Dock == Dock.up or self.Dock == Dock.left:
-                self.setSizes([1, 0]) if hide_num == 0 else self.setSizes([0, 1])
-            else:
+
+            if self.bExpandParentForm:
+                # if self.dock == Dock.up or self.dock == Dock.left:
+                #     self.hideLen = self.sizes()[0] if hide_num == 0 else self.sizes()[1]
+                # else:
+                #     self.hideLen = self.sizes()[1] if hide_num == 0 else self.sizes()[0]
+                # print(self.hideLen)
+
+                # self.hideLen = self.sizes()[0] if hide_num == 0 else self.sizes()[1]
+                if self.dock == Dock.left or self.dock == Dock.right:
+                    self.hideLen = self.widgetToHide.width()
+                    self.window().resize(self.window().width() - self.hideLen, self.window().height())
+                else:
+                    self.hideLen = self.widgetToHide.height()
+                    self.window().resize(self.window().width(), self.window().height() - self.hideLen)
+
+            if self.dock == Dock.up or self.dock == Dock.left:
                 self.setSizes([0, 1]) if hide_num == 0 else self.setSizes([1, 0])
+            else:
+                self.setSizes([1, 0]) if hide_num == 0 else self.setSizes([0, 1])
+
+            print(self.hideLen)
 
             self.splitterState = SplitterState.collapsed
         else:
-            self.setSizes(self.handlePos)  # 1, 0
+            if not self.bExpandParentForm:
+                self.setSizes(self.handlePos)  # 1, 0
+            else:
+                if self.dock == Dock.up or self.dock == Dock.left:
+                    otherLen = self.sizes()[1] if hide_num == 0 else self.sizes()[0]
+                else:
+                    otherLen = self.sizes()[0] if hide_num == 0 else self.sizes()[1]
+
+                if self.dock == Dock.left or self.dock == Dock.right:
+                    # otherLen = self.sizes()[1] if hide_num == 0 else self.sizes()[0]
+                    self.window().resize(self.window().width() + self.hideLen, self.window().height())
+                else:
+                    self.window().resize(self.window().width(), self.window().height() + self.hideLen)
+
+                if self.dock == Dock.up or self.dock == Dock.left:
+                    self.setSizes([self.hideLen, otherLen])
+                else:
+                    self.setSizes([otherLen, self.hideLen])
+
+
             self.splitterState = SplitterState.expanded
 
         if self.bSplitterButton:
@@ -138,13 +186,13 @@ class CollapsibleSplitter(QSplitter):
         self.button.setMinimumSize(5, 15)
         self.button.resize(width, height)
 
-        if self.Dock == Dock.up:
+        if self.dock == Dock.up:
             self.button.setArrowType(Qt.UpArrow)
-        elif self.Dock == Dock.down:
+        elif self.dock == Dock.down:
             self.button.setArrowType(Qt.DownArrow)
-        elif self.Dock == Dock.left:
+        elif self.dock == Dock.left:
             self.button.setArrowType(Qt.LeftArrow)
-        elif self.Dock == Dock.right:
+        elif self.dock == Dock.right:
             self.button.setArrowType(Qt.RightArrow)
         self.setBtnPos()
 
@@ -159,25 +207,25 @@ class CollapsibleSplitter(QSplitter):
             self.button.setArrowType(Qt.UpArrow)
 
     def setBtnPos(self):
-        if (self.Dock == Dock.up and self.splitterState == SplitterState.expanded) or \
-                (self.Dock == Dock.down and self.splitterState == SplitterState.collapsed):
+        if (self.dock == Dock.up and self.splitterState == SplitterState.expanded) or \
+                (self.dock == Dock.down and self.splitterState == SplitterState.collapsed):
             self.button.move((self.widgetToHide.width() - self.button.width()) / 2,
                              self.handle(1).pos().y() - self.button.height())
-        elif (self.Dock == Dock.up and self.splitterState == SplitterState.collapsed) or \
-                (self.Dock == Dock.down and self.splitterState == SplitterState.expanded):
+        elif (self.dock == Dock.up and self.splitterState == SplitterState.collapsed) or \
+                (self.dock == Dock.down and self.splitterState == SplitterState.expanded):
                 self.button.move((self.widgetToHide.width() - self.button.width()) / 2,
                                  self.handle(1).pos().y() + self.handle(1).height())
-        elif (self.Dock == Dock.right and self.splitterState == SplitterState.expanded) or \
-                (self.Dock == Dock.left and self.splitterState == SplitterState.collapsed):
+        elif (self.dock == Dock.right and self.splitterState == SplitterState.expanded) or \
+                (self.dock == Dock.left and self.splitterState == SplitterState.collapsed):
             self.button.move(self.handle(1).pos().x() + self.handle(1).width(),
                              (self.widgetToHide.height() - self.button.height()) / 2)
-        elif (self.Dock == Dock.right and self.splitterState == SplitterState.collapsed) or \
-                (self.Dock == Dock.left and self.splitterState == SplitterState.expanded):
+        elif (self.dock == Dock.right and self.splitterState == SplitterState.collapsed) or \
+                (self.dock == Dock.left and self.splitterState == SplitterState.expanded):
             self.button.move(self.handle(1).pos().x() - self.button.width(),
                              (self.widgetToHide.height() - self.button.height()) / 2)
 
-    def resizeEvent(self, a0: QResizeEvent):
-        print("resize")
+    # def resizeEvent(self, a0: QResizeEvent):
+    #     print("resize")
 
     def createHandle(self):
         handle = SplitterHandle(self.orientation(), self)
@@ -188,11 +236,8 @@ class SplitterHandle(QSplitterHandle):
     def __init__(self, Orientation, qSplitter: CollapsibleSplitter):
         super(SplitterHandle, self).__init__(Orientation, qSplitter)
         self.splitter = qSplitter
-        self.orientation = Orientation
-        if Orientation == Qt.Vertical:
-            self.barWidth = 115
-        else:
-            self.barHeight = 115
+
+        self.barLength = 115
 
         self.bBarHover = False  # handle上的按钮默认没有激活
         self.setMouseTracking(True)
@@ -207,11 +252,11 @@ class SplitterHandle(QSplitterHandle):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing, True)
 
-        if self.orientation == Qt.Vertical:
+        if self.splitter.orientation() == Qt.Vertical:
             # 画按钮矩形
-            self.rr = QRect(int(r.x() + (r.width() - self.barWidth)/2), r.y(), self.barWidth, self.height())
+            self.rr = QRect(int(r.x() + (r.width() - self.barLength)/2), r.y(), self.barLength, self.height())
 
-            painter.fillRect(self.rr.x(), self.rr.y() + 1, self.barWidth, self.height() - 2,
+            painter.fillRect(self.rr.x(), self.rr.y() + 1, self.barLength, self.height() - 2,
                              self.palette().color(QPalette.Window))
 
             # 画两条竖线
@@ -240,11 +285,11 @@ class SplitterHandle(QSplitterHandle):
                 painter.setPen(self.palette().color(QPalette.Dark))
                 painter.drawRect(x + i * 3, y + 1, 1, 1)
 
-        elif self.orientation == Qt.Horizontal:
+        elif self.splitter.orientation() == Qt.Horizontal:
             # 画按钮矩形
-            self.rr = QRect(r.x(), int(r.y() + (r.height() - self.barHeight)/2), self.width(), self.barHeight)
+            self.rr = QRect(r.x(), int(r.y() + (r.height() - self.barLength)/2), self.width(), self.barLength)
 
-            painter.fillRect(self.rr.x() + 1, self.rr.y(), self.width() - 2, self.barHeight,
+            painter.fillRect(self.rr.x() + 1, self.rr.y(), self.width() - 2, self.barLength,
                              self.palette().color(QPalette.Window))
 
             # 画两条竖线
@@ -286,7 +331,7 @@ class SplitterHandle(QSplitterHandle):
                 self.bBarHover = True
             else:
                 if self.splitter.splitterState == SplitterState.expanded:
-                    if self.orientation == Qt.Horizontal:
+                    if self.splitter.orientation() == Qt.Horizontal:
                         self.setCursor(Qt.SplitHCursor)
                     else:
                         self.setCursor(Qt.SplitVCursor)
@@ -296,7 +341,7 @@ class SplitterHandle(QSplitterHandle):
                     if self.splitter.splitterState == SplitterState.expanded:
                         if self.bClick and not self.bBarHover:
                             pos = self.splitter.mapFromGlobal(event.globalPos())
-                            if self.orientation == Qt.Horizontal:
+                            if self.splitter.orientation() == Qt.Horizontal:
                                 pos_move = pos.x()
                             else:
                                 pos_move = pos.y()
@@ -326,7 +371,7 @@ class SplitterHandle(QSplitterHandle):
         else:
             if self.splitter.splitterState == SplitterState.expanded and not self.bBarHover:
                 pos = self.splitter.mapFromGlobal(event.globalPos())
-                if self.orientation == Qt.Horizontal:
+                if self.splitter.orientation() == Qt.Horizontal:
                     pos_move = pos.x()
                     l = self.splitter.width()
                 else:
@@ -339,36 +384,43 @@ class SplitterHandle(QSplitterHandle):
                     self.moveSplitter(self.splitter.minDistanceToEdge)
                 elif pos_move > l - self.splitter.minDistanceToEdge:
                     self.moveSplitter(l - self.splitter.minDistanceToEdge)
-                    self.splitter.setChildrenCollapsible(False)
         self.bClick = False
 
     def ArrowPointArray(self, x, y):
         path = QPainterPath()
 
         # 右箭头
-        if (self.splitter.dock == Dock.right and self.splitter.splitterState == SplitterState.expanded) or \
-                (self.splitter.Dock == Dock.left and self.splitter.splitterState == SplitterState.collapsed):
+        if (self.splitter.dock == Dock.right and self.splitter.splitterState == SplitterState.expanded and not self.splitter.bExpandParentForm) or \
+                (self.splitter.dock == Dock.left and self.splitter.splitterState == SplitterState.collapsed and not self.splitter.bExpandParentForm) or \
+                (self.splitter.dock == Dock.right and self.splitter.splitterState == SplitterState.collapsed and self.splitter.bExpandParentForm) or \
+                (self.splitter.dock == Dock.left and self.splitter.splitterState == SplitterState.expanded and self.splitter.bExpandParentForm):
             path.moveTo(x, y)
             path.lineTo(x + 3, y + 3)
             path.lineTo(x, y + 6)
 
         # 左箭头
-        elif (self.splitter.dock == Dock.right and self.splitter.splitterState == SplitterState.collapsed) or \
-                (self.splitter.Dock == Dock.left and self.splitter.splitterState == SplitterState.expanded):
+        elif (self.splitter.dock == Dock.right and self.splitter.splitterState == SplitterState.collapsed and not self.splitter.bExpandParentForm) or \
+                (self.splitter.dock == Dock.left and self.splitter.splitterState == SplitterState.expanded and not self.splitter.bExpandParentForm) or \
+                (self.splitter.dock == Dock.right and self.splitter.splitterState == SplitterState.expanded and self.splitter.bExpandParentForm) or \
+                (self.splitter.dock == Dock.left and self.splitter.splitterState == SplitterState.collapsed and self.splitter.bExpandParentForm):
             path.moveTo(x + 3, y)
             path.lineTo(x, y + 3)
             path.lineTo(x + 3, y + 6)
 
         # 上箭头
-        elif (self.splitter.dock == Dock.up and self.splitter.splitterState == SplitterState.expanded) or \
-                (self.splitter.Dock == Dock.down and self.splitter.splitterState == SplitterState.collapsed):
+        elif (self.splitter.dock == Dock.up and self.splitter.splitterState == SplitterState.expanded and not self.splitter.bExpandParentForm) or \
+                (self.splitter.dock == Dock.down and self.splitter.splitterState == SplitterState.collapsed and not self.splitter.bExpandParentForm) or \
+                (self.splitter.dock == Dock.up and self.splitter.splitterState == SplitterState.collapsed and self.splitter.bExpandParentForm) or \
+                (self.splitter.dock == Dock.down and self.splitter.splitterState == SplitterState.expanded and self.splitter.bExpandParentForm):
             path.moveTo(x + 3, y)
             path.lineTo(x + 6, y + 3)
             path.lineTo(x, y + 3)
 
         # 下箭头
-        elif (self.splitter.dock == Dock.up and self.splitter.splitterState == SplitterState.collapsed) or \
-                (self.splitter.Dock == Dock.down and self.splitter.splitterState == SplitterState.expanded):
+        elif (self.splitter.dock == Dock.up and self.splitter.splitterState == SplitterState.collapsed and not self.splitter.bExpandParentForm) or \
+                (self.splitter.dock == Dock.down and self.splitter.splitterState == SplitterState.expanded and not self.splitter.bExpandParentForm) or \
+                (self.splitter.dock == Dock.up and self.splitter.splitterState == SplitterState.expanded and self.splitter.bExpandParentForm) or \
+                (self.splitter.dock == Dock.down and self.splitter.splitterState == SplitterState.collapsed and self.splitter.bExpandParentForm):
             path.moveTo(x, y)
             path.lineTo(x + 6, y)
             path.lineTo(x + 3, y + 3)

@@ -14,9 +14,14 @@ class Window(QMainWindow):
         self.resize(800, 600)
         self.centralwidget = QtWidgets.QWidget(self)
         self.centralwidget.setObjectName("centralwidget")
+        self.centralwidget.setMouseTracking(True)
 
-        self.bSplitterButton = False  # 显示按钮)
+        self.bSplitterButton = False  # 显示按钮
         self.splitter = CollapsibleSplitter(self.centralwidget)
+        self.setCentralWidget(self.centralwidget)
+        hlayout = QtWidgets.QHBoxLayout(self.centralwidget)
+        hlayout.addWidget(self.splitter)
+
         self.splitter.setGeometry(0, 0, 800, 600)
         self.splitter.setHandleWidth(10)
 
@@ -27,17 +32,18 @@ class Window(QMainWindow):
         self.textEdit2.setObjectName("textEdit2")
         self.textEdit2.setText("textEdit2")
 
-        self.widgetToHide = self.textEdit2
-        self.otherWidget = self.textEdit1
+        # self.widgetToHide = self.textEdit1
+        # self.otherWidget = self.textEdit2
 
         self.splitter.setSizes([200, 600])
-
+        # self.splitter.setOrientation(Qt.Vertical)
         self.splitter.setProperty("SplitterButton", self.bSplitterButton)
         self.splitter.setProperty("Stretch", SplitterState.expanded)
-        self.splitter.setProperty("Dock", Dock.right)
-        self.splitter.setProperty("WidgetToHide", self.textEdit2)
+        self.splitter.setProperty("Dock", Dock.left)
+        self.splitter.setProperty("WidgetToHide", self.textEdit1)
+        self.splitter.setProperty("ExpandParentForm", True)
 
-        # self.splitter.setupUi()
+        self.splitter.setupUi()
 
         if self.bSplitterButton:
             if self.splitter.orientation() == Qt.Vertical:
@@ -50,9 +56,6 @@ class Window(QMainWindow):
                 self.splitter.widgetToHide.setMinimumWidth(30)
                 self.splitter.otherWidget.setMinimumWidth(30)
                 self.splitter.minDistanceToEdge = 30
-
-        self.centralwidget.setMouseTracking(True)
-        self.setCentralWidget(self.centralwidget)
 
         self.textEdit1.viewport().installEventFilter(self)
         self.textEdit2.viewport().installEventFilter(self)
