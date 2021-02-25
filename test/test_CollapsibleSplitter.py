@@ -37,12 +37,13 @@ class Window(QMainWindow):
 
 
         # self.widgetToHide = self.textEdit1
+
         # self.otherWidget = self.textEdit2
 
         self.splitter.setSizes([200, 600])
         # self.splitter.setOrientation(Qt.Vertical)
         self.splitter.setProperty("SplitterButton", self.bSplitterButton)
-        self.splitter.setProperty("Stretch", SplitterState.expanded)
+        self.splitter.setProperty("Stretch", SplitterState.collapsed)
         self.splitter.setProperty("Dock", Dock.right)
         self.splitter.setProperty("WidgetToHide", self.textEdit2)
         self.splitter.setProperty("ExpandParentForm", True)

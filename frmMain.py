@@ -15,6 +15,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         super(Ui_Window, self).__init__()
         self.setupUi(self)
         # self.setFixedSize(self.width(), self.height())
+        self.setFixedWidth(self.width())
+        self.frame.setFixedHeight(self.frame.height())
 
         self.txt_address.setText(
             "http://suplicmap.pnr.sz/tileszmap_1/rest/services/SZIMAGE/SZAVI2019_20ZWDL/ImageServer")
@@ -52,20 +54,25 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.splitter.setObjectName("splitter")
 
         # self.setCentralWidget(self.splitter)
-        hlayout = QtWidgets.QHBoxLayout(self.splitter)
-        hlayout.addWidget(self.splitter)
 
         self.splitter.addWidget(self.frame)
         self.splitter.addWidget(self.textEdit)
 
-        self.splitter.setProperty("Stretch", SplitterState.expanded)
+        hlayout = QtWidgets.QVBoxLayout(self)
+        hlayout.addWidget(self.splitter)
+        self.adjustSize()
+
+        self.splitter.setProperty("Stretch", SplitterState.collapsed)
         self.splitter.setProperty("Dock", Dock.down)
         self.splitter.setProperty("WidgetToHide", self.textEdit)
         self.splitter.setProperty("ExpandParentForm", True)
-        self.splitter.setSizes([750, self.height() - 750])
+        # self.splitter.setSizes([750, self.height() - 750])
 
         self.btn_obtain.clicked.connect(self.btn_obtain_clicked)
         self.cmb_level.currentIndexChanged.connect(self.cmb_selectionchange)
+
+    # def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
+    #     self.adjustSize()
 
     def rbtn_toggled(self, btn):
         if self.rbtn_onlySpider.isChecked() or self.rbtn_spiderAndHandle.isChecked():
