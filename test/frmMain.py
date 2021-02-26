@@ -63,16 +63,17 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         # self.setFixedWidth(self.width() + 5)
         # self.resize(self.width(), self.frame.height() + self.textEdit.height() + 40)
         self.splitter.setOrientation(Qt.Horizontal)
-        self.splitter.setProperty("Stretch", SplitterState.expanded)
+        self.splitter.setProperty("Stretch", SplitterState.collapsed)
         self.splitter.setProperty("Dock", Dock.right)
         self.splitter.setProperty("WidgetToHide", self.textEdit)
         self.splitter.setProperty("ExpandParentForm", True)
 
+        # self.frame.setMaximumWidth(self.frame.width())
+        # self.splitter.setSizes([self.frame.width() + 40, self.textEdit.width()])
+
         self.frame.setMaximumWidth(self.frame.width())
         self.splitter.setSizes([self.frame.width() + 40, self.textEdit.width()])
-        # self.frame.setMaximumHeight(self.frame.height())
-        # self.splitter.setSizes([self.frame.height(), self.textEdit.height()])
-        # self.resize(self.splitter.width() + 40, self.splitter.height())
+
 
         self.btn_obtain.clicked.connect(self.btn_obtain_clicked)
         self.cmb_level.currentIndexChanged.connect(self.cmb_selectionchange)
