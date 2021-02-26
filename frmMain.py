@@ -15,7 +15,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self):
         super(Ui_Window, self).__init__()
         self.setupUi(self)
-        self.setFixedHeight(self.height() + 15)
+        # self.setFixedHeight(self.height() + 15)
 
         self.txt_address.setText(
             "http://suplicmap.pnr.sz/tileszmap_1/rest/services/SZIMAGE/SZAVI2019_20ZWDL/ImageServer")
@@ -47,31 +47,39 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         self.rbtn_spiderAndHandle.setChecked(True)
 
-        self.splitter = CollapsibleSplitter(self)
-        self.splitter.setGeometry(QRect(0, 0, self.width(), self.height()))
-        self.splitter.setOrientation(Qt.Vertical)
-        self.splitter.setObjectName("splitter")
-        self.splitter.addWidget(self.frame)
-        self.splitter.addWidget(self.textEdit)
+        # self.splitter = CollapsibleSplitter(self)
+        # self.splitter.setGeometry(QRect(0, 0, self.width(), self.height()))
+        # self.splitter.setOrientation(Qt.Vertical)
+        # self.splitter.setObjectName("splitter")
+        # self.splitter.addWidget(self.frame)
+        # self.splitter.addWidget(self.textEdit)
 
         hlayout = QtWidgets.QHBoxLayout(self)
-        hlayout.setContentsMargins(5, 5, 5, 5)
+        hlayout.setContentsMargins(15, 15, 0, 15)
         hlayout.addWidget(self.splitter, stretch=0)
+        #
+        # hlayout = QtWidgets.QHBoxLayout(self.splitter)
+        # hlayout.setContentsMargins(0, 0, 0, 0)
+        # hlayout.addWidget(self.frame)
 
         self.splitter.setOrientation(Qt.Horizontal)
         self.splitter.setProperty("Stretch", SplitterState.collapsed)
         self.splitter.setProperty("Dock", Dock.right)
-        self.splitter.setProperty("WidgetToHide", self.textEdit)
+        self.splitter.setProperty("WidgetToHide", self.TxtEdit_log)
         self.splitter.setProperty("ExpandParentForm", True)
 
         # self.frame.setMaximumWidth(self.frame.width())
         # self.splitter.setSizes([self.frame.width() + 40, self.textEdit.width()])
 
-        self.frame.setMaximumWidth(self.frame.width())
-        self.splitter.setSizes([self.frame.width() + 40, self.textEdit.width()])
+        # self.frame.setMaximumWidth(self.frame.width())
+        self.splitter.setSizes([600, self.splitter.width() - 590])
+        self.resize(self.splitter.width(), self.splitter.height())
 
         self.btn_obtain.clicked.connect(self.btn_obtain_clicked)
         self.cmb_level.currentIndexChanged.connect(self.cmb_selectionchange)
+
+    # def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
+    #     self.adjustSize()
 
     def rbtn_toggled(self, btn):
         if self.rbtn_onlySpider.isChecked() or self.rbtn_spiderAndHandle.isChecked():

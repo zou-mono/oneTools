@@ -46,7 +46,7 @@ fabric.properties
 /target
 
 # log
-/logs
+**/logs
 
 # Java #
 *.jar
@@ -57,7 +57,7 @@ fabric.properties
 /data
 
 *.exe
-*.bak
+**/*.bak
 *.rar
 /res
 /image-data
@@ -66,4 +66,4 @@ fabric.properties
 /data
 /.vagrant
 
-/__pycache__
+**/__pycache__
