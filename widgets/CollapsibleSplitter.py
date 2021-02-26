@@ -70,11 +70,6 @@ class CollapsibleSplitter(QSplitter):
 
         self.hide_num = self.indexOf(self.widgetToHide)
 
-        if self.splitterState == SplitterState.collapsed:
-            self.handleSplitterButton(SplitterState=SplitterState.expanded)
-
-        # self.widgetToHide.set
-
         #  控制最小边缘距离
         if self.dock == Dock.up or self.dock == Dock.down:
             self.setOrientation(Qt.Vertical)
@@ -88,6 +83,9 @@ class CollapsibleSplitter(QSplitter):
         self.widgetToHide.setMouseTracking(True)
         self.otherWidget.setMouseTracking(True)
         self.setMouseTracking(True)
+
+        if self.splitterState == SplitterState.collapsed:
+            self.handleSplitterButton(SplitterState=SplitterState.expanded)
 
         if self.bSplitterButton:
             self.button = QToolButton(self.parentWidget())

@@ -15,9 +15,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self):
         super(Ui_Window, self).__init__()
         self.setupUi(self)
-        self.setFixedWidth(self.width() + 5)
-        # self.frame.setFixedHeight(self.frame.height())
-        # self.textEdit.setFixedHeight(self.textEdit.height())
+        self.setFixedHeight(self.height() + 15)
 
         self.txt_address.setText(
             "http://suplicmap.pnr.sz/tileszmap_1/rest/services/SZIMAGE/SZAVI2019_20ZWDL/ImageServer")
@@ -50,28 +48,31 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.rbtn_spiderAndHandle.setChecked(True)
 
         self.splitter = CollapsibleSplitter(self)
-        self.splitter.setGeometry(QRect(0, 0, self.frame.width(), self.frame.height() + self.textEdit.height() + 50))
+        # self.splitter.setGeometry(QRect(0, 0, self.frame.width(), self.frame.height() + self.textEdit.height() + 50))
+        self.splitter.setGeometry(QRect(0, 0, self.width(), self.height()))
         self.splitter.setOrientation(Qt.Vertical)
         self.splitter.setObjectName("splitter")
-
         self.splitter.addWidget(self.frame)
         self.splitter.addWidget(self.textEdit)
         # self.resize(self.width(), self.frame.height() + self.textEdit.height())
 
-        hlayout = QtWidgets.QVBoxLayout(self)
-        hlayout.addWidget(self.splitter)
-        # self.adjustSize()
-        self.resize(self.width(), self.frame.height() + self.textEdit.height() + 40)
-
+        hlayout = QtWidgets.QHBoxLayout(self)
+        hlayout.setContentsMargins(5, 5, 5, 5)
+        hlayout.addWidget(self.splitter, stretch=0)
+        # self.setLayout(hlayout)
+        # self.setFixedWidth(self.width() + 5)
+        # self.resize(self.width(), self.frame.height() + self.textEdit.height() + 40)
+        self.splitter.setOrientation(Qt.Horizontal)
         self.splitter.setProperty("Stretch", SplitterState.expanded)
-        self.splitter.setProperty("Dock", Dock.down)
+        self.splitter.setProperty("Dock", Dock.right)
         self.splitter.setProperty("WidgetToHide", self.textEdit)
         self.splitter.setProperty("ExpandParentForm", True)
 
-        self.frame.setMaximumHeight(self.frame.height())
-        self.splitter.setSizes([self.frame.height(), self.textEdit.height()])
-
-        # self.splitter.setSizes([750, self.height() - 750])
+        self.frame.setMaximumWidth(self.frame.width())
+        self.splitter.setSizes([self.frame.width() + 40, self.textEdit.width()])
+        # self.frame.setMaximumHeight(self.frame.height())
+        # self.splitter.setSizes([self.frame.height(), self.textEdit.height()])
+        # self.resize(self.splitter.width() + 40, self.splitter.height())
 
         self.btn_obtain.clicked.connect(self.btn_obtain_clicked)
         self.cmb_level.currentIndexChanged.connect(self.cmb_selectionchange)
