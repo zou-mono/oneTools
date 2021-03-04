@@ -63,7 +63,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         # hlayout.addWidget(self.frame)
 
         self.splitter.setOrientation(Qt.Horizontal)
-        self.splitter.setProperty("Stretch", SplitterState.expanded)
+        self.splitter.setProperty("Stretch", SplitterState.collapsed)
         self.splitter.setProperty("Dock", Dock.right)
         self.splitter.setProperty("WidgetToHide", self.TxtEdit_log)
         self.splitter.setProperty("ExpandParentForm", True)
