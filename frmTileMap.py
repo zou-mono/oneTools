@@ -27,17 +27,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.buttonBox.button(QDialogButtonBox.Cancel).setFont(font)
         self.buttonBox.button(QDialogButtonBox.Cancel).setText("取消")
 
-        self.btn_tilesDialog.clicked.connect(self.open_folder)
-        self.btn_infoDialog.clicked.connect(self.open_file)
-
-        self.rbtn_onlySpider.toggled.connect(lambda: self.rbtn_toggled(self.rbtn_onlySpider))
-        self.rbtn_onlyHandle.toggled.connect(lambda: self.rbtn_toggled(self.rbtn_onlyHandle))
-        self.rbtn_spiderAndHandle.toggled.connect(lambda: self.rbtn_toggled(self.rbtn_spiderAndHandle))
-
-        self.btn_addRow.clicked.connect(self.btn_clicked)
-
-        self.rbtn_spiderAndHandle.setChecked(True)
-
         vlayout = QtWidgets.QVBoxLayout(self)
         vlayout.addWidget(self.splitter)
         vlayout.setContentsMargins(20, 15, 20, 15)
@@ -49,18 +38,21 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.splitter.setProperty("WidgetToHide", self.txt_log)
         self.splitter.setProperty("ExpandParentForm", True)
 
-        # self.frame.setMaximumWidth(self.frame.width())
-        # self.splitter.setSizes([self.frame.width() + 40, self.textEdit.width()])
-
-        # self.frame.setMaximumWidth(self.frame.width())
         self.splitter.setSizes([600, self.splitter.width() - 590])
         self.resize(self.splitter.width(), self.splitter.height())
 
-        # self.btn_obtain.clicked.connect(self.btn_obtain_clicked)
         self.cmb_level.currentIndexChanged.connect(self.cmb_selectionchange)
+        self.btn_addRow.clicked.connect(self.btn_addRow_Clicked)
+        self.btn_tilesDialog.clicked.connect(self.open_tileFolder)
+        self.btn_infoDialog.clicked.connect(self.open_tileInfoFile)
+        self.btn_addressFile.clicked.connect(self.open_addressFile)
 
-    # def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
-    #     self.adjustSize()
+        self.rbtn_onlySpider.toggled.connect(lambda: self.rbtn_toggled(self.rbtn_onlySpider))
+        self.rbtn_onlyHandle.toggled.connect(lambda: self.rbtn_toggled(self.rbtn_onlyHandle))
+        self.rbtn_spiderAndHandle.toggled.connect(lambda: self.rbtn_toggled(self.rbtn_spiderAndHandle))
+
+        self.rbtn_spiderAndHandle.setChecked(True)
+
     def table_init(self):
         self.tbl_address.setStyle(mTableStyle())
 
@@ -86,12 +78,23 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.model.setHeaderData(1, Qt.Horizontal, "地址", Qt.DisplayRole)
         self.tbl_address.setModel(self.model)
 
-    def btn_clicked(self):
-        self.tableView.model().addEmptyRow(self.tableView.model().rowCount(0), 1, 0)
+    def btn_addRow_Clicked(self):
+        selModel = self.tbl_address.selectionModel()
+        if len(selModel.selectedIndexes()) == 0:
+            self.model.addEmptyRow(self.model.rowCount(QModelIndex()), 1, 0)
+            next_index = self.model.index(self.model.rowCount(QModelIndex()) - 1, 0)
+        elif len(selModel.selectedRows()) == 1:
+            next_row = selModel.selectedRows()[0].row() + 1
+            self.model.addEmptyRow(next_row, 1, 0)
+            next_index = self.model.index(next_row, 0)
+
+        self.tbl_address.selectionModel().select(next_index,
+                                                 QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
+        self.tbl_address.setFocus()
 
     def removeBtn_clicked(self):
         # rows = sorted(set(index.row() for index in
-        #                   self.tableView.selectedIndexes()), reverse=True)
+        #                   self.tableView.selectedIndexes()), sereverse=True)
 
         index_list = []
         for model_index in self.tableView.selectionModel().selectedRows():
@@ -103,8 +106,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         next_index = self.tableView.model().index(self.tableView.model().rowCount(QModelIndex()) - 1, 0)
         # self.tableView.setCurrentIndex(next_index)
-        self.tableView.selectionModel().select(next_index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
-        self.tableView.setFocus()
+        self.tbl_address.selectionModel().select(next_index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
+        self.tbl_address.setFocus()
 
     def validateValue(self):
         doubleValidator = QDoubleValidator()
@@ -117,29 +120,33 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.txt_resolution.setValidator(doubleValidator)
 
     def rbtn_toggled(self, btn):
-        if self.rbtn_onlySpider.isChecked() or self.rbtn_spiderAndHandle.isChecked():
-            self.txt_infoPath.setEnabled(False)
-            self.btn_infoDialog.setEnabled(False)
-            self.txt_imageFolderPath.setEnabled(False)
-            self.btn_tilesDialog.setEnabled(False)
-        else:
-            self.txt_infoPath.setEnabled(True)
-            self.btn_infoDialog.setEnabled(True)
-            self.txt_imageFolderPath.setEnabled(True)
-            self.btn_tilesDialog.setEnabled(True)
-
         if self.rbtn_onlyHandle.isChecked():
             self.txt_addressFile.setEnabled(False)
             self.btn_addressFile.setEnabled(False)
             self.tbl_address.setEnabled(False)
             self.btn_addRow.setEnabled(False)
             self.btn_removeRow.setEnabled(False)
+
+            self.txt_infoPath.setEnabled(True)
+            self.btn_infoDialog.setEnabled(True)
+            self.txt_imageFolderPath.setEnabled(True)
+            self.btn_tilesDialog.setEnabled(True)
         else:
             self.txt_addressFile.setEnabled(True)
             self.btn_addressFile.setEnabled(True)
             self.tbl_address.setEnabled(True)
             self.btn_addRow.setEnabled(True)
             self.btn_removeRow.setEnabled(True)
+
+            self.txt_infoPath.setEnabled(False)
+            self.btn_infoDialog.setEnabled(False)
+            self.txt_imageFolderPath.setEnabled(False)
+            self.btn_tilesDialog.setEnabled(False)
+
+    def open_addressFile(self):
+        fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择服务地址文件", os.getcwd(),
+                                                                   "All Files(*)")
+        self.txt_addressFile.setText(fileName)
 
     def btn_obtain_clicked(self):
         self.cmb_level.clear()
@@ -173,12 +180,12 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def cmb_selectionchange(self, i):
         self.update_txt_info(i)
 
-    def open_file(self):
+    def open_tileInfoFile(self):
         fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择瓦片信息json文件", os.getcwd(),
                                                                    "json Files(*.json);;All Files(*)")
         self.txt_infoPath.setText(fileName)
 
-    def open_folder(self):
+    def open_tileFolder(self):
         get_folder = QtWidgets.QFileDialog.getExistingDirectory(self,
                                                                 "选择瓦片文件夹",
                                                                 os.getcwd())

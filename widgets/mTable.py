@@ -95,7 +95,7 @@ class TableModel(QAbstractTableModel):
         self.beginInsertRows(QModelIndex(), row, row + count - 1)
         for i in range(count):
             data = [""] * self.columnCount(QModelIndex())
-            self.datas.append(data)
+            self.datas.insert(row, data)
         self.endInsertRows()
         return True
 
