@@ -13,7 +13,11 @@ class Ui_Window(QDialog, Ui_Dialog):
         model = TableModel()
         self.tableView.setStyle(mTableStyle())
 
-        model.initData(["服务名", "地址"], [])
+        # model.initData(["服务名", "地址"], [])
+        model.setHeaderData(0, Qt.Horizontal, "服务名", Qt.DisplayRole)
+        model.setHeaderData(1, Qt.Horizontal, "地址", Qt.DisplayRole)
+
+        model.appendRow([1, "2"], Qt.DisplayRole)
 
         # self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.tableView.horizontalHeader().setStretchLastSection(True)

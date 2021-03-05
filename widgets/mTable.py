@@ -66,14 +66,21 @@ class TableModel(QAbstractTableModel):
             return QVariant()
 
         row, col = index.row(), index.column()
-        data = self.datas[row]
         if role == Qt.EditRole or role == Qt.DisplayRole:
-            item = data[col]
+            item = self.datas[row][col]
             # if col == AGE:                             # 还可以实现数据的转换显示或显示处理后的数据
             #     item = int(item)
             return item
 
-    # def setHeaderData(self, section: int, orientation: Qt.Orientation, value: typing.Any, role: int = ...) -> bool:
+    def setHeaderData(self, section: int, orientation: Qt.Orientation, value: typing.Any, role: int = ...) -> bool:
+        if role != Qt.DisplayRole:
+            return QVariant()
+        self.headers.append(value)
+        return True
+
+    def appendRow(self, rowData, role):
+        if role == Qt.DisplayRole:
+            self.datas.append(rowData)
 
     def headerData(self, section, orientation, role):
         if role != Qt.DisplayRole:

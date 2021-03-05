@@ -14,9 +14,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(1255, 791)
+        Dialog.resize(1250, 791)
         self.splitter = CollapsibleSplitter(Dialog)
-        self.splitter.setGeometry(QtCore.QRect(0, 10, 842, 777))
+        self.splitter.setGeometry(QtCore.QRect(0, -4, 741, 801))
         self.splitter.setOrientation(QtCore.Qt.Horizontal)
         self.splitter.setObjectName("splitter")
         self.widget = QtWidgets.QWidget(self.splitter)

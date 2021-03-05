@@ -1,6 +1,7 @@
-from PyQt5.QtCore import QRect, Qt
-from PyQt5.QtGui import QDoubleValidator, QIntValidator
-from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, QDialogButtonBox, QStyleFactory
+from PyQt5.QtCore import QRect, Qt, QPersistentModelIndex, QItemSelectionModel, QModelIndex
+from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
+from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, QDialogButtonBox, QStyleFactory, \
+    QAbstractItemView
 from PyQt5 import QtWidgets, QtGui
 from UI.UITileMap import Ui_Dialog
 from suplicmap_tilemap import get_json
@@ -8,29 +9,18 @@ import sys
 import json
 import os
 from UICore.Gv import SplitterState, Dock
-from widgets.CollapsibleSplitter import CollapsibleSplitter
+from widgets.mTable import TableModel, mTableStyle
+
 
 class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self):
         super(Ui_Window, self).__init__()
         self.setupUi(self)
-        # self.setFixedHeight(self.height() + 15)
-
-        # self.txt_address.setText(
-        #     "http://suplicmap.pnr.sz/tileszmap_1/rest/services/SZIMAGE/SZAVI2019_20ZWDL/ImageServer")
-
-        doubleValidator = QDoubleValidator()
-        doubleValidator.setNotation(QDoubleValidator.StandardNotation)
-        self.txt_xmin.setValidator(doubleValidator)
-        self.txt_xmax.setValidator(doubleValidator)
-        self.txt_ymin.setValidator(doubleValidator)
-        self.txt_ymax.setValidator(doubleValidator)
-        self.txt_tilesize.setValidator(doubleValidator)
-        self.txt_resolution.setValidator(doubleValidator)
+        self.table_init()
 
         font = QtGui.QFont()
         font.setFamily("微软雅黑")
-        font.setPointSize(10)
+        font.setPointSize(9)
         self.buttonBox.setStandardButtons(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.buttonBox.button(QDialogButtonBox.Ok).setFont(font)
         self.buttonBox.button(QDialogButtonBox.Ok).setText("确定")
@@ -44,22 +34,14 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.rbtn_onlyHandle.toggled.connect(lambda: self.rbtn_toggled(self.rbtn_onlyHandle))
         self.rbtn_spiderAndHandle.toggled.connect(lambda: self.rbtn_toggled(self.rbtn_spiderAndHandle))
 
+        self.btn_addRow.clicked.connect(self.btn_clicked)
+
         self.rbtn_spiderAndHandle.setChecked(True)
 
-        # self.splitter = CollapsibleSplitter(self)
-        # self.splitter.setGeometry(QRect(0, 0, self.width(), self.height()))
-        # self.splitter.setOrientation(Qt.Vertical)
-        # self.splitter.setObjectName("splitter")
-        # self.splitter.addWidget(self.frame)
-        # self.splitter.addWidget(self.textEdit)
-
-        hlayout = QtWidgets.QHBoxLayout(self)
-        hlayout.setContentsMargins(15, 15, 0, 15)
-        hlayout.addWidget(self.splitter)
-        #
-        # hlayout = QtWidgets.QHBoxLayout(self.splitter)
-        # hlayout.setContentsMargins(0, 0, 0, 0)
-        # hlayout.addWidget(self.frame)
+        vlayout = QtWidgets.QVBoxLayout(self)
+        vlayout.addWidget(self.splitter)
+        vlayout.setContentsMargins(20, 15, 20, 15)
+        self.splitter.setGeometry(0, 0, self.width(), self.height())
 
         self.splitter.setOrientation(Qt.Horizontal)
         self.splitter.setProperty("Stretch", SplitterState.collapsed)
@@ -79,6 +61,60 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     # def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
     #     self.adjustSize()
+    def table_init(self):
+        self.tbl_address.setStyle(mTableStyle())
+
+        self.tbl_address.horizontalHeader().setStretchLastSection(True)
+        self.tbl_address.verticalHeader().setDefaultSectionSize(20)
+        color = self.palette().color(QPalette.Button)
+        self.tbl_address.horizontalHeader().setStyleSheet("QHeaderView::section {{ background-color: {}}}".format(color.name()))
+        self.tbl_address.verticalHeader().setStyleSheet("QHeaderView::section {{ background-color: {}}}".format(color.name()))
+        self.tbl_address.setStyleSheet("QTableCornerButton::section {{ color: {}; border: 1px solid; border-color: {}}}".format(color.name(), color.name()))
+
+        self.tbl_address.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.tbl_address.setEditTriggers(QAbstractItemView.SelectedClicked)
+        self.tbl_address.DragDropMode(QAbstractItemView.InternalMove)
+        self.tbl_address.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tbl_address.setDefaultDropAction(Qt.MoveAction)
+
+        self.tbl_address.horizontalHeader().setSectionsMovable(True)
+        self.tbl_address.setDragEnabled(True)
+        self.tbl_address.setAcceptDrops(True)
+
+        self.model = TableModel()
+        self.model.setHeaderData(0, Qt.Horizontal, "服务名", Qt.DisplayRole)
+        self.model.setHeaderData(1, Qt.Horizontal, "地址", Qt.DisplayRole)
+        self.tbl_address.setModel(self.model)
+
+    def btn_clicked(self):
+        self.tableView.model().addEmptyRow(self.tableView.model().rowCount(0), 1, 0)
+
+    def removeBtn_clicked(self):
+        # rows = sorted(set(index.row() for index in
+        #                   self.tableView.selectedIndexes()), reverse=True)
+
+        index_list = []
+        for model_index in self.tableView.selectionModel().selectedRows():
+            index = QPersistentModelIndex(model_index)
+            index_list.append(index)
+
+        for index in index_list:
+            self.tableView.model().removeRows(index.row(), 1, 0)
+
+        next_index = self.tableView.model().index(self.tableView.model().rowCount(QModelIndex()) - 1, 0)
+        # self.tableView.setCurrentIndex(next_index)
+        self.tableView.selectionModel().select(next_index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
+        self.tableView.setFocus()
+
+    def validateValue(self):
+        doubleValidator = QDoubleValidator()
+        doubleValidator.setNotation(QDoubleValidator.StandardNotation)
+        self.txt_xmin.setValidator(doubleValidator)
+        self.txt_xmax.setValidator(doubleValidator)
+        self.txt_ymin.setValidator(doubleValidator)
+        self.txt_ymax.setValidator(doubleValidator)
+        self.txt_tilesize.setValidator(doubleValidator)
+        self.txt_resolution.setValidator(doubleValidator)
 
     def rbtn_toggled(self, btn):
         if self.rbtn_onlySpider.isChecked() or self.rbtn_spiderAndHandle.isChecked():
@@ -91,6 +127,19 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.btn_infoDialog.setEnabled(True)
             self.txt_imageFolderPath.setEnabled(True)
             self.btn_tilesDialog.setEnabled(True)
+
+        if self.rbtn_onlyHandle.isChecked():
+            self.txt_addressFile.setEnabled(False)
+            self.btn_addressFile.setEnabled(False)
+            self.tbl_address.setEnabled(False)
+            self.btn_addRow.setEnabled(False)
+            self.btn_removeRow.setEnabled(False)
+        else:
+            self.txt_addressFile.setEnabled(True)
+            self.btn_addressFile.setEnabled(True)
+            self.tbl_address.setEnabled(True)
+            self.btn_addRow.setEnabled(True)
+            self.btn_removeRow.setEnabled(True)
 
     def btn_obtain_clicked(self):
         self.cmb_level.clear()
@@ -129,13 +178,11 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                                                                    "json Files(*.json);;All Files(*)")
         self.txt_infoPath.setText(fileName)
 
-
     def open_folder(self):
         get_folder = QtWidgets.QFileDialog.getExistingDirectory(self,
                                                                 "选择瓦片文件夹",
                                                                 os.getcwd())
         self.txt_imageFolderPath.setText(get_folder)
-
 
     def accept(self):
         QMessageBox.information(self, "提示", "OK", QMessageBox.Yes)
