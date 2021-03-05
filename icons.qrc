@@ -1,5 +1,8 @@
 <RCC>
   <qresource prefix="icons">
     <file>icons/openDialog.png</file>
+    <file>icons/GenericOpen32.png</file>
+    <file>icons/GenericBlackAdd32.png</file>
+    <file>icons/GenericBlackSubtract32.png</file>
   </qresource>
 </RCC>

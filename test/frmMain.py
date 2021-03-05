@@ -9,7 +9,6 @@ import json
 import os
 from UICore.Gv import SplitterState, Dock
 from widgets.CollapsibleSplitter import CollapsibleSplitter
-from test.frmUI import Ui_Dialog
 
 class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self):

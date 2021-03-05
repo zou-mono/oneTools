@@ -3,7 +3,7 @@ import sys
 from PyQt5.QtGui import QPalette
 from PyQt5.QtWidgets import QHeaderView, QAbstractItemView, QApplication, QDialog
 from PyQt5.QtCore import Qt, QItemSelectionModel, QPersistentModelIndex, QModelIndex
-from test.UItableview import Ui_Dialog
+from UItableview import Ui_Dialog
 from widgets.mTable import TableModel, mTableStyle
 
 class Ui_Window(QDialog, Ui_Dialog):

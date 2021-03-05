@@ -73,6 +73,8 @@ class TableModel(QAbstractTableModel):
             #     item = int(item)
             return item
 
+    # def setHeaderData(self, section: int, orientation: Qt.Orientation, value: typing.Any, role: int = ...) -> bool:
+
     def headerData(self, section, orientation, role):
         if role != Qt.DisplayRole:
             return QVariant()
@@ -91,10 +93,10 @@ class TableModel(QAbstractTableModel):
         return True
 
     def insertRows(self, row: int, count: int, parent: QModelIndex = ...) -> bool:
-        self.beginRemoveRows(QModelIndex(), row, row + count - 1)
+        self.beginInsertRows(QModelIndex(), row, row + count - 1)
         for i in range(count):
             self.datas.insert(row, self.datas[row])
-        self.endRemoveRows()
+        self.beginInsertRows()
         return True
 
     def removeRows(self, row: int, count: int, parent: QModelIndex = ...) -> bool:
