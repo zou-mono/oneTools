@@ -4,5 +4,7 @@
     <file>icons/GenericOpen32.png</file>
     <file>icons/GenericBlackAdd32.png</file>
     <file>icons/GenericBlackSubtract32.png</file>
+    <file>icons/MetadataImport32.png</file>
+    <file>icons/RasterImageAnalysisDifference16.png</file>
   </qresource>
 </RCC>
