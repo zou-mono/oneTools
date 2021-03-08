@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>抓取瓦片数据</string>
   </property>
   <widget class="CollapsibleSplitter" name="splitter">
    <property name="geometry">
@@ -22,16 +22,19 @@
      <height>721</height>
     </rect>
    </property>
+   <property name="frameShape">
+    <enum>QFrame::NoFrame</enum>
+   </property>
    <property name="orientation">
     <enum>Qt::Horizontal</enum>
    </property>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <layout class="QVBoxLayout" name="verticalLayout_6">
      <property name="spacing">
       <number>10</number>
      </property>
      <property name="bottomMargin">
-      <number>10</number>
+      <number>0</number>
      </property>
      <item>
       <widget class="QScrollArea" name="scrollArea">
@@ -40,6 +43,9 @@
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::WinPanel</enum>
        </property>
        <property name="verticalScrollBarPolicy">
         <enum>Qt::ScrollBarAlwaysOn</enum>
@@ -58,7 +64,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>548</width>
+          <width>540</width>
           <height>690</height>
          </rect>
         </property>

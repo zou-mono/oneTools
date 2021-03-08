@@ -29,7 +29,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         vlayout = QtWidgets.QVBoxLayout(self)
         vlayout.addWidget(self.splitter)
-        vlayout.setContentsMargins(0, 0, 10, 0)
+        vlayout.setContentsMargins(0, 0, 10, 10)
         self.splitter.setGeometry(0, 0, self.width(), self.height())
 
         self.splitter.setOrientation(Qt.Horizontal)
