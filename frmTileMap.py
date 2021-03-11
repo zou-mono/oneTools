@@ -16,7 +16,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self):
         super(Ui_Window, self).__init__()
         self.setupUi(self)
-        self.table_init()
 
         font = QtGui.QFont()
         font.setFamily("微软雅黑")
@@ -43,15 +42,14 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         self.cmb_level.currentIndexChanged.connect(self.cmb_selectionchange)
         self.btn_addRow.clicked.connect(self.btn_addRow_Clicked)
-        self.btn_tilesDialog.clicked.connect(self.open_tileFolder)
-        self.btn_infoDialog.clicked.connect(self.open_tileInfoFile)
         self.btn_addressFile.clicked.connect(self.open_addressFile)
+
+        self.table_init()
+        # self.bTbl_init = True
 
         self.rbtn_onlySpider.toggled.connect(lambda: self.rbtn_toggled(self.rbtn_onlySpider))
         self.rbtn_onlyHandle.toggled.connect(lambda: self.rbtn_toggled(self.rbtn_onlyHandle))
         self.rbtn_spiderAndHandle.toggled.connect(lambda: self.rbtn_toggled(self.rbtn_spiderAndHandle))
-
-        self.rbtn_spiderAndHandle.setChecked(True)
 
     def table_init(self):
         self.tbl_address.setStyle(mTableStyle())
@@ -69,14 +67,12 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.tbl_address.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tbl_address.setDefaultDropAction(Qt.MoveAction)
 
-        self.tbl_address.horizontalHeader().setSectionsMovable(True)
+        self.tbl_address.horizontalHeader().setSectionsMovable(False)
         self.tbl_address.setDragEnabled(True)
         self.tbl_address.setAcceptDrops(True)
 
-        self.model = TableModel()
-        self.model.setHeaderData(0, Qt.Horizontal, "服务名", Qt.DisplayRole)
-        self.model.setHeaderData(1, Qt.Horizontal, "地址", Qt.DisplayRole)
-        self.tbl_address.setModel(self.model)
+    def showEvent(self, a0: QtGui.QShowEvent) -> None:
+        self.rbtn_spiderAndHandle.setChecked(True)
 
     def btn_addRow_Clicked(self):
         selModel = self.tbl_address.selectionModel()
@@ -93,9 +89,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.tbl_address.setFocus()
 
     def removeBtn_clicked(self):
-        # rows = sorted(set(index.row() for index in
-        #                   self.tableView.selectedIndexes()), sereverse=True)
-
         index_list = []
         for model_index in self.tableView.selectionModel().selectedRows():
             index = QPersistentModelIndex(model_index)
@@ -120,28 +113,33 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.txt_resolution.setValidator(doubleValidator)
 
     def rbtn_toggled(self, btn):
-        if self.rbtn_onlyHandle.isChecked():
+        self.model = TableModel()
+
+        if btn.isChecked():
             self.txt_addressFile.setEnabled(False)
             self.btn_addressFile.setEnabled(False)
-            self.tbl_address.setEnabled(False)
-            self.btn_addRow.setEnabled(False)
-            self.btn_removeRow.setEnabled(False)
 
-            self.txt_infoPath.setEnabled(True)
-            self.btn_infoDialog.setEnabled(True)
-            self.txt_imageFolderPath.setEnabled(True)
-            self.btn_tilesDialog.setEnabled(True)
+            self.txt_tileInfoFile.setEnabled(True)
+            self.btn_tileInfoDialog.setEnabled(True)
+
+            self.model.setHeaderData(0, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
+            self.model.setHeaderData(1, Qt.Horizontal, "瓦片信息文件", Qt.DisplayRole)
+            self.tbl_address.setModel(self.model)
+            self.tbl_address.setColumnWidth(0, self.tbl_address.width()/2)
+            self.tbl_address.setColumnWidth(1, self.tbl_address.width()/2 - 1)
+
         else:
             self.txt_addressFile.setEnabled(True)
             self.btn_addressFile.setEnabled(True)
-            self.tbl_address.setEnabled(True)
-            self.btn_addRow.setEnabled(True)
-            self.btn_removeRow.setEnabled(True)
 
-            self.txt_infoPath.setEnabled(False)
-            self.btn_infoDialog.setEnabled(False)
-            self.txt_imageFolderPath.setEnabled(False)
-            self.btn_tilesDialog.setEnabled(False)
+            self.txt_tileInfoFile.setEnabled(False)
+            self.btn_tileInfoDialog.setEnabled(False)
+
+            self.model.setHeaderData(0, Qt.Horizontal, "服务名", Qt.DisplayRole)
+            self.model.setHeaderData(1, Qt.Horizontal, "地址", Qt.DisplayRole)
+            self.tbl_address.setModel(self.model)
+            self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.3)
+            self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.7 - 1)
 
     def open_addressFile(self):
         fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择服务地址文件", os.getcwd(),
