@@ -9,7 +9,7 @@ import sys
 import json
 import os
 from UICore.Gv import SplitterState, Dock
-from widgets.mTable import TableModel, mTableStyle
+from widgets.mTable import TableModel, mTableStyle, addressTableDelegate
 
 
 class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
@@ -115,7 +115,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def rbtn_toggled(self, btn):
         self.model = TableModel()
 
-        if btn.isChecked():
+        if self.rbtn_onlyHandle.isChecked():
             self.txt_addressFile.setEnabled(False)
             self.btn_addressFile.setEnabled(False)
 
@@ -124,7 +124,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
             self.model.setHeaderData(0, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
             self.model.setHeaderData(1, Qt.Horizontal, "瓦片信息文件", Qt.DisplayRole)
-            self.tbl_address.setModel(self.model)
             self.tbl_address.setColumnWidth(0, self.tbl_address.width()/2)
             self.tbl_address.setColumnWidth(1, self.tbl_address.width()/2 - 1)
 
@@ -137,9 +136,12 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
             self.model.setHeaderData(0, Qt.Horizontal, "服务名", Qt.DisplayRole)
             self.model.setHeaderData(1, Qt.Horizontal, "地址", Qt.DisplayRole)
-            self.tbl_address.setModel(self.model)
             self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.3)
             self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.7 - 1)
+
+        self.tbl_address.setModel(self.model)
+        delegate = addressTableDelegate(self)
+        self.tbl_address.setItemDelegate(delegate)
 
     def open_addressFile(self):
         fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择服务地址文件", os.getcwd(),

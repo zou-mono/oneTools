@@ -1,12 +1,77 @@
+import os
 import sys
+import sip
 
 import typing
 from PyQt5.QtCore import QAbstractTableModel, Qt, QVariant, QModelIndex, QDataStream, QPersistentModelIndex, QMimeData, \
-    QIODevice, QByteArray, QTextCodec, QItemSelectionModel
+    QIODevice, QByteArray, QTextCodec, QItemSelectionModel, QAbstractItemModel, QTimer, QEvent, QRect, pyqtSignal
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QPalette, QColor, QPainter
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QAbstractItemView, QHeaderView, QMessageBox, \
-    QProxyStyle, QStyleOption, QTableView
+    QProxyStyle, QStyleOption, QTableView, QStyledItemDelegate, QWidget, QLineEdit, QPushButton, QFileDialog, QStyle, \
+    QStyleOptionButton, QHBoxLayout
 
+class FileAddressEditor(QWidget):
+    editingFinished = pyqtSignal()
+    clickButton = pyqtSignal()
+
+    def __init__(self, parent, option: 'QStyleOptionViewItem',):
+        # super(FileAddressEditor, self).__init__(parent)
+        super().__init__(parent)
+
+        # self.setMouseTracking(True)
+        self.setAutoFillBackground(True)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        self.mTxt_address = QLineEdit(self)
+        self.mTxt_address.setObjectName("mTxt_address")
+        layout.addWidget(self.mTxt_address)
+        # self.setText(str(index.data()))
+        self.setFocusProxy(self.mTxt_address)
+
+        mBtn_address = QPushButton(self)
+        mBtn_address.setObjectName("mBtn_address")
+        mBtn_address.setFocusPolicy(Qt.NoFocus)
+        mBtn_address.setFixedWidth(option.rect.height())
+        layout.addWidget(mBtn_address)
+
+        self.mTxt_address.installEventFilter(self)
+        mBtn_address.installEventFilter(self)
+        self.bClickButton = False
+
+    def mBtn_address_clicked(self, parent):
+        fileName, fileType = QFileDialog.getOpenFileName(parent, "选择服务地址文件", os.getcwd(),
+                                                         "All Files(*)")
+        if not sip.isdeleted(self.mTxt_address):
+            self.setText(fileName)
+            print(fileName)
+        else:
+            print("deleted, {}".format(fileName))
+
+    def setText(self, value):
+        self.mTxt_address.setText(str(value))
+
+    def text(self):
+        return self.mTxt_address.text()
+
+    def eventFilter(self, source: 'QObject', event: 'QEvent') -> bool:
+        if isinstance(source, QPushButton) and event.type() == QEvent.MouseButtonPress:
+            if source.objectName() == "mBtn_address":
+                self.bClickButton = True
+                self.clickButton.emit()
+                return True
+
+        if isinstance(source, QLineEdit) and event.type() == QEvent.FocusIn:
+            self.bClickButton = False
+            return True
+
+        if isinstance(source, QLineEdit) and event.type() == QEvent.FocusOut and self.bClickButton == False:
+            self.editingFinished.emit()
+            return True
+
+        return super().eventFilter(source, event)
 
 class mTableStyle(QProxyStyle):
 
@@ -30,6 +95,95 @@ class mTableStyle(QProxyStyle):
             painter.setPen(QColor("red"))
 
         super().drawPrimitive(element, option, painter, widget)
+
+class FileAddressEditor(QWidget):
+    def __init__(self, parent=None):
+        super(FileAddressEditor, self).__init__(parent)
+        self.setMouseTracking(True)
+        self.setAutoFillBackground(True)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        mTxt_address = QLineEdit()
+        layout.addWidget(mTxt_address)
+        self.setFocus()
+
+class addressTableDelegate(QStyledItemDelegate):
+    def __init__(self, parent=None):
+        super(addressTableDelegate, self).__init__(parent)
+
+    def createEditor(self, parent: QWidget, option: 'QStyleOptionViewItem', index: QModelIndex) -> QWidget:
+        mAddressDialog = QWidget(parent)
+        mAddressDialog.setGeometry(option.rect)
+        self.mTxt_address = QLineEdit(mAddressDialog)
+        self.mTxt_address.setText(str(index.data()))
+        self.mTxt_address.setGeometry(0, 0, option.rect.width() - option.rect.height(), option.rect.height())
+        mAddressDialog.setFocusProxy(self.mTxt_address)
+
+        mBtn_address = QPushButton(mAddressDialog)
+        mBtn_address.setFocusPolicy(Qt.NoFocus)
+        mBtn_address.setGeometry(option.rect.width() - option.rect.height(), 0, option.rect.height(), option.rect.height())
+        mBtn_address.clicked.connect(lambda: self.mBtn_address_clicked(parent))
+        self.mTxt_address.editingFinished.connect(lambda: self.commitAndCloseEditor(mAddressDialog))
+
+        return mAddressDialog
+
+    def mBtn_address_clicked(self, parent):
+        fileName, fileType = QFileDialog.getOpenFileName(parent, "选择服务地址文件", os.getcwd(),
+                                                         "All Files(*)")
+        self.mTxt_address.setText(fileName)
+
+    def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex) -> None:
+        if index.data():
+            model.setData(index, str(self.mTxt_address.text()))
+        print(index.data())
+
+    def setEditorData(self, editor: QWidget, index: QModelIndex) -> None:
+        if index.data():
+            self.mTxt_address.setText(str(index.model().data(index, Qt.EditRole)))
+
+    def commitAndCloseEditor(self, parent):
+        editor = self.sender()
+        print("over")
+        self.commitData.emit(editor)
+        self.closeEditor.emit(editor)
+
+    def paint(self, painter: QPainter, option: 'QStyleOptionViewItem', index: QModelIndex) -> None:
+        widget = option.widget
+        self.initStyleOption(option, index)
+        style = QApplication.style() if widget is None else widget.style()
+        style.drawControl(QStyle.CE_ItemViewItem, option, painter, widget)
+
+        if not (option.state & QStyle.State_Editing):
+            return
+        btn_address = QStyleOptionButton()
+        btn_address.features = QStyleOptionButton.DefaultButton
+        btn_address.fontMetrics = option.fontMetrics
+        btn_address.palette = option.palette
+        btn_address.styleObject = option.styleObject
+        btn_address.rect = QRect(option.rect.left() + option.rect.width() - option.rect.height(),
+                                 option.rect.top(), option.rect.height(), option.rect.height())
+
+        style.drawControl(QStyle.CE_PushButton, btn_address, painter, widget)
+
+    def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: 'QStyleOptionViewItem', index: QModelIndex) -> bool:
+        if (event.type() == QEvent.MouseButtonPress and
+                event.button() == Qt.LeftButton and
+                index in option.widget.selectedIndexes()):
+            # the index is already selected, we'll delay the (possible)
+            # editing but we MUST store the direct reference to the table for
+            # the lambda function, since the option object is going to be
+            # destroyed; this is very important: if you use "option.widget"
+            # in the lambda the program will probably hang or crash
+            table = option.widget
+            QTimer.singleShot(0, lambda: self.checkIndex(table, index))
+        return super().editorEvent(event, model, option, index)
+
+    def checkIndex(self, table, index):
+        if index in table.selectedIndexes() and index == table.currentIndex():
+            table.edit(index)
 
 
 class TableModel(QAbstractTableModel):

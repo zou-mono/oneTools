@@ -1,9 +1,10 @@
 import os
 import sys
+import sip
 
 from PyQt5.QtGui import QPalette, QPainter, QMouseEvent
 from PyQt5.QtWidgets import QHeaderView, QAbstractItemView, QApplication, QDialog, QStyledItemDelegate, QWidget, \
-    QFileDialog, QPushButton, QStyle, QStyleOptionButton, QLineEdit, QItemDelegate, QHBoxLayout
+    QFileDialog, QPushButton, QStyle, QStyleOptionButton, QLineEdit, QItemDelegate, QHBoxLayout, QSizePolicy
 from PyQt5.QtCore import Qt, QItemSelectionModel, QPersistentModelIndex, QModelIndex, QRect, QAbstractItemModel, QEvent, \
     QTimer, pyqtSignal
 from UItableview import Ui_Dialog
@@ -13,34 +14,42 @@ class FileAddressEditor(QWidget):
     editingFinished = pyqtSignal()
     clickButton = pyqtSignal()
 
-    def __init__(self, parent, option: 'QStyleOptionViewItem', index: QModelIndex):
-        super(FileAddressEditor, self).__init__(parent)
-        self.setMouseTracking(True)
+    def __init__(self, parent, option: 'QStyleOptionViewItem',):
+        # super(FileAddressEditor, self).__init__(parent)
+        super().__init__(parent)
+
+        # self.setMouseTracking(True)
         self.setAutoFillBackground(True)
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        self.mTxt_address = QLineEdit()
-        self.mTxt_address.objectName()
+        self.mTxt_address = QLineEdit(self)
+        self.mTxt_address.setObjectName("mTxt_address")
         layout.addWidget(self.mTxt_address)
-        self.setText(str(index.data()))
+        # self.setText(str(index.data()))
         self.setFocusProxy(self.mTxt_address)
 
-        mBtn_address = QPushButton()
+        mBtn_address = QPushButton(self)
+        mBtn_address.setObjectName("mBtn_address")
         mBtn_address.setFocusPolicy(Qt.NoFocus)
+        mBtn_address.setFixedWidth(option.rect.height())
+        # mBtn_address.setGeometry(option.rect.width() - option.rect.height(), 0, option.rect.height(), option.rect.height())
         layout.addWidget(mBtn_address)
 
         self.mTxt_address.installEventFilter(self)
-        mBtn_address.clicked.connect(lambda: self.mBtn_address_clicked(parent))
         mBtn_address.installEventFilter(self)
         self.bClickButton = False
 
     def mBtn_address_clicked(self, parent):
         fileName, fileType = QFileDialog.getOpenFileName(parent, "选择服务地址文件", os.getcwd(),
                                                          "All Files(*)")
-        self.setText(fileName)
+        if not sip.isdeleted(self.mTxt_address):
+            self.setText(fileName)
+            print(fileName)
+        else:
+            print("deleted, {}".format(fileName))
 
     def setText(self, value):
         self.mTxt_address.setText(str(value))
@@ -48,16 +57,16 @@ class FileAddressEditor(QWidget):
     def text(self):
         return self.mTxt_address.text()
 
-    # def mousePressEvent(self, event: QMouseEvent) -> None:
-
     def eventFilter(self, source: 'QObject', event: 'QEvent') -> bool:
         if isinstance(source, QPushButton) and event.type() == QEvent.MouseButtonPress:
-            self.bClickButton = True
-            # self.clickButton.emit()
-            # return True
+            if source.objectName() == "mBtn_address":
+                self.bClickButton = True
+                self.clickButton.emit()
+                return True
 
         if isinstance(source, QLineEdit) and event.type() == QEvent.FocusIn:
             self.bClickButton = False
+            return True
 
         if isinstance(source, QLineEdit) and event.type() == QEvent.FocusOut and self.bClickButton == False:
             self.editingFinished.emit()
@@ -77,8 +86,9 @@ class addressTableDelegate(QStyledItemDelegate):
         super(addressTableDelegate, self).__init__(parent)
 
     def createEditor(self, parent: QWidget, option: 'QStyleOptionViewItem', index: QModelIndex) -> QWidget:
-        print(index.data())
-        mAddressDialog = FileAddressEditor(parent, option, index)
+        # print(index.data())
+        # self.mAddressDialog = FileAddressEditor(parent, option, index)
+        self.mAddressDialog = FileAddressEditor(parent, option)
         # mAddressDialog = QWidget(parent)
         # mAddressDialog.setGeometry(option.rect)
         # self.mTxt_address = QLineEdit(mAddressDialog)
@@ -91,18 +101,22 @@ class addressTableDelegate(QStyledItemDelegate):
         # mBtn_address.setGeometry(option.rect.width() - option.rect.height(), 0, option.rect.height(), option.rect.height())
         # mBtn_address.clicked.connect(lambda: self.mBtn_address_clicked(parent))
         # self.mTxt_address.editingFinished.connect(lambda: self.commitAndCloseEditor(mAddressDialog))
-        # mAddressDialog.clickButton.connect(lambda: self.mBtn_address_clicked(parent, mAddressDialog))
-        mAddressDialog.editingFinished.connect(lambda: self.commitAndCloseEditor(mAddressDialog))
-        return mAddressDialog
+        self.mAddressDialog.clickButton.connect(lambda: self.mBtn_address_clicked(parent))
+        self.mAddressDialog.editingFinished.connect(self.commitAndCloseEditor)
+        return self.mAddressDialog
 
-    # def mBtn_address_clicked(self, parent, dialog):
-    #     fileName, fileType = QFileDialog.getOpenFileName(parent, "选择服务地址文件", os.getcwd(),
-    #                                                                "All Files(*)")
-    #     print(fileName)
-    #     self.commitAndCloseEditor2(dialog)
-
-        # self.mTxt_address.setText(fileName)
-        # self.fileName = fileName
+    def mBtn_address_clicked(self, parent):
+        fileName, fileType = QFileDialog.getOpenFileName(parent, "选择服务地址文件", os.getcwd(),
+                                                                   "All Files(*)")
+        # print(fileName)
+        # self.commitAndCloseEditor2(dialog)
+        # self.mAddressDialog.setText(fileName)
+        if not sip.isdeleted(self.mAddressDialog):
+            self.mAddressDialog.setText(fileName)
+            self.commitAndCloseEditor()
+            print(fileName)
+        else:
+            print("deleted, {}".format(fileName))
 
     # def destroyEditor(self, parent: QWidget, index: QModelIndex) -> QWidget:
     #     print("destroy")
@@ -111,7 +125,7 @@ class addressTableDelegate(QStyledItemDelegate):
     def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex) -> None:
         # if index.data():
         #     model.setData(index, str(self.mTxt_address.text()))
-        print(index.data())
+        # print(index.data())
         if isinstance(editor, FileAddressEditor):
             model.setData(index, editor.text())
         else:
@@ -121,8 +135,8 @@ class addressTableDelegate(QStyledItemDelegate):
         # if index.data():
         #     self.mTxt_address.setText(str(index.model().data(index, Qt.EditRole)))
 
-        if index.data():
-            print(index.data())
+        # if index.data():
+        #     print(index.data())
 
             # self.mTxt_address.setText("正在测试")
         if isinstance(editor, FileAddressEditor):
@@ -130,16 +144,10 @@ class addressTableDelegate(QStyledItemDelegate):
         else:
             super(addressTableDelegate, self).setEditorData(editor, index)
 
-    def commitAndCloseEditor(self, parent):
+    def commitAndCloseEditor(self):
         editor = self.sender()
-        print("over")
         self.commitData.emit(editor)
         self.closeEditor.emit(editor)
-
-    def commitAndCloseEditor2(self, parent):
-        print("over")
-        self.commitData.emit(parent)
-        self.closeEditor.emit(parent)
 
 
     def paint(self, painter: QPainter, option: 'QStyleOptionViewItem', index: QModelIndex) -> None:
