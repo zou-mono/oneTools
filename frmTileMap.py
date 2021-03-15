@@ -109,6 +109,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def validateValue(self):
         doubleValidator = QDoubleValidator()
         doubleValidator.setNotation(QDoubleValidator.StandardNotation)
+        self.txt_originX.setValidator(doubleValidator)
+        self.txt_originY.setValidator(doubleValidator)
         self.txt_xmin.setValidator(doubleValidator)
         self.txt_xmax.setValidator(doubleValidator)
         self.txt_ymin.setValidator(doubleValidator)
