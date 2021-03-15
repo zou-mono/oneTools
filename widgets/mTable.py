@@ -112,6 +112,8 @@ class addressTableDelegate(QStyledItemDelegate):
             self.mAddressDialog.clickButton.connect(lambda: self.mBtn_address_clicked(parent, title, type))
             self.mAddressDialog.editingFinished.connect(self.commitAndCloseEditor)
             return self.mAddressDialog
+        else:
+            return super().createEditor(parent, option, index)
 
     def mBtn_address_clicked(self, parent, title, type):
         if type == 'f':

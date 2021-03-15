@@ -65,7 +65,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.tbl_address.setStyleSheet("QTableCornerButton::section {{ color: {}; border: 1px solid; border-color: {}}}".format(color.name(), color.name()))
 
         self.tbl_address.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.tbl_address.setEditTriggers(QAbstractItemView.SelectedClicked)
+        self.tbl_address.setEditTriggers(QAbstractItemView.SelectedClicked | QAbstractItemView.DoubleClicked)
         self.tbl_address.DragDropMode(QAbstractItemView.InternalMove)
         self.tbl_address.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tbl_address.setDefaultDropAction(Qt.MoveAction)
@@ -76,7 +76,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         # self.rbtn_spiderAndHandle.setChecked(True)
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
-        self.rbtn_spiderAndHandle.setChecked(True)
+        self.rbtn_spiderAndHandle.click()
 
     def btn_addRow_Clicked(self):
         selModel = self.tbl_address.selectionModel()
