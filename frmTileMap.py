@@ -43,6 +43,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.cmb_level.currentIndexChanged.connect(self.cmb_selectionchange)
         self.btn_addRow.clicked.connect(self.btn_addRow_Clicked)
         self.btn_addressFile.clicked.connect(self.open_addressFile)
+        self.btn_removeRow.clicked.connect(self.removeBtn_clicked)
 
         self.table_init()
         # self.bTbl_init = True
@@ -73,6 +74,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.tbl_address.setDragEnabled(True)
         self.tbl_address.setAcceptDrops(True)
 
+        self.model = TableModel()
+
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
         self.rbtn_spiderAndHandle.setChecked(True)
 
@@ -92,14 +95,14 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     def removeBtn_clicked(self):
         index_list = []
-        for model_index in self.tableView.selectionModel().selectedRows():
+        for model_index in self.tbl_address.selectionModel().selectedRows():
             index = QPersistentModelIndex(model_index)
             index_list.append(index)
 
         for index in index_list:
-            self.tableView.model().removeRows(index.row(), 1, 0)
+            self.model.removeRows(index.row(), 1, 0)
 
-        next_index = self.tableView.model().index(self.tableView.model().rowCount(QModelIndex()) - 1, 0)
+        next_index = self.model.index(self.model.rowCount(QModelIndex()) - 1, 0)
         # self.tableView.setCurrentIndex(next_index)
         self.tbl_address.selectionModel().select(next_index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
         self.tbl_address.setFocus()
@@ -115,8 +118,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.txt_resolution.setValidator(doubleValidator)
 
     def rbtn_toggled(self, btn):
-        self.model = TableModel()
-
         if self.rbtn_onlyHandle.isChecked():
             self.txt_addressFile.setEnabled(False)
             self.btn_addressFile.setEnabled(False)
