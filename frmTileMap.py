@@ -49,6 +49,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.rbtn_onlySpider.clicked.connect(self.rbtn_toggled)
         self.rbtn_onlyHandle.clicked.connect(self.rbtn_toggled)
         self.rbtn_spiderAndHandle.clicked.connect(self.rbtn_toggled)
+        self.tbl_address.verticalHeader().sectionClicked.connect(self.table_section_clicked)
 
         self.table_init()
 
@@ -168,6 +169,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         self.tbl_address.setModel(self.model)
         self.tbl_address.setItemDelegate(delegate)
+
+    def table_section_clicked(self, index):
+        print("clicked:{}".format(index))
 
     def open_addressFile(self):
         fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择服务地址文件", os.getcwd(),

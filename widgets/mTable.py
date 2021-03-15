@@ -117,7 +117,7 @@ class addressTableDelegate(QStyledItemDelegate):
 
     def mBtn_address_clicked(self, parent, title, type):
         if type == 'f':
-            fileName, fileType = QFileDialog.getOpenFileName(parent, title, os.getcwd(),
+            fileName, fileType = QFileDialog.getSaveFileName(parent, title, os.getcwd(),
                                                              "All Files(*)")
         elif type == 'd':
             fileName = QFileDialog.getExistingDirectory(parent, title, os.getcwd(), QFileDialog.ShowDirsOnly)
