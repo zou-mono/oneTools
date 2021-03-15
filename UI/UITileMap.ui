@@ -387,7 +387,7 @@
                   </size>
                  </property>
                  <property name="toolTip">
-                  <string>获取元数据</string>
+                  <string>获取参数数据</string>
                  </property>
                  <property name="text">
                   <string/>
