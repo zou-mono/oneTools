@@ -252,9 +252,11 @@ class TableModel(QAbstractTableModel):
         return True
 
     def setData(self, index, value, role=Qt.EditRole):
-        if index.isValid() and 0 <= index.row() < self.rowCount(QModelIndex()) and role == Qt.EditRole and value:
+        if index.isValid() and 0 <= index.row() < self.rowCount(QModelIndex()) and role == Qt.EditRole:
             col = index.column()
             # print(col)
+            if value is None:
+                value = ""
             if col < self.columnCount(QModelIndex()):
                 self.beginResetModel()
                 self.datas[index.row()][col] = value
