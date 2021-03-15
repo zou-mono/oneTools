@@ -14,7 +14,7 @@ class FileAddressEditor(QWidget):
     editingFinished = pyqtSignal()
     clickButton = pyqtSignal()
 
-    def __init__(self, parent, option: 'QStyleOptionViewItem',):
+    def __init__(self, parent, option: 'QStyleOptionViewItem'):
         # super(FileAddressEditor, self).__init__(parent)
         super().__init__(parent)
 

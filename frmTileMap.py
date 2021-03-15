@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QRect, Qt, QPersistentModelIndex, QItemSelectionModel, QModelIndex
 from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
 from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, QDialogButtonBox, QStyleFactory, \
-    QAbstractItemView
+    QAbstractItemView, QHeaderView
 from PyQt5 import QtWidgets, QtGui
 from UI.UITileMap import Ui_Dialog
 from suplicmap_tilemap import get_json
@@ -56,6 +56,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         self.tbl_address.horizontalHeader().setStretchLastSection(True)
         self.tbl_address.verticalHeader().setDefaultSectionSize(20)
+        self.tbl_address.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)  # 行高固定
+
         color = self.palette().color(QPalette.Button)
         self.tbl_address.horizontalHeader().setStyleSheet("QHeaderView::section {{ background-color: {}}}".format(color.name()))
         self.tbl_address.verticalHeader().setStyleSheet("QHeaderView::section {{ background-color: {}}}".format(color.name()))
@@ -126,7 +128,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.model.setHeaderData(1, Qt.Horizontal, "瓦片信息文件", Qt.DisplayRole)
             self.tbl_address.setColumnWidth(0, self.tbl_address.width()/2)
             self.tbl_address.setColumnWidth(1, self.tbl_address.width()/2 - 1)
-
+            delegate = addressTableDelegate(self, [{'text': "请选择瓦片文件夹", 'type': "d"},
+                                                   {'text': "请选择瓦片信息文件", 'type': "f"}])
         else:
             self.txt_addressFile.setEnabled(True)
             self.btn_addressFile.setEnabled(True)
@@ -138,9 +141,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.model.setHeaderData(1, Qt.Horizontal, "地址", Qt.DisplayRole)
             self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.3)
             self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.7 - 1)
+            delegate = addressTableDelegate(self, [None, None])
 
         self.tbl_address.setModel(self.model)
-        delegate = addressTableDelegate(self)
         self.tbl_address.setItemDelegate(delegate)
 
     def open_addressFile(self):
