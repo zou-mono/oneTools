@@ -204,7 +204,14 @@ class TableModel(QAbstractTableModel):
     def setHeaderData(self, section: int, orientation: Qt.Orientation, value: typing.Any, role: int = ...) -> bool:
         if role != Qt.DisplayRole:
             return QVariant()
-        self.headers.append(value)
+        if len(self.headers) <= section:
+            self.headers.append(value)
+            return True
+
+        if self.headers[section] is not None:
+            self.headers[section] = value
+        else:
+            self.headers.append(value)
         return True
 
     def appendRow(self, rowData, role):

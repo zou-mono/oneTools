@@ -44,13 +44,13 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.btn_addRow.clicked.connect(self.btn_addRow_Clicked)
         self.btn_addressFile.clicked.connect(self.open_addressFile)
         self.btn_removeRow.clicked.connect(self.removeBtn_clicked)
-
-        self.table_init()
         # self.bTbl_init = True
 
-        self.rbtn_onlySpider.toggled.connect(lambda: self.rbtn_toggled(self.rbtn_onlySpider))
-        self.rbtn_onlyHandle.toggled.connect(lambda: self.rbtn_toggled(self.rbtn_onlyHandle))
-        self.rbtn_spiderAndHandle.toggled.connect(lambda: self.rbtn_toggled(self.rbtn_spiderAndHandle))
+        self.rbtn_onlySpider.clicked.connect(self.rbtn_toggled)
+        self.rbtn_onlyHandle.clicked.connect(self.rbtn_toggled)
+        self.rbtn_spiderAndHandle.clicked.connect(self.rbtn_toggled)
+
+        self.table_init()
 
     def table_init(self):
         self.tbl_address.setStyle(mTableStyle())
@@ -73,8 +73,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.tbl_address.horizontalHeader().setSectionsMovable(False)
         self.tbl_address.setDragEnabled(True)
         self.tbl_address.setAcceptDrops(True)
-
-        self.model = TableModel()
+        # self.rbtn_spiderAndHandle.setChecked(True)
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
         self.rbtn_spiderAndHandle.setChecked(True)
@@ -118,6 +117,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.txt_resolution.setValidator(doubleValidator)
 
     def rbtn_toggled(self, btn):
+        self.model = TableModel()
+
         if self.rbtn_onlyHandle.isChecked():
             self.txt_addressFile.setEnabled(False)
             self.btn_addressFile.setEnabled(False)
