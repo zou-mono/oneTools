@@ -148,7 +148,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.model.setHeaderData(0, Qt.Horizontal, "服务名", Qt.DisplayRole)
             self.model.setHeaderData(1, Qt.Horizontal, "地址", Qt.DisplayRole)
 
-            if self.rbtn_onlyHandle.isChecked():
+            if self.rbtn_onlySpider.isChecked():
                 self.model.setHeaderData(2, Qt.Horizontal, "输出影像文件", Qt.DisplayRole)
                 self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.2)
                 self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.4)
