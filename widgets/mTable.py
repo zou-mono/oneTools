@@ -8,7 +8,8 @@ from PyQt5.QtCore import QAbstractTableModel, Qt, QVariant, QModelIndex, QDataSt
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QPalette, QColor, QPainter, QIcon, QPixmap
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QAbstractItemView, QHeaderView, QMessageBox, \
     QProxyStyle, QStyleOption, QTableView, QStyledItemDelegate, QWidget, QLineEdit, QPushButton, QFileDialog, QStyle, \
-    QStyleOptionButton, QHBoxLayout
+    QStyleOptionButton, QHBoxLayout, QComboBox
+
 
 class FileAddressEditor(QWidget):
     editingFinished = pyqtSignal()
@@ -95,12 +96,15 @@ class mTableStyle(QProxyStyle):
 
 
 class addressTableDelegate(QStyledItemDelegate):
+
     def __init__(self, parent, buttonSection, orientation=Qt.Horizontal):
         # buttonColumn用来记录需要设置按钮的单元格
         # orientation用来表示需要设置按钮的表头方向，horizontal表示所有列都设置按钮, vertical表示所有行都设置按钮
         super(addressTableDelegate, self).__init__(parent)
         self.buttonSection = buttonSection
         self.orientation = orientation
+        self._isEditing = False
+        # self.cmb_level = QComboBox(parent)
 
     def createEditor(self, parent: QWidget, option: 'QStyleOptionViewItem', index: QModelIndex) -> QWidget:
         section = index.column() if self.orientation == Qt.Horizontal else index.row()
@@ -108,10 +112,18 @@ class addressTableDelegate(QStyledItemDelegate):
         if self.buttonSection[section] is not None:
             title = self.buttonSection[section]['text'] if 'text' in self.buttonSection[section] else "请选择..."
             type = self.buttonSection[section]['type'] if 'type' in self.buttonSection[section] else "f"
-            self.mAddressDialog = FileAddressEditor(parent, option, type)
-            self.mAddressDialog.clickButton.connect(lambda: self.mBtn_address_clicked(parent, title, type))
-            self.mAddressDialog.editingFinished.connect(self.commitAndCloseEditor)
-            return self.mAddressDialog
+            if type == 'c':
+                self.cmb_level = QComboBox(parent)
+                # datas = index.model().data(index, Qt.EditRole)
+                # for data in datas:
+                #     self.cmb_level.addItem(str(data))
+                # self.cmb_level.currentIndexChanged.connect(self.cmb_selectionchange)
+                return self.cmb_level
+            else:
+                self.mAddressDialog = FileAddressEditor(parent, option, type)
+                self.mAddressDialog.clickButton.connect(lambda: self.mBtn_address_clicked(parent, title, type))
+                self.mAddressDialog.editingFinished.connect(self.commitAndCloseEditor)
+                return self.mAddressDialog
         else:
             return super().createEditor(parent, option, index)
 
@@ -131,14 +143,26 @@ class addressTableDelegate(QStyledItemDelegate):
     def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex) -> None:
         if isinstance(editor, FileAddressEditor):
             model.setData(index, editor.text())
+        elif isinstance(editor, QComboBox):
+            allItems = [editor.itemText(i) for i in range(editor.count())]
+            model.setData(index, allItems)
         else:
             super(addressTableDelegate, self).setModelData(editor, model, index)
+        self._isEditing = False
 
     def setEditorData(self, editor: QWidget, index: QModelIndex) -> None:
         if isinstance(editor, FileAddressEditor):
             editor.setText(index.model().data(index, Qt.EditRole))
+        elif isinstance(editor, QComboBox):
+            datas = index.model().data(index, Qt.EditRole)
+            for data in datas:
+                editor.addItem(str(data))
         else:
             super(addressTableDelegate, self).setEditorData(editor, index)
+        self._isEditing = True
+
+    def isEditing(self):
+        return self._isEditing
 
     def commitAndCloseEditor(self):
         editor = self.sender()
@@ -169,6 +193,9 @@ class TableModel(QAbstractTableModel):
 
         self.datas = []
         self.headers = []
+
+    def datas(self):
+        return self.datas
 
     def initData(self, headers, datas):
         self.headers = headers

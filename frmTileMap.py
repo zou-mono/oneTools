@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QRect, Qt, QPersistentModelIndex, QItemSelectionModel, QModelIndex
 from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
 from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, QDialogButtonBox, QStyleFactory, \
-    QAbstractItemView, QHeaderView
+    QAbstractItemView, QHeaderView, QComboBox
 from PyQt5 import QtWidgets, QtGui
 from UI.UITileMap import Ui_Dialog
 from suplicmap_tilemap import get_json
@@ -44,12 +44,12 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.btn_addRow.clicked.connect(self.btn_addRow_Clicked)
         self.btn_addressFile.clicked.connect(self.open_addressFile)
         self.btn_removeRow.clicked.connect(self.removeBtn_clicked)
-        # self.bTbl_init = True
 
         self.rbtn_onlySpider.clicked.connect(self.rbtn_toggled)
         self.rbtn_onlyHandle.clicked.connect(self.rbtn_toggled)
         self.rbtn_spiderAndHandle.clicked.connect(self.rbtn_toggled)
         self.tbl_address.verticalHeader().sectionClicked.connect(self.table_section_clicked)
+        self.btn_obtainMeta.clicked.connect(self.btn_obtainMeta_clicked)
 
         self.table_init()
 
@@ -68,14 +68,13 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.tbl_address.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tbl_address.setEditTriggers(QAbstractItemView.SelectedClicked | QAbstractItemView.DoubleClicked)
         self.tbl_address.DragDropMode(QAbstractItemView.InternalMove)
-        self.tbl_address.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tbl_address.setSelectionBehavior(QAbstractItemView.SelectRows | QAbstractItemView.SelectItems)
         self.tbl_address.setDefaultDropAction(Qt.MoveAction)
 
         self.tbl_address.horizontalHeader().setSectionsMovable(False)
         self.tbl_address.setDragEnabled(True)
         self.tbl_address.setAcceptDrops(True)
 
-        self.tbl_address.show()
         # self.rbtn_spiderAndHandle.setChecked(True)
 
     # def showEvent(self, a0: QtGui.QShowEvent) -> None:
@@ -161,7 +160,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 self.model.setHeaderData(2, Qt.Horizontal, "等级", Qt.DisplayRole)
                 self.model.setHeaderData(3, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
 
-                delegate = addressTableDelegate(self, [None, None, None, {'text': "请选择输出瓦片文件夹", 'type': "d"}])
+                delegate = addressTableDelegate(self, [None, None, {'type': 'c'},
+                                                       {'text': "请选择输出瓦片文件夹", 'type': "d"}])
                 self.tbl_address.setModel(self.model)
                 self.tbl_address.setItemDelegate(delegate)
                 self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.1)
@@ -174,7 +174,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 self.model.setHeaderData(3, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
                 self.model.setHeaderData(4, Qt.Horizontal, "影像文件", Qt.DisplayRole)
 
-                delegate = addressTableDelegate(self, [None, None, None,
+                delegate = addressTableDelegate(self, [None, None,{'type': 'c'},
                                                        {'text': "请选择输出瓦片文件夹", 'type': "d"},
                                                        {'text': "请选择输出影像文件", 'type': "f"}])
                 self.tbl_address.setModel(self.model)
@@ -192,6 +192,38 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择服务地址文件", os.getcwd(),
                                                                    "All Files(*)")
         self.txt_addressFile.setText(fileName)
+
+    def btn_obtainMeta_clicked(self):
+        selModel = self.tbl_address.selectionModel()
+
+        print([self.tbl_address.currentIndex().row(), self.tbl_address.currentIndex().column()])
+
+        indexes = selModel.selectedIndexes()
+        level_no = 2  # 等级字段的序号
+
+        if self.rbtn_onlyHandle.isChecked():
+            return
+
+        colCount = len(self.tbl_address.model().headers)
+
+        ## 如果有被选中的行，则只获取被选中行的信息
+        if len(indexes) > 0:
+            rows = sorted(set(index.row() for index in
+                              self.tbl_address.selectedIndexes()))
+            rows = range(0, len(rows))
+            for row in rows:
+                index = indexes[colCount * row + level_no]
+                editor_delegate = self.tbl_address.itemDelegate(index)
+                if isinstance(editor_delegate, addressTableDelegate):
+                    self.tbl_address.model().setData(index, [1,2,3,4])
+        else:
+            rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
+            for row in rows:
+                index = self.tbl_address.model().index(row, level_no, QModelIndex())
+                editor_delegate = self.tbl_address.itemDelegate(index)
+
+                if isinstance(editor_delegate, addressTableDelegate):
+                    self.tbl_address.model().setData(index, [1,2,3,4])
 
     def btn_obtain_clicked(self):
         self.cmb_level.clear()
