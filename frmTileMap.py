@@ -84,6 +84,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     def btn_addRow_Clicked(self):
         selModel = self.tbl_address.selectionModel()
+        if selModel is None:
+            return
         if len(selModel.selectedIndexes()) == 0:
             self.model.addEmptyRow(self.model.rowCount(QModelIndex()), 1, 0)
             next_index = self.model.index(self.model.rowCount(QModelIndex()) - 1, 0)
@@ -92,13 +94,15 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.model.addEmptyRow(next_row, 1, 0)
             next_index = self.model.index(next_row, 0)
 
-        self.tbl_address.selectionModel().select(next_index,
-                                                 QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
+        selModel.select(next_index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
         self.tbl_address.setFocus()
 
     def removeBtn_clicked(self):
         index_list = []
-        for model_index in self.tbl_address.selectionModel().selectedRows():
+        selModel = self.tbl_address.selectionModel()
+        if selModel is None:
+            return
+        for model_index in selModel.selectedRows():
             index = QPersistentModelIndex(model_index)
             index_list.append(index)
 
@@ -107,7 +111,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         next_index = self.model.index(self.model.rowCount(QModelIndex()) - 1, 0)
         # self.tableView.setCurrentIndex(next_index)
-        self.tbl_address.selectionModel().select(next_index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
+        selModel.select(next_index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
         self.tbl_address.setFocus()
 
     def validateValue(self):
