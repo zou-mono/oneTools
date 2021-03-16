@@ -10,3 +10,6 @@ class Dock(Enum):
 class SplitterState(Enum):
     collapsed = 0
     expanded = 1
+
+class Gv:
+    defaultTilePath = ""

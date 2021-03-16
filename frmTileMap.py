@@ -74,10 +74,13 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.tbl_address.horizontalHeader().setSectionsMovable(False)
         self.tbl_address.setDragEnabled(True)
         self.tbl_address.setAcceptDrops(True)
+
+        self.tbl_address.show()
         # self.rbtn_spiderAndHandle.setChecked(True)
 
-    def showEvent(self, a0: QtGui.QShowEvent) -> None:
-        self.rbtn_spiderAndHandle.click()
+    # def showEvent(self, a0: QtGui.QShowEvent) -> None:
+        # self.rbtn_spiderAndHandle.click()
+        # self.tbl_address.show()
 
     def btn_addRow_Clicked(self):
         selModel = self.tbl_address.selectionModel()
@@ -130,14 +133,16 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.btn_tileInfoDialog.setEnabled(True)
 
             self.model.setHeaderData(0, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
-            self.model.setHeaderData(1, Qt.Horizontal, "瓦片参数文件", Qt.DisplayRole)
-            self.model.setHeaderData(2, Qt.Horizontal, "输出影像文件", Qt.DisplayRole)
-            self.tbl_address.setColumnWidth(0, self.tbl_address.width()/3)
-            self.tbl_address.setColumnWidth(1, self.tbl_address.width()/3)
-            self.tbl_address.setColumnWidth(2, self.tbl_address.width()/3)
+            self.model.setHeaderData(1, Qt.Horizontal, "参数文件", Qt.DisplayRole)
+            self.model.setHeaderData(2, Qt.Horizontal, "影像文件", Qt.DisplayRole)
             delegate = addressTableDelegate(self, [{'text': "请选择瓦片文件夹", 'type': "d"},
                                                    {'text': "请选择瓦片信息文件", 'type': "f"},
                                                    {'text': "请选择输出影像文件", 'type': "f"}])
+            self.tbl_address.setModel(self.model)
+            self.tbl_address.setItemDelegate(delegate)
+            self.tbl_address.setColumnWidth(0, self.tbl_address.width()/3)
+            self.tbl_address.setColumnWidth(1, self.tbl_address.width()/3)
+            self.tbl_address.setColumnWidth(2, self.tbl_address.width()/3)
         else:
             self.txt_addressFile.setEnabled(True)
             self.btn_addressFile.setEnabled(True)
@@ -145,30 +150,36 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.txt_tileInfoFile.setEnabled(False)
             self.btn_tileInfoDialog.setEnabled(False)
 
-            self.model.setHeaderData(0, Qt.Horizontal, "服务名", Qt.DisplayRole)
+            self.model.setHeaderData(0, Qt.Horizontal, "ID", Qt.DisplayRole)
             self.model.setHeaderData(1, Qt.Horizontal, "地址", Qt.DisplayRole)
 
             if self.rbtn_onlySpider.isChecked():
-                self.model.setHeaderData(2, Qt.Horizontal, "输出影像文件", Qt.DisplayRole)
-                self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.2)
-                self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.4)
-                self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.4)
+                self.model.setHeaderData(2, Qt.Horizontal, "等级", Qt.DisplayRole)
+                self.model.setHeaderData(3, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
 
-                delegate = addressTableDelegate(self, [None, None, {'text': "请选择输出影像文件", 'type': "f"}])
-            elif self.rbtn_spiderAndHandle.isChecked():
-                self.model.setHeaderData(2, Qt.Horizontal, "输出瓦片文件夹", Qt.DisplayRole)
-                self.model.setHeaderData(3, Qt.Horizontal, "输出影像文件", Qt.DisplayRole)
+                delegate = addressTableDelegate(self, [None, None, None, {'text': "请选择输出瓦片文件夹", 'type': "d"}])
+                self.tbl_address.setModel(self.model)
+                self.tbl_address.setItemDelegate(delegate)
                 self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.1)
                 self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.3)
                 self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.3)
                 self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.3)
 
-                delegate = addressTableDelegate(self, [None, None,
+            elif self.rbtn_spiderAndHandle.isChecked():
+                self.model.setHeaderData(2, Qt.Horizontal, "等级", Qt.DisplayRole)
+                self.model.setHeaderData(3, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
+                self.model.setHeaderData(4, Qt.Horizontal, "影像文件", Qt.DisplayRole)
+
+                delegate = addressTableDelegate(self, [None, None, None,
                                                        {'text': "请选择输出瓦片文件夹", 'type': "d"},
                                                        {'text': "请选择输出影像文件", 'type': "f"}])
-
-        self.tbl_address.setModel(self.model)
-        self.tbl_address.setItemDelegate(delegate)
+                self.tbl_address.setModel(self.model)
+                self.tbl_address.setItemDelegate(delegate)
+                self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.1)
+                self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.3)
+                self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)
+                self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.2)
+                self.tbl_address.setColumnWidth(4, self.tbl_address.width() * 0.2)
 
     def table_section_clicked(self, index):
         print("clicked:{}".format(index))

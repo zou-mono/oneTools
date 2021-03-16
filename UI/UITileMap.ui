@@ -425,7 +425,7 @@
                   </size>
                  </property>
                  <property name="toolTip">
-                  <string>获取元数据</string>
+                  <string>保存参数文件</string>
                  </property>
                  <property name="text">
                   <string/>
