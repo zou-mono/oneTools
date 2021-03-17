@@ -216,12 +216,12 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         colCount = len(self.tbl_address.model().headers)
 
         # 测试
-        with open("data/tile_Info.json", 'r') as j:
-            self.getInfo = json.load(j)
-        self.lods = self.getInfo['tileInfo']['lods']
-        levels = []
-        for lod in self.lods:
-            levels.append(lod["level"])
+        # with open("data/tile_Info.json", 'r') as j:
+        #     self.getInfo = json.load(j)
+        # self.lods = self.getInfo['tileInfo']['lods']
+        # levels = []
+        # for lod in self.lods:
+        #     levels.append(lod["level"])
 
         self.paras = {}  # 存储参数信息
 
@@ -237,76 +237,76 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             url_index = self.tbl_address.model().index(row, url_no, QModelIndex())
             editor_delegate = self.tbl_address.itemDelegate(level_index)
 
-            # url = str(self.tbl_address.model().data(url_index, Qt.DisplayRole)).strip()
-            #
-            # if url == "": continue
-            #
-            # getInfo = self.get_paraInfo(url)
-            # if getInfo is None:
-            #     log.error(url + "无法获取远程参数信息，请检查地址是否正确以及网络是否连通！")
-            #     continue
-            # else:
-            #     log.info(url + "参数信息获取成功！")
-            #
-            # levels = []
-            # resolutions = []
-            # lods = []
-            # origin_x = origin_y = xmin = xmax = ymin = ymax = resolution = tilesize = level = ""
-            #
-            # if 'tileInfo' in getInfo.keys():
-            #     if 'origin' in getInfo['tileInfo'].keys():
-            #         if 'x' in getInfo['tileInfo']['origin'].keys():
-            #             origin_x = getInfo['tileInfo']['origin']['x']
-            #         if 'y' in getInfo['tileInfo']['origin'].keys():
-            #             origin_y = getInfo['tileInfo']['origin']['y']
-            #     if 'lods' in getInfo['tileInfo'].keys():
-            #         lods = getInfo['tileInfo']['lods']
-            #
-            # if 'extent' in getInfo.keys():
-            #     if 'xmin' in getInfo['extent']:
-            #         xmin = getInfo['extent']['xmin']
-            #     if 'xmax' in getInfo['extent']:
-            #         xmax = getInfo['extent']['xmax']
-            #     if 'ymin' in getInfo['extent']:
-            #         ymin = getInfo['extent']['ymin']
-            #     if 'ymax' in getInfo['extent']:
-            #         ymax = getInfo['extent']['ymax']
-            #
-            # if 'tileInfo' in getInfo.keys():
-            #     if 'rows' in getInfo['tileInfo']:
-            #         tilesize = getInfo['tileInfo']['rows']
-            #
-            # paras = []
-            # for lod in lods:
-            #     if 'level' in lod.keys():
-            #         level = lod['level']
-            #         levels.append(level)
-            #
-            #         if 'resolution' in lod.keys():
-            #             resolution = lod['resolution']
-            #             resolutions.append(resolution)
-            #
-            #         paras.append({
-            #             'level': level,
-            #             'origin_x': origin_x,
-            #             'origin_y': origin_y,
-            #             'xmin': xmin,
-            #             'xmax': xmax,
-            #             'ymin': ymin,
-            #             'ymax': ymax,
-            #             'tilesize': tilesize,
-            #             'resolution': resolution
-            #         })
-            #
-            # url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
-            # self.paras[url] = {
-            #     'code': url_encodeStr,
-            #     'paras': paras
-            # }
+            url = str(self.tbl_address.model().data(url_index, Qt.DisplayRole)).strip()
+
+            if url == "": continue
+
+            getInfo = self.get_paraInfo(url)
+            if getInfo is None:
+                log.error(url + "无法获取远程参数信息，请检查地址是否正确以及网络是否连通！")
+                continue
+            else:
+                log.info(url + "参数信息获取成功！")
+
+            levels = []
+            resolutions = []
+            lods = []
+            origin_x = origin_y = xmin = xmax = ymin = ymax = resolution = tilesize = level = ""
+
+            if 'tileInfo' in getInfo.keys():
+                if 'origin' in getInfo['tileInfo'].keys():
+                    if 'x' in getInfo['tileInfo']['origin'].keys():
+                        origin_x = getInfo['tileInfo']['origin']['x']
+                    if 'y' in getInfo['tileInfo']['origin'].keys():
+                        origin_y = getInfo['tileInfo']['origin']['y']
+                if 'lods' in getInfo['tileInfo'].keys():
+                    lods = getInfo['tileInfo']['lods']
+
+            if 'extent' in getInfo.keys():
+                if 'xmin' in getInfo['extent']:
+                    xmin = getInfo['extent']['xmin']
+                if 'xmax' in getInfo['extent']:
+                    xmax = getInfo['extent']['xmax']
+                if 'ymin' in getInfo['extent']:
+                    ymin = getInfo['extent']['ymin']
+                if 'ymax' in getInfo['extent']:
+                    ymax = getInfo['extent']['ymax']
+
+            if 'tileInfo' in getInfo.keys():
+                if 'rows' in getInfo['tileInfo']:
+                    tilesize = getInfo['tileInfo']['rows']
+
+            paras = []
+            for lod in lods:
+                if 'level' in lod.keys():
+                    level = lod['level']
+                    levels.append(level)
+
+                    if 'resolution' in lod.keys():
+                        resolution = lod['resolution']
+                        resolutions.append(resolution)
+
+                    paras.append({
+                        'level': level,
+                        'origin_x': origin_x,
+                        'origin_y': origin_y,
+                        'xmin': xmin,
+                        'xmax': xmax,
+                        'ymin': ymin,
+                        'ymax': ymax,
+                        'tilesize': tilesize,
+                        'resolution': resolution
+                    })
+
+            url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
+            self.paras[url] = {
+                'code': url_encodeStr,
+                'paras': paras
+            }
 
             if isinstance(editor_delegate, addressTableDelegate):
-                editor_delegate.setLevels(levels)
-                # self.tbl_address.model().setData(level_index, levels)
+                # editor_delegate.setLevels(levels)
+                self.model.setLevelData(level_index, levels)
 
     def get_paraInfo(self, url):
         http = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'

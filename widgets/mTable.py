@@ -103,28 +103,25 @@ class addressTableDelegate(QStyledItemDelegate):
         self.orientation = orientation
         self._isEditing = False
         self.mainWindow = parent
-        self.levels = []
         # self.cmb_level = QComboBox(parent)
-
-    def setLevels(self, levels):
-        self.levels = levels
 
     def createEditor(self, parent: QWidget, option: 'QStyleOptionViewItem', index: QModelIndex) -> QWidget:
         section = index.column() if self.orientation == Qt.Horizontal else index.row()
         self.index = index
 
-        # selModel = self.mainWindow.tbl_address.selectionModel()
-        # selModel.select(index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
-        # self.mainWindow.tbl_address.setFocus()
-
         if self.buttonSection[section] is not None:
             title = self.buttonSection[section]['text'] if 'text' in self.buttonSection[section] else "请选择..."
             type = self.buttonSection[section]['type'] if 'type' in self.buttonSection[section] else "f"
             if type == 'c':
+                currentData = index.data(Qt.DisplayRole)
+
                 self.cmb_level = QComboBox(parent)
-                # datas = index.model().data(index, Qt.DisplayRole)
-                for data in self.levels:
-                    self.cmb_level.addItem(str(data))
+                if index.row() in index.model().levelData():
+                    datas = index.model().levelData()[index.row()]
+                    for data in datas:
+                        self.cmb_level.addItem(str(data))
+
+                self.cmb_level.setCurrentText(str(currentData))
 
                 self.cmb_level.currentIndexChanged.connect(self.cmb_selectionchange)
                 return self.cmb_level
@@ -176,7 +173,8 @@ class addressTableDelegate(QStyledItemDelegate):
         elif isinstance(editor, QComboBox):
             data = index.model().data(index, Qt.EditRole)
             idx = editor.findData(data)
-            editor.setCurrentIndex(idx)
+            if idx > -1:
+                editor.setCurrentIndex(idx)
             # datas = index.model().data(index, Qt.EditRole)
             # for data in datas:
             #     editor.addItem(str(data))
@@ -192,18 +190,18 @@ class addressTableDelegate(QStyledItemDelegate):
         self.commitData.emit(editor)
         self.closeEditor.emit(editor)
 
-    # def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: 'QStyleOptionViewItem', index: QModelIndex) -> bool:
-    #     if (event.type() == QEvent.MouseButtonPress and
-    #             event.button() == Qt.LeftButton and
-    #             index in option.widget.selectedIndexes()):
-    #         # the index is already selected, we'll delay the (possible)
-    #         # editing but we MUST store the direct reference to the table for
-    #         # the lambda function, since the option object is going to be
-    #         # destroyed; this is very important: if you use "option.widget"
-    #         # in the lambda the program will probably hang or crash
-    #         table = option.widget
-    #         QTimer.singleShot(0, lambda: self.checkIndex(table, index))
-    #     return super().editorEvent(event, model, option, index)
+    def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: 'QStyleOptionViewItem', index: QModelIndex) -> bool:
+        if (event.type() == QEvent.MouseButtonPress and
+                event.button() == Qt.LeftButton and
+                index in option.widget.selectedIndexes()):
+            # the index is already selected, we'll delay the (possible)
+            # editing but we MUST store the direct reference to the table for
+            # the lambda function, since the option object is going to be
+            # destroyed; this is very important: if you use "option.widget"
+            # in the lambda the program will probably hang or crash
+            table = option.widget
+            QTimer.singleShot(0, lambda: self.checkIndex(table, index))
+        return super().editorEvent(event, model, option, index)
 
     def checkIndex(self, table, index):
         if index in table.selectedIndexes() and index == table.currentIndex():
@@ -216,6 +214,7 @@ class TableModel(QAbstractTableModel):
 
         self.datas = []
         self.headers = []
+        self.levels = {}
 
     def datas(self):
         return self.datas
@@ -313,6 +312,13 @@ class TableModel(QAbstractTableModel):
                 self.endResetModel()
                 return True
         return False
+
+    def setLevelData(self, index: QModelIndex, value):
+        row = index.row()
+        self.levels[row] = value
+
+    def levelData(self):
+        return self.levels
 
     def mimeTypes(self) -> typing.List[str]:
         return ['application/x-tableview-dragRow']
