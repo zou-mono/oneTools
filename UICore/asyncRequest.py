@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from need.log4p import Log
+from UICore.log4p import Log
 import aiohttp
 import asyncio
 import json
-import traceback
 
 HTTP_STATUS_CODES_TO_RETRY = [500, 502, 503, 504]
 log = Log(__file__)

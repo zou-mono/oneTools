@@ -1,16 +1,16 @@
 import time
 import aiohttp
 import asyncio
-from need.log4p import Log
+from UICore.log4p import Log
 import urllib.request, urllib.parse
 import json
 import os
 import math
 import click
 import traceback
-from need.asyncRequest import send_http
+from UICore.asyncRequest import send_http
 
-try_num = 10
+try_num = 3
 log = Log(__file__)
 failed_urls = []
 lock = asyncio.Lock()
@@ -43,7 +43,7 @@ def main(url, file_name, sr, level, output_path):
     """crawler program for tilemap data in http://suplicmap.pnr.sz."""
     start = time.time()
 
-    if url[-1] == os.sep:
+    if url[-1] == "/":
         url = url[:-1]
 
     url_json = url + "?f=pjson"
@@ -118,6 +118,11 @@ def main(url, file_name, sr, level, output_path):
         lock.release()
     log.info('完成抓取.耗时：' + str(end - start))
 
+def url_json(url):
+    if url[-1] == "/":
+        url = url[:-1]
+
+    return url + "?f=pjson"
 
 def write_info_to_json(info, path):
     out_file = path + "tile_Info.json"

@@ -32,7 +32,7 @@
    <widget class="QWidget" name="layoutWidget">
     <layout class="QVBoxLayout" name="verticalLayout_4">
      <property name="spacing">
-      <number>12</number>
+      <number>15</number>
      </property>
      <property name="leftMargin">
       <number>0</number>
@@ -69,7 +69,7 @@
           <x>0</x>
           <y>0</y>
           <width>511</width>
-          <height>715</height>
+          <height>709</height>
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -152,14 +152,20 @@
                 </font>
                </property>
                <property name="text">
-                <string>加载批处理影像服务地址文件</string>
+                <string>加载批处理影像服务参数文件</string>
                </property>
               </widget>
              </item>
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_4">
                <item>
-                <widget class="QLineEdit" name="txt_addressFile"/>
+                <widget class="QLineEdit" name="txt_addressFile">
+                 <property name="font">
+                  <font>
+                   <family>微软雅黑</family>
+                  </font>
+                 </property>
+                </widget>
                </item>
                <item>
                 <spacer name="horizontalSpacer_8">
@@ -211,7 +217,7 @@
                 </font>
                </property>
                <property name="text">
-                <string>加载批处理瓦片地址文件</string>
+                <string>加载批处理瓦片参数文件</string>
                </property>
               </widget>
              </item>
@@ -285,6 +291,11 @@
                  <width>0</width>
                  <height>250</height>
                 </size>
+               </property>
+               <property name="font">
+                <font>
+                 <family>微软雅黑</family>
+                </font>
                </property>
               </widget>
              </item>
@@ -491,7 +502,7 @@
               </spacer>
              </item>
              <item>
-              <widget class="QComboBox" name="cmb_level">
+              <widget class="QLabel" name="lbl_level">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -502,6 +513,9 @@
                 <font>
                  <family>微软雅黑</family>
                 </font>
+               </property>
+               <property name="text">
+                <string/>
                </property>
               </widget>
              </item>
@@ -615,7 +629,7 @@
                 </font>
                </property>
                <property name="text">
-                <string>获取坐标范围</string>
+                <string>获取坐标范围:</string>
                </property>
               </widget>
              </item>
@@ -1014,7 +1028,13 @@
      </item>
     </layout>
    </widget>
-   <widget class="QPlainTextEdit" name="txt_log"/>
+   <widget class="QPlainTextEdit" name="txt_log">
+    <property name="font">
+     <font>
+      <family>微软雅黑</family>
+     </font>
+    </property>
+   </widget>
   </widget>
  </widget>
  <customwidgets>

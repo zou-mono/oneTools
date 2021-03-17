@@ -8,9 +8,13 @@ from suplicmap_tilemap import get_json
 import sys
 import json
 import os
-from UICore.Gv import SplitterState, Dock, defaultImageFile, defaultTileFolderPath
+import re
+import base64
+from UICore.Gv import SplitterState, Dock, defaultImageFile, defaultTileFolder
 from widgets.mTable import TableModel, mTableStyle, addressTableDelegate
+from UICore.log4p import Log
 
+log = Log(__file__)
 
 class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self):
@@ -40,7 +44,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.splitter.setSizes([600, self.splitter.width() - 590])
         self.resize(self.splitter.width(), self.splitter.height())
 
-        self.cmb_level.currentIndexChanged.connect(self.cmb_selectionchange)
         self.btn_addRow.clicked.connect(self.btn_addRow_Clicked)
         self.btn_addressFile.clicked.connect(self.open_addressFile)
         self.btn_removeRow.clicked.connect(self.removeBtn_clicked)
@@ -61,9 +64,13 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.tbl_address.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)  # 行高固定
 
         color = self.palette().color(QPalette.Button)
-        self.tbl_address.horizontalHeader().setStyleSheet("QHeaderView::section {{ background-color: {}}}".format(color.name()))
-        self.tbl_address.verticalHeader().setStyleSheet("QHeaderView::section {{ background-color: {}}}".format(color.name()))
-        self.tbl_address.setStyleSheet("QTableCornerButton::section {{ color: {}; border: 1px solid; border-color: {}}}".format(color.name(), color.name()))
+        self.tbl_address.horizontalHeader().setStyleSheet(
+            "QHeaderView::section {{ background-color: {}}}".format(color.name()))
+        self.tbl_address.verticalHeader().setStyleSheet(
+            "QHeaderView::section {{ background-color: {}}}".format(color.name()))
+        self.tbl_address.setStyleSheet(
+            "QTableCornerButton::section {{ color: {}; border: 1px solid; border-color: {}}}".format(color.name(),
+                                                                                                     color.name()))
 
         self.tbl_address.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tbl_address.setEditTriggers(QAbstractItemView.SelectedClicked | QAbstractItemView.DoubleClicked)
@@ -78,8 +85,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         # self.rbtn_spiderAndHandle.setChecked(True)
 
     # def showEvent(self, a0: QtGui.QShowEvent) -> None:
-        # self.rbtn_spiderAndHandle.click()
-        # self.tbl_address.show()
+    # self.rbtn_spiderAndHandle.click()
+    # self.tbl_address.show()
 
     def btn_addRow_Clicked(self):
         selModel = self.tbl_address.selectionModel()
@@ -143,9 +150,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                                                    {'text': "请选择输出影像文件", 'type': "f"}])
             self.tbl_address.setModel(self.model)
             self.tbl_address.setItemDelegate(delegate)
-            self.tbl_address.setColumnWidth(0, self.tbl_address.width()/3)
-            self.tbl_address.setColumnWidth(1, self.tbl_address.width()/3)
-            self.tbl_address.setColumnWidth(2, self.tbl_address.width()/3)
+            self.tbl_address.setColumnWidth(0, self.tbl_address.width() / 3)
+            self.tbl_address.setColumnWidth(1, self.tbl_address.width() / 3)
+            self.tbl_address.setColumnWidth(2, self.tbl_address.width() / 3)
         else:
             self.txt_addressFile.setEnabled(True)
             self.btn_addressFile.setEnabled(True)
@@ -153,40 +160,39 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.txt_tileInfoFile.setEnabled(False)
             self.btn_tileInfoDialog.setEnabled(False)
 
-            self.model.setHeaderData(0, Qt.Horizontal, "ID", Qt.DisplayRole)
-            self.model.setHeaderData(1, Qt.Horizontal, "地址", Qt.DisplayRole)
+            # self.model.setHeaderData(0, Qt.Horizontal, "ID", Qt.DisplayRole)
+            self.model.setHeaderData(0, Qt.Horizontal, "地址", Qt.DisplayRole)
 
             if self.rbtn_onlySpider.isChecked():
-                self.model.setHeaderData(2, Qt.Horizontal, "等级", Qt.DisplayRole)
-                self.model.setHeaderData(3, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
+                self.model.setHeaderData(1, Qt.Horizontal, "等级", Qt.DisplayRole)
+                self.model.setHeaderData(2, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
 
-                delegate = addressTableDelegate(self, [None, None, {'type': 'c'},
+                delegate = addressTableDelegate(self, [None, {'type': 'c'},
                                                        {'text': "请选择输出瓦片文件夹", 'type': "d"}])
                 self.tbl_address.setModel(self.model)
                 self.tbl_address.setItemDelegate(delegate)
-                self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.1)
-                self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.3)
-                self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.3)
-                self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.3)
+                self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.4)
+                self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
+                self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.4)
 
             elif self.rbtn_spiderAndHandle.isChecked():
-                self.model.setHeaderData(2, Qt.Horizontal, "等级", Qt.DisplayRole)
-                self.model.setHeaderData(3, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
-                self.model.setHeaderData(4, Qt.Horizontal, "影像文件", Qt.DisplayRole)
+                self.model.setHeaderData(1, Qt.Horizontal, "等级", Qt.DisplayRole)
+                self.model.setHeaderData(2, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
+                self.model.setHeaderData(3, Qt.Horizontal, "影像文件", Qt.DisplayRole)
 
-                delegate = addressTableDelegate(self, [None, None,{'type': 'c'},
+                delegate = addressTableDelegate(self, [None, {'type': 'c'},
                                                        {'text': "请选择输出瓦片文件夹", 'type': "d"},
                                                        {'text': "请选择输出影像文件", 'type': "f"}])
                 self.tbl_address.setModel(self.model)
                 self.tbl_address.setItemDelegate(delegate)
-                self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.1)
-                self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.3)
+                self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.4)
+                self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
                 self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)
                 self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.2)
-                self.tbl_address.setColumnWidth(4, self.tbl_address.width() * 0.2)
 
     def table_section_clicked(self, index):
-        print("clicked:{}".format(index))
+        self.section_clicked = index
+        print(index)
 
     def open_addressFile(self):
         fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择服务地址文件", os.getcwd(),
@@ -195,68 +201,136 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     def btn_obtainMeta_clicked(self):
         selModel = self.tbl_address.selectionModel()
-        print(defaultTileFolderPath())
-        print(defaultImageFile())
 
-        # print([self.tbl_address.currentIndex().row(), self.tbl_address.currentIndex().column()])
         if selModel is None:
             return
 
         indexes = selModel.selectedIndexes()
-        level_no = 2  # 等级字段的序号
+        print(len(indexes))
+        level_no = 1  # 等级字段的序号
+        url_no = 0  # url地址的序号
 
         if self.rbtn_onlyHandle.isChecked():
             return
 
         colCount = len(self.tbl_address.model().headers)
 
+        # 测试
+        with open("data/tile_Info.json", 'r') as j:
+            self.getInfo = json.load(j)
+        self.lods = self.getInfo['tileInfo']['lods']
+        levels = []
+        for lod in self.lods:
+            levels.append(lod["level"])
+
+        self.paras = {}  # 存储参数信息
+
         ## 如果有被选中的行，则只获取被选中行的信息
         if len(indexes) > 0:
             rows = sorted(set(index.row() for index in
                               self.tbl_address.selectedIndexes()))
-            rows = range(0, len(rows))
-            for row in rows:
-                index = indexes[colCount * row + level_no]
-                editor_delegate = self.tbl_address.itemDelegate(index)
-                if isinstance(editor_delegate, addressTableDelegate):
-                    self.tbl_address.model().setData(index, [1,2,3,4])
         else:
             rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
-            for row in rows:
-                index = self.tbl_address.model().index(row, level_no, QModelIndex())
-                editor_delegate = self.tbl_address.itemDelegate(index)
 
-                if isinstance(editor_delegate, addressTableDelegate):
-                    self.tbl_address.model().setData(index, [1,2,3,4])
+        for row in rows:
+            level_index = self.tbl_address.model().index(row, level_no, QModelIndex())
+            url_index = self.tbl_address.model().index(row, url_no, QModelIndex())
+            editor_delegate = self.tbl_address.itemDelegate(level_index)
 
-    def btn_obtain_clicked(self):
-        self.cmb_level.clear()
-        if self.txt_address.toPlainText() == "":
-            msg_box = QMessageBox(QMessageBox.Critical, '错误', '地址不能为空!')
-            msg_box.exec()
+            # url = str(self.tbl_address.model().data(url_index, Qt.DisplayRole)).strip()
+            #
+            # if url == "": continue
+            #
+            # getInfo = self.get_paraInfo(url)
+            # if getInfo is None:
+            #     log.error(url + "无法获取远程参数信息，请检查地址是否正确以及网络是否连通！")
+            #     continue
+            # else:
+            #     log.info(url + "参数信息获取成功！")
+            #
+            # levels = []
+            # resolutions = []
+            # lods = []
+            # origin_x = origin_y = xmin = xmax = ymin = ymax = resolution = tilesize = level = ""
+            #
+            # if 'tileInfo' in getInfo.keys():
+            #     if 'origin' in getInfo['tileInfo'].keys():
+            #         if 'x' in getInfo['tileInfo']['origin'].keys():
+            #             origin_x = getInfo['tileInfo']['origin']['x']
+            #         if 'y' in getInfo['tileInfo']['origin'].keys():
+            #             origin_y = getInfo['tileInfo']['origin']['y']
+            #     if 'lods' in getInfo['tileInfo'].keys():
+            #         lods = getInfo['tileInfo']['lods']
+            #
+            # if 'extent' in getInfo.keys():
+            #     if 'xmin' in getInfo['extent']:
+            #         xmin = getInfo['extent']['xmin']
+            #     if 'xmax' in getInfo['extent']:
+            #         xmax = getInfo['extent']['xmax']
+            #     if 'ymin' in getInfo['extent']:
+            #         ymin = getInfo['extent']['ymin']
+            #     if 'ymax' in getInfo['extent']:
+            #         ymax = getInfo['extent']['ymax']
+            #
+            # if 'tileInfo' in getInfo.keys():
+            #     if 'rows' in getInfo['tileInfo']:
+            #         tilesize = getInfo['tileInfo']['rows']
+            #
+            # paras = []
+            # for lod in lods:
+            #     if 'level' in lod.keys():
+            #         level = lod['level']
+            #         levels.append(level)
+            #
+            #         if 'resolution' in lod.keys():
+            #             resolution = lod['resolution']
+            #             resolutions.append(resolution)
+            #
+            #         paras.append({
+            #             'level': level,
+            #             'origin_x': origin_x,
+            #             'origin_y': origin_y,
+            #             'xmin': xmin,
+            #             'xmax': xmax,
+            #             'ymin': ymin,
+            #             'ymax': ymax,
+            #             'tilesize': tilesize,
+            #             'resolution': resolution
+            #         })
+            #
+            # url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
+            # self.paras[url] = {
+            #     'code': url_encodeStr,
+            #     'paras': paras
+            # }
+
+            if isinstance(editor_delegate, addressTableDelegate):
+                editor_delegate.setLevels(levels)
+                # self.tbl_address.model().setData(level_index, levels)
+
+    def get_paraInfo(self, url):
+        http = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+        res = re.match(http, string=url)
+        url_json = url + "?f=pjson"
+        if res is not None:
+            getInfo = get_json(url_json)
+            return getInfo
         else:
-            # 测试
-            with open("data/tile_Info.json", 'r') as j:
-                self.getInfo = json.load(j)
+            return None
 
-            self.txt_originX.setText(str(self.getInfo['tileInfo']['origin']['x']))
-            self.txt_originY.setText(str(self.getInfo['tileInfo']['origin']['y']))
-            self.lods = self.getInfo['tileInfo']['lods']
-            for lod in self.lods:
-                self.cmb_level.addItem("level {}".format(lod["level"]))
-            # self.update_txt_info(0)
+    def update_txt_info(self, index: QModelIndex, i):
+        print([index.row(), index.column()])
 
-    def update_txt_info(self, i):
-        self.url = self.txt_address.toPlainText()
-
-        self.txt_xmin.setText(str(self.getInfo['extent']['xmin']))
-        self.txt_xmax.setText(str(self.getInfo['extent']['xmax']))
-        self.txt_ymin.setText(str(self.getInfo['extent']['ymin']))
-        self.txt_ymax.setText(str(self.getInfo['extent']['ymax']))
-
-        self.txt_tilesize.setText(str(self.getInfo['tileInfo']['rows']))
-        # self.resolution = lod['resolution']
-        self.txt_resolution.setText(str(self.lods[i]['resolution']))
+        # self.txt_originX.setText(str(self.getInfo['tileInfo']['origin']['x']))
+        # self.txt_originY.setText(str(self.getInfo['tileInfo']['origin']['y']))
+        # self.txt_xmin.setText(str(self.getInfo['extent']['xmin']))
+        # self.txt_xmax.setText(str(self.getInfo['extent']['xmax']))
+        # self.txt_ymin.setText(str(self.getInfo['extent']['ymin']))
+        # self.txt_ymax.setText(str(self.getInfo['extent']['ymax']))
+        #
+        # self.txt_tilesize.setText(str(self.getInfo['tileInfo']['rows']))
+        # # self.resolution = lod['resolution']
+        # self.txt_resolution.setText(str(self.lods[i]['resolution']))
 
     def cmb_selectionchange(self, i):
         self.update_txt_info(i)

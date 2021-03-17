@@ -10,7 +10,6 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QAbstractItemVie
     QProxyStyle, QStyleOption, QTableView, QStyledItemDelegate, QWidget, QLineEdit, QPushButton, QFileDialog, QStyle, \
     QStyleOptionButton, QHBoxLayout, QComboBox
 
-
 class FileAddressEditor(QWidget):
     editingFinished = pyqtSignal()
     clickButton = pyqtSignal()
@@ -96,7 +95,6 @@ class mTableStyle(QProxyStyle):
 
 
 class addressTableDelegate(QStyledItemDelegate):
-
     def __init__(self, parent, buttonSection, orientation=Qt.Horizontal):
         # buttonColumn用来记录需要设置按钮的单元格
         # orientation用来表示需要设置按钮的表头方向，horizontal表示所有列都设置按钮, vertical表示所有行都设置按钮
@@ -104,19 +102,30 @@ class addressTableDelegate(QStyledItemDelegate):
         self.buttonSection = buttonSection
         self.orientation = orientation
         self._isEditing = False
+        self.mainWindow = parent
+        self.levels = []
         # self.cmb_level = QComboBox(parent)
+
+    def setLevels(self, levels):
+        self.levels = levels
 
     def createEditor(self, parent: QWidget, option: 'QStyleOptionViewItem', index: QModelIndex) -> QWidget:
         section = index.column() if self.orientation == Qt.Horizontal else index.row()
+        self.index = index
+
+        # selModel = self.mainWindow.tbl_address.selectionModel()
+        # selModel.select(index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
+        # self.mainWindow.tbl_address.setFocus()
 
         if self.buttonSection[section] is not None:
             title = self.buttonSection[section]['text'] if 'text' in self.buttonSection[section] else "请选择..."
             type = self.buttonSection[section]['type'] if 'type' in self.buttonSection[section] else "f"
             if type == 'c':
                 self.cmb_level = QComboBox(parent)
-                # datas = index.model().data(index, Qt.EditRole)
-                # for data in datas:
-                #     self.cmb_level.addItem(str(data))
+                # datas = index.model().data(index, Qt.DisplayRole)
+                for data in self.levels:
+                    self.cmb_level.addItem(str(data))
+
                 self.cmb_level.currentIndexChanged.connect(self.cmb_selectionchange)
                 return self.cmb_level
             else:
@@ -127,28 +136,36 @@ class addressTableDelegate(QStyledItemDelegate):
         else:
             return super().createEditor(parent, option, index)
 
-    def cmb_selectionchange(self):
-        print('change')
+    def cmb_selectionchange(self, i):
+        print(i)
+        self.mainWindow.update_txt_info(self.index, i)
+        self.mainWindow.lbl_level.setText(str(self.cmb_level.currentText()))
+        if i > -1:
+            self.cmb_level.setCurrentIndex(i)
+            # self.cmb_level.setCurrentText("ttt")
+            # self.commitData.emit(self.cmb_level)
+            # self.closeEditor.emit(self.cmb_level)
 
     def mBtn_address_clicked(self, parent, title, type):
-        if type == 'f':
-            fileName, fileType = QFileDialog.getSaveFileName(parent, title, os.getcwd(),
-                                                             "All Files(*)")
-        elif type == 'd':
-            fileName = QFileDialog.getExistingDirectory(parent, title, os.getcwd(), QFileDialog.ShowDirsOnly)
+            if type == 'f':
+                fileName, fileType = QFileDialog.getSaveFileName(parent, title, os.getcwd(),
+                                                                 "All Files(*)")
+            elif type == 'd':
+                fileName = QFileDialog.getExistingDirectory(parent, title, os.getcwd(), QFileDialog.ShowDirsOnly)
 
-        if not sip.isdeleted(self.mAddressDialog):
-            self.mAddressDialog.setText(fileName)
-            self.commitAndCloseEditor()
-        else:
-            print("deleted, {}".format(fileName))
+            if not sip.isdeleted(self.mAddressDialog):
+                self.mAddressDialog.setText(fileName)
+                self.commitAndCloseEditor()
+            else:
+                print("deleted, {}".format(fileName))
 
     def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex) -> None:
         if isinstance(editor, FileAddressEditor):
             model.setData(index, editor.text())
         elif isinstance(editor, QComboBox):
-            allItems = [editor.itemText(i) for i in range(editor.count())]
-            model.setData(index, allItems)
+            # allItems = [editor.itemText(i) for i in range(editor.count())]
+            # model.setData(index, allItems)
+            model.setData(index, editor.currentText())
         else:
             super(addressTableDelegate, self).setModelData(editor, model, index)
         self._isEditing = False
@@ -157,9 +174,12 @@ class addressTableDelegate(QStyledItemDelegate):
         if isinstance(editor, FileAddressEditor):
             editor.setText(index.model().data(index, Qt.EditRole))
         elif isinstance(editor, QComboBox):
-            datas = index.model().data(index, Qt.EditRole)
-            for data in datas:
-                editor.addItem(str(data))
+            data = index.model().data(index, Qt.EditRole)
+            idx = editor.findData(data)
+            editor.setCurrentIndex(idx)
+            # datas = index.model().data(index, Qt.EditRole)
+            # for data in datas:
+            #     editor.addItem(str(data))
         else:
             super(addressTableDelegate, self).setEditorData(editor, index)
         self._isEditing = True
@@ -172,18 +192,18 @@ class addressTableDelegate(QStyledItemDelegate):
         self.commitData.emit(editor)
         self.closeEditor.emit(editor)
 
-    def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: 'QStyleOptionViewItem', index: QModelIndex) -> bool:
-        if (event.type() == QEvent.MouseButtonPress and
-                event.button() == Qt.LeftButton and
-                index in option.widget.selectedIndexes()):
-            # the index is already selected, we'll delay the (possible)
-            # editing but we MUST store the direct reference to the table for
-            # the lambda function, since the option object is going to be
-            # destroyed; this is very important: if you use "option.widget"
-            # in the lambda the program will probably hang or crash
-            table = option.widget
-            QTimer.singleShot(0, lambda: self.checkIndex(table, index))
-        return super().editorEvent(event, model, option, index)
+    # def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: 'QStyleOptionViewItem', index: QModelIndex) -> bool:
+    #     if (event.type() == QEvent.MouseButtonPress and
+    #             event.button() == Qt.LeftButton and
+    #             index in option.widget.selectedIndexes()):
+    #         # the index is already selected, we'll delay the (possible)
+    #         # editing but we MUST store the direct reference to the table for
+    #         # the lambda function, since the option object is going to be
+    #         # destroyed; this is very important: if you use "option.widget"
+    #         # in the lambda the program will probably hang or crash
+    #         table = option.widget
+    #         QTimer.singleShot(0, lambda: self.checkIndex(table, index))
+    #     return super().editorEvent(event, model, option, index)
 
     def checkIndex(self, table, index):
         if index in table.selectedIndexes() and index == table.currentIndex():

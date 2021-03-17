@@ -1,6 +1,6 @@
 import os
 from osgeo import gdal
-from need.log4p import Log
+from UICore.log4p import Log
 import time
 import click
 import math

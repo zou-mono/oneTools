@@ -14,7 +14,7 @@ class SplitterState(Enum):
     expanded = 1
 
 
-def defaultTileFolderPath():
+def defaultTileFolder():
     path = os.path.join(os.getcwd(), "data", "tiles")
     if not os.path.exists(path):
         os.mkdir(path)
