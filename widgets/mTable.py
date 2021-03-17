@@ -117,7 +117,7 @@ class addressTableDelegate(QStyledItemDelegate):
                 # datas = index.model().data(index, Qt.EditRole)
                 # for data in datas:
                 #     self.cmb_level.addItem(str(data))
-                # self.cmb_level.currentIndexChanged.connect(self.cmb_selectionchange)
+                self.cmb_level.currentIndexChanged.connect(self.cmb_selectionchange)
                 return self.cmb_level
             else:
                 self.mAddressDialog = FileAddressEditor(parent, option, type)
@@ -126,6 +126,9 @@ class addressTableDelegate(QStyledItemDelegate):
                 return self.mAddressDialog
         else:
             return super().createEditor(parent, option, index)
+
+    def cmb_selectionchange(self):
+        print('change')
 
     def mBtn_address_clicked(self, parent, title, type):
         if type == 'f':

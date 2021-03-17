@@ -8,7 +8,7 @@ from suplicmap_tilemap import get_json
 import sys
 import json
 import os
-from UICore.Gv import SplitterState, Dock
+from UICore.Gv import SplitterState, Dock, defaultImageFile, defaultTileFolderPath
 from widgets.mTable import TableModel, mTableStyle, addressTableDelegate
 
 
@@ -195,8 +195,12 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     def btn_obtainMeta_clicked(self):
         selModel = self.tbl_address.selectionModel()
+        print(defaultTileFolderPath())
+        print(defaultImageFile())
 
-        print([self.tbl_address.currentIndex().row(), self.tbl_address.currentIndex().column()])
+        # print([self.tbl_address.currentIndex().row(), self.tbl_address.currentIndex().column()])
+        if selModel is None:
+            return
 
         indexes = selModel.selectedIndexes()
         level_no = 2  # 等级字段的序号
