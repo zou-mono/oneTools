@@ -142,6 +142,11 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.txt_tileInfoFile.setEnabled(True)
             self.btn_tileInfoDialog.setEnabled(True)
 
+            self.txt_originX.setEnabled(True)
+            self.txt_originY.setEnabled(True)
+            self.txt_resolution.setEnabled(True)
+            self.txt_tilesize.setEnabled(True)
+
             self.model.setHeaderData(0, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
             self.model.setHeaderData(1, Qt.Horizontal, "参数文件", Qt.DisplayRole)
             self.model.setHeaderData(2, Qt.Horizontal, "影像文件", Qt.DisplayRole)
@@ -159,6 +164,11 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
             self.txt_tileInfoFile.setEnabled(False)
             self.btn_tileInfoDialog.setEnabled(False)
+
+            self.txt_originX.setEnabled(False)
+            self.txt_originY.setEnabled(False)
+            self.txt_resolution.setEnabled(False)
+            self.txt_tilesize.setEnabled(False)
 
             # self.model.setHeaderData(0, Qt.Horizontal, "ID", Qt.DisplayRole)
             self.model.setHeaderData(0, Qt.Horizontal, "地址", Qt.DisplayRole)
@@ -241,72 +251,93 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
             if url == "": continue
 
-            getInfo = self.get_paraInfo(url)
-            if getInfo is None:
-                log.error(url + "无法获取远程参数信息，请检查地址是否正确以及网络是否连通！")
-                continue
-            else:
-                log.info(url + "参数信息获取成功！")
+            if url not in self.paras.keys():
+                getInfo = self.get_paraInfo(url)
+                if getInfo is None:
+                    log.error(url + "无法获取远程参数信息，请检查地址是否正确以及网络是否连通！")
+                    continue
+                else:
+                    log.info(url + "参数信息获取成功！")
 
-            levels = []
-            resolutions = []
-            lods = []
-            origin_x = origin_y = xmin = xmax = ymin = ymax = resolution = tilesize = level = ""
+                self.setParaToMemory(url, getInfo)
 
-            if 'tileInfo' in getInfo.keys():
-                if 'origin' in getInfo['tileInfo'].keys():
-                    if 'x' in getInfo['tileInfo']['origin'].keys():
-                        origin_x = getInfo['tileInfo']['origin']['x']
-                    if 'y' in getInfo['tileInfo']['origin'].keys():
-                        origin_y = getInfo['tileInfo']['origin']['y']
-                if 'lods' in getInfo['tileInfo'].keys():
-                    lods = getInfo['tileInfo']['lods']
-
-            if 'extent' in getInfo.keys():
-                if 'xmin' in getInfo['extent']:
-                    xmin = getInfo['extent']['xmin']
-                if 'xmax' in getInfo['extent']:
-                    xmax = getInfo['extent']['xmax']
-                if 'ymin' in getInfo['extent']:
-                    ymin = getInfo['extent']['ymin']
-                if 'ymax' in getInfo['extent']:
-                    ymax = getInfo['extent']['ymax']
-
-            if 'tileInfo' in getInfo.keys():
-                if 'rows' in getInfo['tileInfo']:
-                    tilesize = getInfo['tileInfo']['rows']
-
-            paras = []
-            for lod in lods:
-                if 'level' in lod.keys():
-                    level = lod['level']
-                    levels.append(level)
-
-                    if 'resolution' in lod.keys():
-                        resolution = lod['resolution']
-                        resolutions.append(resolution)
-
-                    paras.append({
-                        'level': level,
-                        'origin_x': origin_x,
-                        'origin_y': origin_y,
-                        'xmin': xmin,
-                        'xmax': xmax,
-                        'ymin': ymin,
-                        'ymax': ymax,
-                        'tilesize': tilesize,
-                        'resolution': resolution
-                    })
-
-            url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
-            self.paras[url] = {
-                'code': url_encodeStr,
-                'paras': paras
-            }
+            levels = self.paras[url]['levels']
 
             if isinstance(editor_delegate, addressTableDelegate):
                 # editor_delegate.setLevels(levels)
                 self.model.setLevelData(level_index, levels)
+
+    def setParaToMemory(self, url, getInfo):
+        levels = []
+        resolutions = []
+        lods = []
+        origin_x = origin_y = xmin = xmax = ymin = ymax = resolution = tilesize = level = ""
+
+        if 'tileInfo' in getInfo.keys():
+            if 'origin' in getInfo['tileInfo'].keys():
+                if 'x' in getInfo['tileInfo']['origin'].keys():
+                    origin_x = getInfo['tileInfo']['origin']['x']
+                if 'y' in getInfo['tileInfo']['origin'].keys():
+                    origin_y = getInfo['tileInfo']['origin']['y']
+            if 'lods' in getInfo['tileInfo'].keys():
+                lods = getInfo['tileInfo']['lods']
+
+        if 'extent' in getInfo.keys():
+            if 'xmin' in getInfo['extent']:
+                xmin = getInfo['extent']['xmin']
+            if 'xmax' in getInfo['extent']:
+                xmax = getInfo['extent']['xmax']
+            if 'ymin' in getInfo['extent']:
+                ymin = getInfo['extent']['ymin']
+            if 'ymax' in getInfo['extent']:
+                ymax = getInfo['extent']['ymax']
+
+        if 'tileInfo' in getInfo.keys():
+            if 'rows' in getInfo['tileInfo']:
+                tilesize = getInfo['tileInfo']['rows']
+
+        paras = {}
+        for lod in lods:
+            if 'level' in lod.keys():
+                level = lod['level']
+                levels.append(level)
+
+                if 'resolution' in lod.keys():
+                    resolution = lod['resolution']
+                    resolutions.append(resolution)
+
+                paras[str(level)] = {
+                    'origin_x': origin_x,
+                    'origin_y': origin_y,
+                    'xmin': xmin,
+                    'xmax': xmax,
+                    'ymin': ymin,
+                    'ymax': ymax,
+                    'tilesize': tilesize,
+                    'resolution': resolution
+                }
+
+                # paras.append({
+                #     'level': level,
+                #     'para': {
+                #         'origin_x': origin_x,
+                #         'origin_y': origin_y,
+                #         'xmin': xmin,
+                #         'xmax': xmax,
+                #         'ymin': ymin,
+                #         'ymax': ymax,
+                #         'tilesize': tilesize,
+                #         'resolution': resolution
+                #     }
+                # })
+
+        url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
+        self.paras[url] = {
+            'code': url_encodeStr,
+            'levels': levels,
+            'paras': paras
+        }
+
 
     def get_paraInfo(self, url):
         http = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
@@ -318,19 +349,20 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         else:
             return None
 
-    def update_txt_info(self, index: QModelIndex, i):
+    def update_txt_info(self, index: QModelIndex, level):
         print([index.row(), index.column()])
+        url_index = self.tbl_address.model().index(index.row(), 0)
+        url = self.tbl_address.model().data(url_index, Qt.DisplayRole)
+        getInfo = self.paras[url]['paras'][level]
 
-        # self.txt_originX.setText(str(self.getInfo['tileInfo']['origin']['x']))
-        # self.txt_originY.setText(str(self.getInfo['tileInfo']['origin']['y']))
-        # self.txt_xmin.setText(str(self.getInfo['extent']['xmin']))
-        # self.txt_xmax.setText(str(self.getInfo['extent']['xmax']))
-        # self.txt_ymin.setText(str(self.getInfo['extent']['ymin']))
-        # self.txt_ymax.setText(str(self.getInfo['extent']['ymax']))
-        #
-        # self.txt_tilesize.setText(str(self.getInfo['tileInfo']['rows']))
-        # # self.resolution = lod['resolution']
-        # self.txt_resolution.setText(str(self.lods[i]['resolution']))
+        self.txt_originX.setText(str(getInfo['origin_x']))
+        self.txt_originY.setText(str(getInfo['origin_x']))
+        self.txt_xmin.setText(str(getInfo['xmin']))
+        self.txt_xmax.setText(str(getInfo['xmax']))
+        self.txt_ymin.setText(str(getInfo['ymin']))
+        self.txt_ymax.setText(str(getInfo['ymax']))
+        self.txt_tilesize.setText(str(getInfo['tilesize']))
+        self.txt_resolution.setText(str(getInfo['resolution']))
 
     def cmb_selectionchange(self, i):
         self.update_txt_info(i)

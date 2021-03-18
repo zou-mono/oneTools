@@ -134,14 +134,9 @@ class addressTableDelegate(QStyledItemDelegate):
             return super().createEditor(parent, option, index)
 
     def cmb_selectionchange(self, i):
-        print(i)
-        self.mainWindow.update_txt_info(self.index, i)
-        self.mainWindow.lbl_level.setText(str(self.cmb_level.currentText()))
         if i > -1:
-            self.cmb_level.setCurrentIndex(i)
-            # self.cmb_level.setCurrentText("ttt")
-            # self.commitData.emit(self.cmb_level)
-            # self.closeEditor.emit(self.cmb_level)
+            self.mainWindow.update_txt_info(self.index, self.cmb_level.currentText())
+            self.mainWindow.lbl_level.setText(str(self.cmb_level.currentText()))
 
     def mBtn_address_clicked(self, parent, title, type):
             if type == 'f':
