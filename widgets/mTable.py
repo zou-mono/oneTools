@@ -136,7 +136,7 @@ class addressTableDelegate(QStyledItemDelegate):
     def cmb_selectionchange(self, i):
         if i > -1:
             self.mainWindow.update_txt_info(self.index, self.cmb_level.currentText())
-            self.mainWindow.lbl_level.setText(str(self.cmb_level.currentText()))
+            self.mainWindow.txt_level.setText(str(self.cmb_level.currentText()))
 
     def mBtn_address_clicked(self, parent, title, type):
             if type == 'f':
@@ -218,13 +218,10 @@ class TableModel(QAbstractTableModel):
         self.headers = headers
         self.datas = datas
 
-    def rowCount(self, parent):
+    def rowCount(self, parent=None):
         return len(self.datas)
 
-    def columnCount(self, parent):
-        return len(self.headers)
-
-    def columnCount(self, parent):
+    def columnCount(self, parent=None):
         return len(self.headers)
 
     def flags(self, index):

@@ -6,6 +6,8 @@ import time
 import datetime
 import os, sys, io
 import traceback
+
+from PyQt5.QtWidgets import QMessageBox
 from osgeo import gdal
 
 currentframe = lambda: sys._getframe(3)
@@ -141,8 +143,10 @@ class Log:
     def warning(self, message):
         self.__console('warning', message)
 
-    def error(self, message):
+    def error(self, message, parent=None, dialog=False):
         self.__console('error', message)
+        if dialog:
+            QMessageBox.critical(parent, "错误", message, QMessageBox.Close)
 
 
 class WrappedLogger(logging.getLoggerClass()):

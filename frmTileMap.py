@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QRect, Qt, QPersistentModelIndex, QItemSelectionModel, QModelIndex
 from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
 from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, QDialogButtonBox, QStyleFactory, \
-    QAbstractItemView, QHeaderView, QComboBox
+    QAbstractItemView, QHeaderView, QComboBox, QAbstractButton, QFileDialog
 from PyQt5 import QtWidgets, QtGui
 from UI.UITileMap import Ui_Dialog
 from suplicmap_tilemap import get_json
@@ -53,8 +53,62 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.rbtn_spiderAndHandle.clicked.connect(self.rbtn_toggled)
         self.tbl_address.verticalHeader().sectionClicked.connect(self.table_section_clicked)
         self.btn_obtainMeta.clicked.connect(self.btn_obtainMeta_clicked)
+        self.buttonBox.clicked.connect(self.buttonBox_clicked)
+        self.btn_saveMetaFile.clicked.connect(self.btn_saveMetaFile_clicked)
 
+        self.validateValue()
+
+        self.paras = {}  # 存储参数信息
         self.table_init()
+
+    def btn_saveMetaFile_clicked(self):
+        datas = self.tbl_address.model().datas
+
+        bHasData = False
+        for i in datas:
+            for j in i:
+                if j != '':
+                    bHasData = True
+                    break
+            else:
+                continue
+            break
+
+        if bHasData and bool(self.paras):
+            fileName, fileType = QFileDialog.getSaveFileName(self, "请选择保存的参数文件", os.getcwd(),
+                                                             "json file(*.json)")
+
+            rows = range(0, self.tbl_address.model().rowCount())
+
+            urls = set()
+            for row in rows:
+                url = datas[row][self.url_no]
+                urls.add(url)
+
+                if url in self.paras.keys():
+                    paras = self.paras[url]['paras']
+                    level = datas[row][self.level_no]
+
+                    if level in paras:
+                        paras[level]['isExport'] = 1
+
+                        if self.rbtn_spiderAndHandle.isChecked():
+                            paras[level]['tileFolder'] = datas[row][2]
+                            paras[level]['imageFile'] = datas[row][3]
+                        elif self.rbtn_onlySpider.isChecked():
+                            paras[level]['tileFolder'] = datas[row][2]
+
+            try:
+                with open(fileName, 'w+') as f:
+                    json.dump(self.paras, f)
+            except:
+                log.error("文件存储路径错误，无法保存！", parent=self, dialog=True)
+
+    def buttonBox_clicked(self, button: QAbstractButton):
+        if button == self.buttonBox.button(QDialogButtonBox.Ok):
+            print(self.paras),
+        elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
+            self.close()
 
     def table_init(self):
         self.tbl_address.setStyle(mTableStyle())
@@ -82,10 +136,13 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.tbl_address.setDragEnabled(True)
         self.tbl_address.setAcceptDrops(True)
 
+        self.level_no = 1  # 等级字段的序号
+        self.url_no = 0  # url地址的序号
+
         # self.rbtn_spiderAndHandle.setChecked(True)
 
-    # def showEvent(self, a0: QtGui.QShowEvent) -> None:
-    # self.rbtn_spiderAndHandle.click()
+    def showEvent(self, a0: QtGui.QShowEvent) -> None:
+        self.rbtn_spiderAndHandle.click()
     # self.tbl_address.show()
 
     def btn_addRow_Clicked(self):
@@ -132,8 +189,21 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.txt_tilesize.setValidator(doubleValidator)
         self.txt_resolution.setValidator(doubleValidator)
 
+        integerValidator = QIntValidator(0, 99)
+        self.txt_level.setValidator(integerValidator)
+
     def rbtn_toggled(self, btn):
         self.model = TableModel()
+
+        self.txt_originX.setText("")
+        self.txt_originY.setText("")
+        self.txt_xmin.setText("")
+        self.txt_xmax.setText("")
+        self.txt_ymin.setText("")
+        self.txt_ymax.setText("")
+        self.txt_tilesize.setText("")
+        self.txt_resolution.setText("")
+        self.txt_level.setText("")
 
         if self.rbtn_onlyHandle.isChecked():
             self.txt_addressFile.setEnabled(False)
@@ -147,9 +217,11 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.txt_resolution.setEnabled(True)
             self.txt_tilesize.setEnabled(True)
 
+            self.txt_level.setEnabled(True)
+
             self.model.setHeaderData(0, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
             self.model.setHeaderData(1, Qt.Horizontal, "参数文件", Qt.DisplayRole)
-            self.model.setHeaderData(2, Qt.Horizontal, "影像文件", Qt.DisplayRole)
+            self.model.setHeaderData(2, Qt.Horizontal, "输出影像文件", Qt.DisplayRole)
             delegate = addressTableDelegate(self, [{'text': "请选择瓦片文件夹", 'type': "d"},
                                                    {'text': "请选择瓦片信息文件", 'type': "f"},
                                                    {'text': "请选择输出影像文件", 'type': "f"}])
@@ -170,6 +242,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.txt_resolution.setEnabled(False)
             self.txt_tilesize.setEnabled(False)
 
+            self.txt_level.setEnabled(False)
+
             # self.model.setHeaderData(0, Qt.Horizontal, "ID", Qt.DisplayRole)
             self.model.setHeaderData(0, Qt.Horizontal, "地址", Qt.DisplayRole)
 
@@ -188,7 +262,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             elif self.rbtn_spiderAndHandle.isChecked():
                 self.model.setHeaderData(1, Qt.Horizontal, "等级", Qt.DisplayRole)
                 self.model.setHeaderData(2, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
-                self.model.setHeaderData(3, Qt.Horizontal, "影像文件", Qt.DisplayRole)
+                self.model.setHeaderData(3, Qt.Horizontal, "输出影像文件", Qt.DisplayRole)
 
                 delegate = addressTableDelegate(self, [None, {'type': 'c'},
                                                        {'text': "请选择输出瓦片文件夹", 'type': "d"},
@@ -217,13 +291,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         indexes = selModel.selectedIndexes()
         print(len(indexes))
-        level_no = 1  # 等级字段的序号
-        url_no = 0  # url地址的序号
 
         if self.rbtn_onlyHandle.isChecked():
             return
-
-        colCount = len(self.tbl_address.model().headers)
 
         # 测试
         # with open("data/tile_Info.json", 'r') as j:
@@ -233,8 +303,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         # for lod in self.lods:
         #     levels.append(lod["level"])
 
-        self.paras = {}  # 存储参数信息
-
         ## 如果有被选中的行，则只获取被选中行的信息
         if len(indexes) > 0:
             rows = sorted(set(index.row() for index in
@@ -243,8 +311,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
 
         for row in rows:
-            level_index = self.tbl_address.model().index(row, level_no, QModelIndex())
-            url_index = self.tbl_address.model().index(row, url_no, QModelIndex())
+            level_index = self.tbl_address.model().index(row, self.level_no, QModelIndex())
+            url_index = self.tbl_address.model().index(row, self.url_no, QModelIndex())
             editor_delegate = self.tbl_address.itemDelegate(level_index)
 
             url = str(self.tbl_address.model().data(url_index, Qt.DisplayRole)).strip()
@@ -314,22 +382,11 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     'ymin': ymin,
                     'ymax': ymax,
                     'tilesize': tilesize,
-                    'resolution': resolution
+                    'resolution': resolution,
+                    'isExport': 0,
+                    'tileFolder': '',
+                    'imageFile': ''
                 }
-
-                # paras.append({
-                #     'level': level,
-                #     'para': {
-                #         'origin_x': origin_x,
-                #         'origin_y': origin_y,
-                #         'xmin': xmin,
-                #         'xmax': xmax,
-                #         'ymin': ymin,
-                #         'ymax': ymax,
-                #         'tilesize': tilesize,
-                #         'resolution': resolution
-                #     }
-                # })
 
         url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
         self.paras[url] = {
