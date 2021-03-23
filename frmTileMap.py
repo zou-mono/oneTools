@@ -16,6 +16,7 @@ from UICore.log4p import Log
 
 log = Log(__file__)
 
+
 class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self):
         super(Ui_Window, self).__init__()
@@ -77,27 +78,31 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         if bHasData and bool(self.paras):
             fileName, fileType = QFileDialog.getSaveFileName(self, "请选择保存的参数文件", os.getcwd(),
                                                              "json file(*.json)")
-
             rows = range(0, self.tbl_address.model().rowCount())
 
-            urls = set()
+            for v in self.paras.values():
+                v['exports'] = []
+
             for row in rows:
                 url = datas[row][self.url_no]
-                urls.add(url)
 
                 if url in self.paras.keys():
                     paras = self.paras[url]['paras']
                     level = datas[row][self.level_no]
 
                     if level in paras:
-                        paras[level]['isExport'] = 1
-
                         if self.rbtn_spiderAndHandle.isChecked():
-                            paras[level]['tileFolder'] = datas[row][2]
-                            paras[level]['imageFile'] = datas[row][3]
+                            self.paras[url]['exports'].append({
+                                'level': level,
+                                'tileFolder': datas[row][2],
+                                'imageFile': datas[row][3]
+                            })
                         elif self.rbtn_onlySpider.isChecked():
-                            paras[level]['tileFolder'] = datas[row][2]
-
+                            self.paras[url]['exports'].append({
+                                'level': level,
+                                'tileFolder': datas[row][2],
+                                'imageFile': ''
+                            })
             try:
                 with open(fileName, 'w+') as f:
                     json.dump(self.paras, f)
@@ -143,6 +148,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
         self.rbtn_spiderAndHandle.click()
+
     # self.tbl_address.show()
 
     def btn_addRow_Clicked(self):
@@ -219,17 +225,15 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
             self.txt_level.setEnabled(True)
 
-            self.model.setHeaderData(0, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
-            self.model.setHeaderData(1, Qt.Horizontal, "参数文件", Qt.DisplayRole)
-            self.model.setHeaderData(2, Qt.Horizontal, "输出影像文件", Qt.DisplayRole)
+            self.model.setHeaderData(0, Qt.Horizontal, "输入瓦片文件夹", Qt.DisplayRole)
+            # self.model.setHeaderData(1, Qt.Horizontal, "参数文件", Qt.DisplayRole)
+            self.model.setHeaderData(1, Qt.Horizontal, "输出影像文件", Qt.DisplayRole)
             delegate = addressTableDelegate(self, [{'text': "请选择瓦片文件夹", 'type': "d"},
-                                                   {'text': "请选择瓦片信息文件", 'type': "f"},
                                                    {'text': "请选择输出影像文件", 'type': "f"}])
             self.tbl_address.setModel(self.model)
             self.tbl_address.setItemDelegate(delegate)
-            self.tbl_address.setColumnWidth(0, self.tbl_address.width() / 3)
-            self.tbl_address.setColumnWidth(1, self.tbl_address.width() / 3)
-            self.tbl_address.setColumnWidth(2, self.tbl_address.width() / 3)
+            self.tbl_address.setColumnWidth(0, self.tbl_address.width() / 2)
+            self.tbl_address.setColumnWidth(1, self.tbl_address.width() / 2)
         else:
             self.txt_addressFile.setEnabled(True)
             self.btn_addressFile.setEnabled(True)
@@ -383,7 +387,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     'ymax': ymax,
                     'tilesize': tilesize,
                     'resolution': resolution,
-                    'isExport': 0,
                     'tileFolder': '',
                     'imageFile': ''
                 }
@@ -394,7 +397,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             'levels': levels,
             'paras': paras
         }
-
 
     def get_paraInfo(self, url):
         http = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'

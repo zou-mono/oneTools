@@ -24,7 +24,6 @@
         "ymax": 56103.070108084656,
         "tilesize": 256,
         "resolution": 105.83354500042334,
-        "isExport": 0,
         "tileFolder": "",
         "imageFile": ""
       },
@@ -37,7 +36,6 @@
         "ymax": 56103.070108084656,
         "tilesize": 256,
         "resolution": 52.91677250021167,
-        "isExport": 0,
         "tileFolder": "",
         "imageFile": ""
       },
@@ -50,7 +48,6 @@
         "ymax": 56103.070108084656,
         "tilesize": 256,
         "resolution": 39.687579375158755,
-        "isExport": 0,
         "tileFolder": "",
         "imageFile": ""
       },
@@ -63,9 +60,8 @@
         "ymax": 56103.070108084656,
         "tilesize": 256,
         "resolution": 26.458386250105836,
-        "isExport": 1,
-        "tileFolder": "D:/Codes/Spider/res",
-        "imageFile": "D:/Codes/Spider/res/111"
+        "tileFolder": "",
+        "imageFile": ""
       },
       "4": {
         "origin_x": -5123300,
@@ -76,7 +72,6 @@
         "ymax": 56103.070108084656,
         "tilesize": 256,
         "resolution": 13.229193125052918,
-        "isExport": 0,
         "tileFolder": "",
         "imageFile": ""
       },
@@ -89,8 +84,7 @@
         "ymax": 56103.070108084656,
         "tilesize": 256,
         "resolution": 5.291677250021167,
-        "isExport": 1,
-        "tileFolder": "D:/Codes/Spider/res",
+        "tileFolder": "",
         "imageFile": ""
       },
       "6": {
@@ -102,7 +96,6 @@
         "ymax": 56103.070108084656,
         "tilesize": 256,
         "resolution": 2.6458386250105836,
-        "isExport": 0,
         "tileFolder": "",
         "imageFile": ""
       },
@@ -115,7 +108,6 @@
         "ymax": 56103.070108084656,
         "tilesize": 256,
         "resolution": 1.3229193125052918,
-        "isExport": 0,
         "tileFolder": "",
         "imageFile": ""
       },
@@ -128,7 +120,6 @@
         "ymax": 56103.070108084656,
         "tilesize": 256,
         "resolution": 0.5291677250021167,
-        "isExport": 0,
         "tileFolder": "",
         "imageFile": ""
       },
@@ -141,7 +132,6 @@
         "ymax": 56103.070108084656,
         "tilesize": 256,
         "resolution": 0.26458386250105836,
-        "isExport": 0,
         "tileFolder": "",
         "imageFile": ""
       },
@@ -154,10 +144,21 @@
         "ymax": 56103.070108084656,
         "tilesize": 256,
         "resolution": 0.13229193125052918,
-        "isExport": 0,
         "tileFolder": "",
         "imageFile": ""
       }
-    }
+    },
+    "exports": [
+      {
+        "1": "1",
+        "tileFolder": "",
+        "imageFile": ""
+      },
+      {
+        "3": "3",
+        "tileFolder": "",
+        "imageFile": ""
+      }
+    ]
   }
 }
