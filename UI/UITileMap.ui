@@ -1026,6 +1026,9 @@
       <family>微软雅黑</family>
      </font>
     </property>
+    <property name="readOnly">
+     <bool>false</bool>
+    </property>
    </widget>
   </widget>
  </widget>

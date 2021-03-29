@@ -1,0 +1,164 @@
+{
+  "http://suplicmap.pnr.sz/tileszmap_1/rest/services/SZIMAGE/SZAVI2001_100ZWDL/ImageServer": {
+    "code": "aHR0cDovL3N1cGxpY21hcC5wbnIuc3ovdGlsZXN6bWFwXzEvcmVzdC9zZXJ2aWNlcy9TWklNQUdFL1NaQVZJMjAwMV8xMDBaV0RML0ltYWdlU2VydmVy",
+    "levels": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "paras": {
+      "0": {
+        "origin_x": -5123300,
+        "origin_y": 10002300,
+        "xmin": -56.85272201447515,
+        "xmax": 176068.34698444352,
+        "ymin": -3419.3297927113454,
+        "ymax": 56103.070108084656,
+        "tilesize": 256,
+        "resolution": 105.83354500042334,
+        "tileFolder": "",
+        "imageFile": ""
+      },
+      "1": {
+        "origin_x": -5123300,
+        "origin_y": 10002300,
+        "xmin": -56.85272201447515,
+        "xmax": 176068.34698444352,
+        "ymin": -3419.3297927113454,
+        "ymax": 56103.070108084656,
+        "tilesize": 256,
+        "resolution": 52.91677250021167,
+        "tileFolder": "",
+        "imageFile": ""
+      },
+      "2": {
+        "origin_x": -5123300,
+        "origin_y": 10002300,
+        "xmin": -56.85272201447515,
+        "xmax": 176068.34698444352,
+        "ymin": -3419.3297927113454,
+        "ymax": 56103.070108084656,
+        "tilesize": 256,
+        "resolution": 39.687579375158755,
+        "tileFolder": "",
+        "imageFile": ""
+      },
+      "3": {
+        "origin_x": -5123300,
+        "origin_y": 10002300,
+        "xmin": -56.85272201447515,
+        "xmax": 176068.34698444352,
+        "ymin": -3419.3297927113454,
+        "ymax": 56103.070108084656,
+        "tilesize": 256,
+        "resolution": 26.458386250105836,
+        "tileFolder": "",
+        "imageFile": ""
+      },
+      "4": {
+        "origin_x": -5123300,
+        "origin_y": 10002300,
+        "xmin": -56.85272201447515,
+        "xmax": 176068.34698444352,
+        "ymin": -3419.3297927113454,
+        "ymax": 56103.070108084656,
+        "tilesize": 256,
+        "resolution": 13.229193125052918,
+        "tileFolder": "",
+        "imageFile": ""
+      },
+      "5": {
+        "origin_x": -5123300,
+        "origin_y": 10002300,
+        "xmin": -56.85272201447515,
+        "xmax": 176068.34698444352,
+        "ymin": -3419.3297927113454,
+        "ymax": 56103.070108084656,
+        "tilesize": 256,
+        "resolution": 5.291677250021167,
+        "tileFolder": "",
+        "imageFile": ""
+      },
+      "6": {
+        "origin_x": -5123300,
+        "origin_y": 10002300,
+        "xmin": -56.85272201447515,
+        "xmax": 176068.34698444352,
+        "ymin": -3419.3297927113454,
+        "ymax": 56103.070108084656,
+        "tilesize": 256,
+        "resolution": 2.6458386250105836,
+        "tileFolder": "",
+        "imageFile": ""
+      },
+      "7": {
+        "origin_x": -5123300,
+        "origin_y": 10002300,
+        "xmin": -56.85272201447515,
+        "xmax": 176068.34698444352,
+        "ymin": -3419.3297927113454,
+        "ymax": 56103.070108084656,
+        "tilesize": 256,
+        "resolution": 1.3229193125052918,
+        "tileFolder": "",
+        "imageFile": ""
+      },
+      "8": {
+        "origin_x": -5123300,
+        "origin_y": 10002300,
+        "xmin": -56.85272201447515,
+        "xmax": 176068.34698444352,
+        "ymin": -3419.3297927113454,
+        "ymax": 56103.070108084656,
+        "tilesize": 256,
+        "resolution": 0.5291677250021167,
+        "tileFolder": "",
+        "imageFile": ""
+      },
+      "9": {
+        "origin_x": -5123300,
+        "origin_y": 10002300,
+        "xmin": -56.85272201447515,
+        "xmax": 176068.34698444352,
+        "ymin": -3419.3297927113454,
+        "ymax": 56103.070108084656,
+        "tilesize": 256,
+        "resolution": 0.26458386250105836,
+        "tileFolder": "",
+        "imageFile": ""
+      },
+      "10": {
+        "origin_x": -5123300,
+        "origin_y": 10002300,
+        "xmin": -56.85272201447515,
+        "xmax": 176068.34698444352,
+        "ymin": -3419.3297927113454,
+        "ymax": 56103.070108084656,
+        "tilesize": 256,
+        "resolution": 0.13229193125052918,
+        "tileFolder": "",
+        "imageFile": ""
+      }
+    },
+    "exports": [
+      {
+        "level": "1",
+        "tileFolder": "",
+        "imageFile": ""
+      },
+      {
+        "level": "3",
+        "tileFolder": "",
+        "imageFile": ""
+      }
+    ]
+  }
+}

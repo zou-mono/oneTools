@@ -16,7 +16,6 @@ from UICore.log4p import Log
 
 log = Log(__file__)
 
-
 class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self):
         super(Ui_Window, self).__init__()
@@ -61,6 +60,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         self.paras = {}  # 存储参数信息
         self.table_init()
+        log.setTextEditWidget(parent=self, txtEdit=self.txt_log)
+        self.txt_log.setReadOnly(True)
 
     def btn_saveMetaFile_clicked(self):
         datas = self.tbl_address.model().datas
@@ -104,8 +105,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                                 'imageFile': ''
                             })
             try:
-                with open(fileName, 'w+') as f:
-                    json.dump(self.paras, f)
+                if fileName != '':
+                    with open(fileName, 'w+') as f:
+                        json.dump(self.paras, f)
             except:
                 log.error("文件存储路径错误，无法保存！", parent=self, dialog=True)
 
@@ -152,6 +154,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     # self.tbl_address.show()
 
     def btn_addRow_Clicked(self):
+        log.info("增加一行")
         selModel = self.tbl_address.selectionModel()
         if selModel is None:
             return
@@ -286,6 +289,34 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择服务地址文件", os.getcwd(),
                                                                    "All Files(*)")
         self.txt_addressFile.setText(fileName)
+
+        # try:
+        with open(fileName, 'r') as f:
+            self.paras = json.load(f)
+
+            for kv in self.paras.items():
+                url = kv[0]
+                v = kv[1]
+                imp = v['exports']
+                levels = v['levels']
+
+                for i in range(len(imp)):
+                    row = self.model.rowCount(QModelIndex())
+                    self.model.addEmptyRow(self.model.rowCount(QModelIndex()), 1, 0)
+                    url_index = self.tbl_address.model().index(row, self.url_no)
+                    level_index = self.tbl_address.model().index(row, self.level_no)
+                    self.tbl_address.model().setData(url_index, url)
+                    self.tbl_address.model().setData(level_index, imp[i]['level'])
+                    self.tbl_address.model().setData(self.tbl_address.model().index(row, 2), imp[i]['tileFolder'])
+
+                    if self.rbtn_spiderAndHandle.isChecked():
+                        self.tbl_address.model().setData(self.tbl_address.model().index(row, 3), imp[i]['imageFile'])
+
+                    editor_delegate = self.tbl_address.itemDelegate(level_index)
+                    if isinstance(editor_delegate, addressTableDelegate):
+                        self.model.setLevelData(level_index, levels)
+        # except:
+        #     log.error("读取参数文件失败！", dialog=True)
 
     def btn_obtainMeta_clicked(self):
         selModel = self.tbl_address.selectionModel()

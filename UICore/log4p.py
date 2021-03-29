@@ -7,7 +7,8 @@ import datetime
 import os, sys, io
 import traceback
 
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtWidgets import QMessageBox, QPlainTextEdit
 from osgeo import gdal
 
 currentframe = lambda: sys._getframe(3)
@@ -38,17 +39,29 @@ log_colors_config = {
 }
 
 
-class GdalErrorHandler(object):
-    def __init__(self):
-        self.err_level=gdal.CE_None
-        self.err_no=0
-        self.err_msg=''
+# class GdalErrorHandler(object):
+#     def __init__(self):
+#         self.err_level=gdal.CE_None
+#         self.err_no=0
+#         self.err_msg=''
+#
+#     def handler(self, err_level, err_no, err_msg):
+#         self.err_level=err_level
+#         self.err_no=err_no
+#         self.err_msg=err_msg
+class Handler(QObject, logging.Handler):
+    new_record = pyqtSignal(object)
 
-    def handler(self, err_level, err_no, err_msg):
-        self.err_level=err_level
-        self.err_no=err_no
-        self.err_msg=err_msg
+    def __init__(self, parent):
+        super().__init__(parent)
+        super(logging.Handler).__init__()
+        formatter = logging.Formatter(
+            '[%(asctime)s] [%(filename)s:%(lineno)d] [%(module)s:%(funcName)s] [%(levelname)s]- %(message)s')
+        self.setFormatter(formatter)
 
+    def emit(self, record):
+        msg = self.format(record)
+        self.new_record.emit(msg) # <---- emit signal here
 
 class Log:
     def __init__(self, logName=logName):
@@ -58,6 +71,11 @@ class Log:
         self.logger = logging.getLogger(filename)
         self.logger.setLevel(logging.DEBUG)
         self.handle_logs()
+
+    def setTextEditWidget(self, parent, txtEdit: QPlainTextEdit):
+        self.handler = Handler(parent)
+        self.textEdit = txtEdit
+        self.handler.new_record.connect(self.textEdit.appendPlainText)
 
     def get_file_sorted(self, file_path):
         """最后修改时间顺序升序排列 os.path.getmtime()->获取文件最后修改时间"""
@@ -133,6 +151,7 @@ class Log:
         self.logger.removeHandler(ch)
         self.logger.removeHandler(fh)
         fh.close()  # 关闭打开的文件
+        self.textEdit.appendPlainText(message)  # 在ui里面显示日志
 
     def debug(self, message):
         self.__console('debug', message)
@@ -140,13 +159,16 @@ class Log:
     def info(self, message):
         self.__console('info', message)
 
-    def warning(self, message):
+    def warning(self, message, parent=None, dialog=False):
         self.__console('warning', message)
+        if dialog:
+            QMessageBox.Information(parent, "警告", message, QMessageBox.Close)
 
     def error(self, message, parent=None, dialog=False):
         self.__console('error', message)
         if dialog:
             QMessageBox.critical(parent, "错误", message, QMessageBox.Close)
+
 
 
 class WrappedLogger(logging.getLoggerClass()):

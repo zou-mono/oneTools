@@ -113,7 +113,7 @@ class addressTableDelegate(QStyledItemDelegate):
             title = self.buttonSection[section]['text'] if 'text' in self.buttonSection[section] else "请选择..."
             type = self.buttonSection[section]['type'] if 'type' in self.buttonSection[section] else "f"
             if type == 'c':
-                currentData = index.data(Qt.DisplayRole)
+                currentData = self.index.data(Qt.DisplayRole)
 
                 self.cmb_level = QComboBox(parent)
                 if index.row() in index.model().levelData():
