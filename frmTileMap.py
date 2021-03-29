@@ -113,7 +113,41 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     def buttonBox_clicked(self, button: QAbstractButton):
         if button == self.buttonBox.button(QDialogButtonBox.Ok):
-            print(self.paras),
+            rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
+            for row in rows:
+                level_index = self.tbl_address.model().index(row, self.level_no, QModelIndex())
+                url_index = self.tbl_address.model().index(row, self.url_no, QModelIndex())
+                url = str(self.tbl_address.model().data(url_index, Qt.DisplayRole)).strip()
+                level = str(self.tbl_address.model().data(level_index, Qt.DisplayRole)).strip()
+
+                if url == "":
+                    log.error('第{}行参数缺失必要参数"地址"，请补全！'.format(row))
+                    continue
+                if level == "":
+                    log.error('第{}行参数缺失必要参数"等级"，请补全！'.format(row))
+                    continue
+
+                if self.rbtn_spiderAndHandle.isChecked():
+                    tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
+                    imgFile_index = self.tbl_address.model().index(row, 3, QModelIndex())
+                    tileFolder = str(self.tbl_address.model().data(tileFolder_index, Qt.DisplayRole)).strip()
+                    imgFile = str(self.tbl_address.model().data(imgFile_index, Qt.DisplayRole)).strip()
+
+                    if tileFolder == "":
+                        tileFolder = defaultTileFolder(url, level)
+                        log.info('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认参数{}'.format(row, tileFolder))
+                    elif imgFile == "":
+                        imgFile = defaultImageFile(url, level)
+                        log.info('第{}行参数缺失非必要参数"输出影像文件"，将使用默认参数{}'.format(row, imgFile))
+                elif self.rbtn_onlySpider.isChecked():
+                    tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
+                    tileFolder = str(self.tbl_address.model().data(tileFolder_index, Qt.DisplayRole)).strip()
+                    if tileFolder == "":
+                        tileFolder = defaultTileFolder(url, level)
+                        log.info('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认参数{}'.format(row, tileFolder))
+
+
+
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
             self.close()
 

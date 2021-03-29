@@ -56,7 +56,7 @@ class Handler(QObject, logging.Handler):
         super().__init__(parent)
         super(logging.Handler).__init__()
         formatter = logging.Formatter(
-            '[%(asctime)s] [%(filename)s:%(lineno)d] [%(module)s:%(funcName)s] [%(levelname)s]- %(message)s')
+            '[%(asctime)s] [%(filename)s:%(lineno)d] [%(levelname)s]- %(message)s')
         self.setFormatter(formatter)
 
     def emit(self, record):
@@ -73,7 +73,7 @@ class Log:
         self.handle_logs()
 
     def setTextEditWidget(self, parent, txtEdit: QPlainTextEdit):
-        self.handler = Handler(parent)
+        self.handler = Handler(txtEdit)
         self.textEdit = txtEdit
         self.handler.new_record.connect(self.textEdit.appendPlainText)
 
@@ -121,6 +121,8 @@ class Log:
             Log().warning('删除日志文件失败：{}'.format(e))
 
     def __console(self, level, message):
+        self.logger.addHandler(self.handler)
+
         formatter = logging.Formatter(
             '[%(asctime)s] [%(filename)s:%(lineno)d] [%(module)s:%(funcName)s] [%(levelname)s]- %(message)s')  # 日志输出格式
         # 创建一个FileHandler，用于写到本地
@@ -147,17 +149,21 @@ class Log:
             self.logger.warning(message)
         elif level == 'error':
             self.logger.error(message)
+
         # 这两行代码是为了避免日志输出重复问题
         self.logger.removeHandler(ch)
         self.logger.removeHandler(fh)
+        self.logger.removeHandler(self.handler)
+        # self.logger.removeHandler(self.handler)
         fh.close()  # 关闭打开的文件
-        self.textEdit.appendPlainText(message)  # 在ui里面显示日志
+        # self.textEdit.appendPlainText(message)  # 在ui里面显示日志
 
     def debug(self, message):
         self.__console('debug', message)
 
     def info(self, message):
         self.__console('info', message)
+        # self.textEdit.appendPlainText(message)
 
     def warning(self, message, parent=None, dialog=False):
         self.__console('warning', message)
@@ -168,8 +174,6 @@ class Log:
         self.__console('error', message)
         if dialog:
             QMessageBox.critical(parent, "错误", message, QMessageBox.Close)
-
-
 
 class WrappedLogger(logging.getLoggerClass()):
     def __init__(self, name, level=logging.NOTSET):

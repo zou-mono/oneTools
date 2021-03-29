@@ -39,7 +39,11 @@ lock = asyncio.Lock()
     '--output-path', '-o',
     help='Output folder, need the full path. For example, res/tilemaps',
     required=True)
-def main(url, file_name, sr, level, output_path):
+def main(url, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, level, output_path):
+    craw_tilemap(url, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, level, output_path)
+
+
+def craw_tilemap(url, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, level, output_path):
     """crawler program for tilemap data in http://suplicmap.pnr.sz."""
     start = time.time()
 
@@ -61,17 +65,17 @@ def main(url, file_name, sr, level, output_path):
     log.info('输出影像信息json文件:{}'.format(out_file))
     # print(getInfo)
 
-    tile_size = getInfo['tileInfo']['rows']  # 瓦片尺寸
-    x0 = getInfo['tileInfo']['origin']['x']  # 初始x
-    y0 = getInfo['tileInfo']['origin']['y']  # 初始y
-    xmin = getInfo['extent']['xmin']  # xmin
-    ymin = getInfo['extent']['ymin']  # ymin
-    xmax = getInfo['extent']['xmax']  # xmax
-    ymax = getInfo['extent']['ymax']  # ymax
+    # tile_size = getInfo['tileInfo']['rows']  # 瓦片尺寸
+    # x0 = getInfo['tileInfo']['origin']['x']  # 初始x
+    # y0 = getInfo['tileInfo']['origin']['y']  # 初始y
+    # xmin = getInfo['extent']['xmin']  # xmin
+    # ymin = getInfo['extent']['ymin']  # ymin
+    # xmax = getInfo['extent']['xmax']  # xmax
+    # ymax = getInfo['extent']['ymax']  # ymax
 
-    lods = getInfo['tileInfo']['lods']  # lod信息
-    lod = get_lod(lods, level)
-    resolution = lod['resolution']
+    # lods = getInfo['tileInfo']['lods']  # lod信息
+    # lod = get_lod(lods, level)
+    # resolution = lod['resolution']
     min_col, min_row = get_col_row(x0, y0, xmin, ymax, tile_size, resolution)
     print(str(min_col) + " " + str(min_row))
     max_col, max_row = get_col_row(x0, y0, xmax, ymin, tile_size, resolution)
@@ -117,6 +121,7 @@ def main(url, file_name, sr, level, output_path):
     if lock.locked():
         lock.release()
     log.info('完成抓取.耗时：' + str(end - start))
+
 
 def url_json(url):
     if url[-1] == "/":
