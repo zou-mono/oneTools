@@ -56,6 +56,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.buttonBox.clicked.connect(self.buttonBox_clicked)
         self.btn_saveMetaFile.clicked.connect(self.btn_saveMetaFile_clicked)
 
+        self.tbl_address.clicked.connect(self.table_index_clicked)
+
         self.validateValue()
 
         self.paras = {}  # 存储参数信息
@@ -63,8 +65,27 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         log.setTextEditWidget(parent=self, txtEdit=self.txt_log)
         self.txt_log.setReadOnly(True)
 
+    def table_section_clicked(self, section):
+        if self.rbtn_spiderAndHandle.isChecked() or self.rbtn_onlySpider.isChecked():
+            level_index = self.tbl_address.model().index(section, self.level_no, QModelIndex())
+            level = self.tbl_address.model().data(level_index, Qt.DisplayRole)
+            self.update_txt_info(level_index, level)
+
+    def table_index_clicked(self, index):
+        if self.rbtn_spiderAndHandle.isChecked() or self.rbtn_onlySpider.isChecked():
+            level_index = self.tbl_address.model().index(index.row(), self.level_no, QModelIndex())
+            level = self.tbl_address.model().data(level_index, Qt.DisplayRole)
+            self.update_txt_info(index, level)
+
     def btn_saveMetaFile_clicked(self):
         datas = self.tbl_address.model().datas
+
+        selModel = self.tbl_address.selectionModel()
+
+        if selModel is None:
+            return
+
+        indexes = selModel.selectedIndexes()
 
         bHasData = False
         for i in datas:
@@ -91,22 +112,24 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     paras = self.paras[url]['paras']
                     level = datas[row][self.level_no]
 
-                    if level in paras:
-                        if self.rbtn_spiderAndHandle.isChecked():
-                            self.paras[url]['exports'].append({
-                                'level': level,
-                                'tileFolder': datas[row][2],
-                                'imageFile': datas[row][3]
-                            })
-                        elif self.rbtn_onlySpider.isChecked():
-                            self.paras[url]['exports'].append({
-                                'level': level,
-                                'tileFolder': datas[row][2],
-                                'imageFile': ''
-                            })
+                    if level not in paras:
+                        level = -1
+
+                    if self.rbtn_spiderAndHandle.isChecked():
+                        self.paras[url]['exports'].append({
+                            'level': level,
+                            'tileFolder': datas[row][2],
+                            'imageFile': datas[row][3]
+                        })
+                    elif self.rbtn_onlySpider.isChecked():
+                        self.paras[url]['exports'].append({
+                            'level': level,
+                            'tileFolder': datas[row][2],
+                            'imageFile': ''
+                        })
             try:
                 if fileName != '':
-                    with open(fileName, 'w+') as f:
+                    with open(fileName, 'w') as f:
                         json.dump(self.paras, f)
             except:
                 log.error("文件存储路径错误，无法保存！", parent=self, dialog=True)
@@ -145,9 +168,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     if tileFolder == "":
                         tileFolder = defaultTileFolder(url, level)
                         log.info('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认参数{}'.format(row, tileFolder))
-
-
-
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
             self.close()
 
@@ -188,7 +208,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     # self.tbl_address.show()
 
     def btn_addRow_Clicked(self):
-        log.info("增加一行")
+        # log.info("增加一行")
         selModel = self.tbl_address.selectionModel()
         if selModel is None:
             return
@@ -315,10 +335,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)
                 self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.2)
 
-    def table_section_clicked(self, index):
-        self.section_clicked = index
-        print(index)
-
     def open_addressFile(self):
         fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择服务地址文件", os.getcwd(),
                                                                    "All Files(*)")
@@ -340,7 +356,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     url_index = self.tbl_address.model().index(row, self.url_no)
                     level_index = self.tbl_address.model().index(row, self.level_no)
                     self.tbl_address.model().setData(url_index, url)
-                    self.tbl_address.model().setData(level_index, imp[i]['level'])
+                    if imp[i]['level'] == -1:
+                        self.tbl_address.model().setData(level_index, "")
+                    else:
+                        self.tbl_address.model().setData(level_index, imp[i]['level'])
                     self.tbl_address.model().setData(self.tbl_address.model().index(row, 2), imp[i]['tileFolder'])
 
                     if self.rbtn_spiderAndHandle.isChecked():
@@ -359,7 +378,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             return
 
         indexes = selModel.selectedIndexes()
-        print(len(indexes))
 
         if self.rbtn_onlyHandle.isChecked():
             return
@@ -474,19 +492,35 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             return None
 
     def update_txt_info(self, index: QModelIndex, level):
-        print([index.row(), index.column()])
-        url_index = self.tbl_address.model().index(index.row(), 0)
+        # print([index.row(), index.column()])
+        url_index = self.tbl_address.model().index(index.row(), self.url_no)
         url = self.tbl_address.model().data(url_index, Qt.DisplayRole)
-        getInfo = self.paras[url]['paras'][level]
 
-        self.txt_originX.setText(str(getInfo['origin_x']))
-        self.txt_originY.setText(str(getInfo['origin_x']))
-        self.txt_xmin.setText(str(getInfo['xmin']))
-        self.txt_xmax.setText(str(getInfo['xmax']))
-        self.txt_ymin.setText(str(getInfo['ymin']))
-        self.txt_ymax.setText(str(getInfo['ymax']))
-        self.txt_tilesize.setText(str(getInfo['tilesize']))
-        self.txt_resolution.setText(str(getInfo['resolution']))
+        self.txt_level.setText("")
+        self.txt_originX.setText("")
+        self.txt_originY.setText("")
+        self.txt_xmin.setText("")
+        self.txt_xmax.setText("")
+        self.txt_ymin.setText("")
+        self.txt_ymax.setText("")
+        self.txt_tilesize.setText("")
+        self.txt_resolution.setText("")
+
+        if url not in self.paras:
+            return
+
+        if level in self.paras[url]['paras']:
+            getInfo = self.paras[url]['paras'][level]
+
+            self.txt_level.setText(str(level))
+            self.txt_originX.setText(str(getInfo['origin_x']))
+            self.txt_originY.setText(str(getInfo['origin_x']))
+            self.txt_xmin.setText(str(getInfo['xmin']))
+            self.txt_xmax.setText(str(getInfo['xmax']))
+            self.txt_ymin.setText(str(getInfo['ymin']))
+            self.txt_ymax.setText(str(getInfo['ymax']))
+            self.txt_tilesize.setText(str(getInfo['tilesize']))
+            self.txt_resolution.setText(str(getInfo['resolution']))
 
     def cmb_selectionchange(self, i):
         self.update_txt_info(i)

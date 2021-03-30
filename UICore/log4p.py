@@ -107,11 +107,10 @@ class Log:
                     now = datetime.datetime(int(now_list[0]), int(now_list[1]), int(now_list[2]))
                     if (now - t).days > 10:  # 创建时间大于10天的文件删除
                         self.delete_logs(file_path)
-                # if len(file_list) > 10:  # 限制目录下记录文件数量
-                #     file_list = file_list[0:-10]
+                # if len(file_list) > 50:  # 限制目录下记录文件数量
+                #     file_list = file_list[0:-50]
                 #     for i in file_list:
                 #         file_path = os.path.join(dirPath, i)
-                #         print(file_path)
                 #         self.delete_logs(file_path)
 
     def delete_logs(self, file_path):
@@ -154,7 +153,6 @@ class Log:
         self.logger.removeHandler(ch)
         self.logger.removeHandler(fh)
         self.logger.removeHandler(self.handler)
-        # self.logger.removeHandler(self.handler)
         fh.close()  # 关闭打开的文件
         # self.textEdit.appendPlainText(message)  # 在ui里面显示日志
 
@@ -163,7 +161,6 @@ class Log:
 
     def info(self, message):
         self.__console('info', message)
-        # self.textEdit.appendPlainText(message)
 
     def warning(self, message, parent=None, dialog=False):
         self.__console('warning', message)

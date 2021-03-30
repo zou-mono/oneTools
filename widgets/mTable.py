@@ -121,7 +121,10 @@ class addressTableDelegate(QStyledItemDelegate):
                     for data in datas:
                         self.cmb_level.addItem(str(data))
 
-                self.cmb_level.setCurrentText(str(currentData))
+                if currentData == -1:
+                    self.cmb_level.setCurrentText("")
+                else:
+                    self.cmb_level.setCurrentText(str(currentData))
 
                 self.cmb_level.currentIndexChanged.connect(self.cmb_selectionchange)
                 return self.cmb_level
@@ -136,7 +139,7 @@ class addressTableDelegate(QStyledItemDelegate):
     def cmb_selectionchange(self, i):
         if i > -1:
             self.mainWindow.update_txt_info(self.index, self.cmb_level.currentText())
-            self.mainWindow.txt_level.setText(str(self.cmb_level.currentText()))
+            # self.mainWindow.txt_level.setText(str(self.cmb_level.currentText()))
 
     def mBtn_address_clicked(self, parent, title, type):
             if type == 'f':
@@ -295,7 +298,6 @@ class TableModel(QAbstractTableModel):
     def setData(self, index, value, role=Qt.EditRole):
         if index.isValid() and 0 <= index.row() < self.rowCount(QModelIndex()) and role == Qt.EditRole:
             col = index.column()
-            # print(col)
             if value is None:
                 value = ""
             if col < self.columnCount(QModelIndex()):
