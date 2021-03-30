@@ -73,7 +73,7 @@ class Log:
         self.handle_logs()
 
     def setTextEditWidget(self, parent, txtEdit: QPlainTextEdit):
-        self.handler = Handler(txtEdit)
+        self.handler = Handler(parent)
         self.textEdit = txtEdit
         self.handler.new_record.connect(self.textEdit.appendPlainText)
 

@@ -71,21 +71,35 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             level = self.tbl_address.model().data(level_index, Qt.DisplayRole)
             self.update_txt_info(level_index, level)
 
+            self.selIndex = level_index
+
     def table_index_clicked(self, index):
         if self.rbtn_spiderAndHandle.isChecked() or self.rbtn_onlySpider.isChecked():
             level_index = self.tbl_address.model().index(index.row(), self.level_no, QModelIndex())
             level = self.tbl_address.model().data(level_index, Qt.DisplayRole)
             self.update_txt_info(index, level)
 
+            self.selIndex = level_index
+
     def btn_saveMetaFile_clicked(self):
         datas = self.tbl_address.model().datas
 
-        selModel = self.tbl_address.selectionModel()
+        # selModel = self.tbl_address.selectionModel()
+        #
+        # if selModel is None:
+        #     return
+        #
+        # indexes = selModel.selectedIndexes()
 
-        if selModel is None:
-            return
-
-        indexes = selModel.selectedIndexes()
+        selRow = -1
+        paras_dict = {}
+        if self.selIndex is not None:
+            # selRows = sorted(set(index.row() for index in
+            #                      self.tbl_address.selectedIndexes()))
+            # selRow = selRows[-1]
+            selRow = self.selIndex.row()
+            print(selRow)
+            paras_dict = self.update_para_dict()
 
         bHasData = False
         for i in datas:
@@ -109,11 +123,14 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 url = datas[row][self.url_no]
 
                 if url in self.paras.keys():
-                    paras = self.paras[url]['paras']
+                    # paras = self.paras[url]['exports']['paras']
                     level = datas[row][self.level_no]
 
-                    if level not in paras:
+                    if level not in self.paras[url]['paras']:
                         level = -1
+
+                    if row == selRow:
+                        self.paras[url]['paras'][level] = paras_dict
 
                     if self.rbtn_spiderAndHandle.isChecked():
                         self.paras[url]['exports'].append({
@@ -124,6 +141,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     elif self.rbtn_onlySpider.isChecked():
                         self.paras[url]['exports'].append({
                             'level': level,
+                            # 'paras': paras,
                             'tileFolder': datas[row][2],
                             'imageFile': ''
                         })
@@ -208,7 +226,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     # self.tbl_address.show()
 
     def btn_addRow_Clicked(self):
-        # log.info("增加一行")
+        log.info("增加一行")
         selModel = self.tbl_address.selectionModel()
         if selModel is None:
             return
@@ -340,36 +358,39 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                                                                    "All Files(*)")
         self.txt_addressFile.setText(fileName)
 
-        # try:
-        with open(fileName, 'r') as f:
-            self.paras = json.load(f)
+        if fileName == "":
+            return
 
-            for kv in self.paras.items():
-                url = kv[0]
-                v = kv[1]
-                imp = v['exports']
-                levels = v['levels']
+        try:
+            with open(fileName, 'r') as f:
+                self.paras = json.load(f)
 
-                for i in range(len(imp)):
-                    row = self.model.rowCount(QModelIndex())
-                    self.model.addEmptyRow(self.model.rowCount(QModelIndex()), 1, 0)
-                    url_index = self.tbl_address.model().index(row, self.url_no)
-                    level_index = self.tbl_address.model().index(row, self.level_no)
-                    self.tbl_address.model().setData(url_index, url)
-                    if imp[i]['level'] == -1:
-                        self.tbl_address.model().setData(level_index, "")
-                    else:
-                        self.tbl_address.model().setData(level_index, imp[i]['level'])
-                    self.tbl_address.model().setData(self.tbl_address.model().index(row, 2), imp[i]['tileFolder'])
+                for kv in self.paras.items():
+                    url = kv[0]
+                    v = kv[1]
+                    imp = v['exports']
+                    levels = v['levels']
 
-                    if self.rbtn_spiderAndHandle.isChecked():
-                        self.tbl_address.model().setData(self.tbl_address.model().index(row, 3), imp[i]['imageFile'])
+                    for i in range(len(imp)):
+                        row = self.model.rowCount(QModelIndex())
+                        self.model.addEmptyRow(self.model.rowCount(QModelIndex()), 1, 0)
+                        url_index = self.tbl_address.model().index(row, self.url_no)
+                        level_index = self.tbl_address.model().index(row, self.level_no)
+                        self.tbl_address.model().setData(url_index, url)
+                        if imp[i]['level'] == -1:
+                            self.tbl_address.model().setData(level_index, "")
+                        else:
+                            self.tbl_address.model().setData(level_index, imp[i]['level'])
+                        self.tbl_address.model().setData(self.tbl_address.model().index(row, 2), imp[i]['tileFolder'])
 
-                    editor_delegate = self.tbl_address.itemDelegate(level_index)
-                    if isinstance(editor_delegate, addressTableDelegate):
-                        self.model.setLevelData(level_index, levels)
-        # except:
-        #     log.error("读取参数文件失败！", dialog=True)
+                        if self.rbtn_spiderAndHandle.isChecked():
+                            self.tbl_address.model().setData(self.tbl_address.model().index(row, 3), imp[i]['imageFile'])
+
+                        editor_delegate = self.tbl_address.itemDelegate(level_index)
+                        if isinstance(editor_delegate, addressTableDelegate):
+                            self.model.setLevelData(level_index, levels)
+        except:
+            log.error("读取参数文件失败！", dialog=True)
 
     def btn_obtainMeta_clicked(self):
         selModel = self.tbl_address.selectionModel()
@@ -406,20 +427,20 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
             if url == "": continue
 
-            if url not in self.paras.keys():
-                getInfo = self.get_paraInfo(url)
-                if getInfo is None:
-                    log.error(url + "无法获取远程参数信息，请检查地址是否正确以及网络是否连通！")
-                    continue
-                else:
-                    log.info(url + "参数信息获取成功！")
+            # if url not in self.paras.keys():
+            # getInfo = self.get_paraInfo(url)
+            getInfo = None
+            if getInfo is None:
+                log.error(url + "无法获取远程参数信息，请检查地址是否正确以及网络是否连通！")
+                continue
+            else:
+                log.info(url + "参数信息获取成功！")
 
-                self.setParaToMemory(url, getInfo)
+            self.setParaToMemory(url, getInfo)
 
             levels = self.paras[url]['levels']
 
             if isinstance(editor_delegate, addressTableDelegate):
-                # editor_delegate.setLevels(levels)
                 self.model.setLevelData(level_index, levels)
 
     def setParaToMemory(self, url, getInfo):
@@ -469,9 +490,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     'ymin': ymin,
                     'ymax': ymax,
                     'tilesize': tilesize,
-                    'resolution': resolution,
-                    'tileFolder': '',
-                    'imageFile': ''
+                    'resolution': resolution
                 }
 
         url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
@@ -491,8 +510,21 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         else:
             return None
 
+    def update_para_dict(self):
+        dict = {
+            "origin_x": self.txt_originX.text(),
+            "origin_y": self.txt_originY.text(),
+            "xmin": self.txt_xmin.text(),
+            "xmax": self.txt_xmax.text(),
+            "ymin": self.txt_ymin.text(),
+            "ymax": self.txt_ymax.text(),
+            "tilesize": self.txt_tilesize.text(),
+            "resolution": self.txt_resolution.text()
+        }
+        return dict
+
     def update_txt_info(self, index: QModelIndex, level):
-        # print([index.row(), index.column()])
+        print([index.row(), index.column()])
         url_index = self.tbl_address.model().index(index.row(), self.url_no)
         url = self.tbl_address.model().data(url_index, Qt.DisplayRole)
 
@@ -522,8 +554,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.txt_tilesize.setText(str(getInfo['tilesize']))
             self.txt_resolution.setText(str(getInfo['resolution']))
 
-    def cmb_selectionchange(self, i):
-        self.update_txt_info(i)
+    # def cmb_selectionchange(self, i):
+    #     self.update_txt_info(i)
 
     def open_tileInfoFile(self):
         fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择瓦片信息json文件", os.getcwd(),
@@ -542,10 +574,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    print("start")
-    style = QStyleFactory.create("windows")
-    app.setStyle(style)
+    # style = QStyleFactory.create("windows")
+    # app.setStyle(style)
     # MainWindow = QDialog()
     window = Ui_Window()
     window.show()
-    sys.exit(app.exec())
+    sys.exit(app.exec_())

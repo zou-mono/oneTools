@@ -230,7 +230,7 @@ def get_json(url):
         try:
             req = urllib.request.Request(url=url, headers=reqheaders)
             r = urllib.request.urlopen(req)
-            respData = r.read().decode('utf-8')
+            respData = r.read().decode('utf-8', 'ignore')
             # return respData
             res = json.loads(respData)
             if 'error' not in res.keys():
