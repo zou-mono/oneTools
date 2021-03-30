@@ -1,10 +1,12 @@
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import Qt, pyqtSignal, QPointF, QObject, QEvent, QRect
-from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QStyleFactory
+from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QStyleFactory, QPushButton
 import sys
 from widgets.CollapsibleSplitter import CollapsibleSplitter
 from UICore.Gv import Dock, SplitterState
+from UICore.log4p import Log
 
+log = Log(__file__)
 
 class Window(QMainWindow):
     def __init__(self):
@@ -18,9 +20,11 @@ class Window(QMainWindow):
 
         self.bSplitterButton = False  # 显示按钮
         self.splitter = CollapsibleSplitter(self.centralwidget)
+        self.splitter.setProperty("ExpandParentForm", True)
+
         self.setCentralWidget(self.centralwidget)
-        hlayout = QtWidgets.QHBoxLayout(self.centralwidget)
-        hlayout.addWidget(self.splitter)
+        vlayout = QtWidgets.QVBoxLayout(self.centralwidget)
+        vlayout.addWidget(self.splitter)
 
         self.splitter.setGeometry(0, 0, 800, 600)
         self.splitter.setHandleWidth(10)
@@ -28,12 +32,20 @@ class Window(QMainWindow):
         self.textEdit1 = QtWidgets.QTextEdit()
         self.textEdit1.setObjectName("textEdit1")
         self.textEdit1.setText("textEdit1")
-        self.textEdit2 = QtWidgets.QTextEdit()
+        self.textEdit2 = QtWidgets.QPlainTextEdit()
         self.textEdit2.setObjectName("textEdit2")
-        self.textEdit2.setText("textEdit2")
+        # self.textEdit2.setText("textEdit2")
 
         self.splitter.addWidget(self.textEdit1)
         self.splitter.addWidget(self.textEdit2)
+
+        self.button = QPushButton()
+        vlayout.addWidget(self.button)
+        self.button.clicked.connect(self.button_clicked)
+        # vlayout = QtWidgets.QVBoxLayout(self.centralwidget)
+        # vlayout.addLayout(hlayout)
+        # self.button = QPushButton(self)
+        # vlayout.addWidget(self.button)
 
 
         # self.widgetToHide = self.textEdit1
@@ -46,7 +58,7 @@ class Window(QMainWindow):
         self.splitter.setProperty("Stretch", SplitterState.collapsed)
         self.splitter.setProperty("Dock", Dock.right)
         self.splitter.setProperty("WidgetToHide", self.textEdit2)
-        self.splitter.setProperty("ExpandParentForm", True)
+        self.splitter.setProperty("ExpandParentForm", False)
 
         # self.splitter.setupUi()
 
@@ -64,6 +76,13 @@ class Window(QMainWindow):
 
         self.textEdit1.viewport().installEventFilter(self)
         self.textEdit2.viewport().installEventFilter(self)
+
+        log.setTextEditWidget(self, self.textEdit2)
+
+    def button_clicked(self):
+        log.info("增加一行")
+        # self.textEdit2.appendPlainText("增加一行")
+        # self.textEdit2.centerCursor()
 
     def eventFilter(self, obj: QObject, event: QEvent):
         # print(event.type())
@@ -92,6 +111,6 @@ if __name__ == '__main__':
     # MainWindow = QMainWindow()
     # MainWindow.setMouseTracking(True)
     ui = Window()
-    ui.setMouseTracking(True)
+    # ui.setMouseTracking(True)
     ui.show()
     sys.exit(app.exec_())

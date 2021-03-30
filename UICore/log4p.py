@@ -7,9 +7,10 @@ import datetime
 import os, sys, io
 import traceback
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal, QThread
 from PyQt5.QtWidgets import QMessageBox, QPlainTextEdit
-from osgeo import gdal
+
+from UICore.Gv import SplitterState
 
 currentframe = lambda: sys._getframe(3)
 _logging_srcfile = os.path.normcase(logging.addLevelName.__code__.co_filename)
@@ -49,19 +50,40 @@ log_colors_config = {
 #         self.err_level=err_level
 #         self.err_no=err_no
 #         self.err_msg=err_msg
+
 class Handler(QObject, logging.Handler):
     new_record = pyqtSignal(object)
+    clear_record = pyqtSignal(object)
+    set_record = pyqtSignal(object)
 
     def __init__(self, parent):
         super().__init__(parent)
         super(logging.Handler).__init__()
+        self.parent = parent
+        self.stringList = []
         formatter = logging.Formatter(
             '[%(asctime)s] [%(filename)s:%(lineno)d] [%(levelname)s]- %(message)s')
         self.setFormatter(formatter)
+        parent.splitter.handle(1).handleClicked.connect(self.handleClicked)
+
+    def handleClicked(self):
+        if self.parent.splitter.splitterState == SplitterState.collapsed:
+            #  splitter缩起来时必须要先清空plainText，否则会卡死
+            self.clear_record.emit(self.parent)
+        else:
+            output = os.linesep.join(self.stringList)
+            self.set_record.emit(output)
 
     def emit(self, record):
         msg = self.format(record)
-        self.new_record.emit(msg) # <---- emit signal here
+        if self.parent.splitter.splitterState == SplitterState.expanded:
+            if len(self.stringList) > 500:
+                self.clear_record.emit(self.parent)
+            else:
+                self.new_record.emit(msg) # <---- emit signal here
+        if len(self.stringList) > 500:
+            self.stringList.clear()
+        self.stringList.append(msg)
 
 class Log:
     def __init__(self, logName=logName):
@@ -75,7 +97,10 @@ class Log:
     def setTextEditWidget(self, parent, txtEdit: QPlainTextEdit):
         self.handler = Handler(parent)
         self.textEdit = txtEdit
+        self.parent = parent
         self.handler.new_record.connect(self.textEdit.appendPlainText)
+        self.handler.clear_record.connect(self.textEdit.clear)
+        self.handler.set_record.connect(self.textEdit.setPlainText)
 
     def get_file_sorted(self, file_path):
         """最后修改时间顺序升序排列 os.path.getmtime()->获取文件最后修改时间"""
@@ -120,6 +145,8 @@ class Log:
             Log().warning('删除日志文件失败：{}'.format(e))
 
     def __console(self, level, message):
+        # if self.parent.splitter.splitterState == SplitterState.expanded:
+        #     self.handler.new_record.connect(self.textEdit.appendPlainText)
         self.logger.addHandler(self.handler)
 
         formatter = logging.Formatter(
@@ -153,6 +180,8 @@ class Log:
         self.logger.removeHandler(ch)
         self.logger.removeHandler(fh)
         self.logger.removeHandler(self.handler)
+        # if self.parent.splitter.splitterState == SplitterState.expanded:
+        #     self.handler.new_record.disconnect(self.textEdit.appendPlainText)
         fh.close()  # 关闭打开的文件
         # self.textEdit.appendPlainText(message)  # 在ui里面显示日志
 

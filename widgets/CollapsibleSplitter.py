@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from PyQt5.QtWidgets import QSplitter, QWidget, QSplitterHandle, QApplication, QToolButton
-from PyQt5.QtCore import Qt, QObject, QEvent, QRect, QPoint, pyqtProperty
+from PyQt5.QtCore import Qt, QObject, QEvent, QRect, QPoint, pyqtProperty, pyqtSignal
 from PyQt5.QtGui import QPainter, QResizeEvent, QPalette, QPainterPath, QMouseEvent, QShowEvent
 from UICore.Gv import Dock, SplitterState
 
@@ -226,6 +226,8 @@ class CollapsibleSplitter(QSplitter):
 
 
 class SplitterHandle(QSplitterHandle):
+    handleClicked = pyqtSignal()
+
     def __init__(self, Orientation, qSplitter: CollapsibleSplitter):
         super(SplitterHandle, self).__init__(Orientation, qSplitter)
         self.splitter = qSplitter
@@ -361,6 +363,7 @@ class SplitterHandle(QSplitterHandle):
         if self.bBarHover and not self.bMove:
             self.splitter.handleSplitterButton(self.splitter.splitterState)
             self.bBarHover = False
+            self.handleClicked.emit()
         else:
             if self.splitter.splitterState == SplitterState.expanded and not self.bBarHover:
                 pos = self.splitter.mapFromGlobal(event.globalPos())

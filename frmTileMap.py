@@ -428,8 +428,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             if url == "": continue
 
             # if url not in self.paras.keys():
-            # getInfo = self.get_paraInfo(url)
-            getInfo = None
+            getInfo = self.get_paraInfo(url)
             if getInfo is None:
                 log.error(url + "无法获取远程参数信息，请检查地址是否正确以及网络是否连通！")
                 continue
