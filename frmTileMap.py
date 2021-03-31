@@ -169,9 +169,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         if button == self.buttonBox.button(QDialogButtonBox.Ok):
             self.crawlTilesThread = crawlTilesWorker()
             self.crawlTilesThread.moveToThread(self.thread)
-            self.crawlTilesThread.crawl.connect(self.crawlTilesThread.work)
+            self.crawlTilesThread.crawl.connect(self.crawlTilesThread.crawlTiles)
             # self.thread.started.connect(self.crawlTilesThread.work)
             self.crawlTilesThread.finished.connect(self.threadStop)
+            self.thread.start()
 
             rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
             for row in rows:
@@ -202,7 +203,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
                     paras = self.paras[url]['paras'][level]
 
-                    self.thread.start()
                     self.crawlTilesThread.crawl.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
                                                      float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
                                                      float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']), tileFolder)
@@ -217,10 +217,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                         log.info('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认参数{}'.format(row, tileFolder))
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
             self.close()
-
-    # def craw_tilemap_thread(self, url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path):
-    #
-    #     craw_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path)
 
     def threadStop(self):
         self.thread.quit()
