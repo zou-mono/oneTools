@@ -26,7 +26,9 @@ else:
 _srcfile = os.path.normcase(_srcfile)
 _wrongCallerFiles = set([_loggingfile, _srcfile])
 
-cur_path = os.path.dirname(os.path.realpath(__file__))  # log_path是存放日志的路径
+# cur_path = os.path.dirname(os.path.realpath(__file__))  # log_path是存放日志的路径
+# cur_path = os.path.realpath(sys.argv[0])
+cur_path, filename = os.path.split(os.path.abspath(sys.argv[0]))
 log_path = os.path.join(cur_path, 'logs')
 if not os.path.exists(log_path): os.mkdir(log_path)  # 如果不存在这个logs文件夹，就自动创建一个
 logName = os.path.join(log_path, '%s.log' % (os.path.basename(__file__).split('.')[0] + '_' + time.strftime('%Y-%m-%d-%H-%M-%S')))  # 文件的命名
