@@ -1,10 +1,11 @@
-from PyQt5.QtCore import QRect, Qt, QPersistentModelIndex, QItemSelectionModel, QModelIndex
+import time
+
+from PyQt5.QtCore import QRect, Qt, QPersistentModelIndex, QItemSelectionModel, QModelIndex, QThread
 from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
 from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, QDialogButtonBox, QStyleFactory, \
     QAbstractItemView, QHeaderView, QComboBox, QAbstractButton, QFileDialog
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets, QtGui, QtCore
 from UI.UITileMap import Ui_Dialog
-from suplicmap_tilemap import get_json
 import sys
 import json
 import os
@@ -13,6 +14,11 @@ import base64
 from UICore.Gv import SplitterState, Dock, defaultImageFile, defaultTileFolder
 from widgets.mTable import TableModel, mTableStyle, addressTableDelegate
 from UICore.log4p import Log
+from suplicmap_tilemap import craw_tilemap, get_json
+from merge_tiles import merge_tiles
+from UICore.workerThread import crawlTilesWorker
+
+Slot = QtCore.pyqtSlot
 
 log = Log(__file__)
 
@@ -61,10 +67,14 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.validateValue()
 
         self.paras = {}  # 存储参数信息
+        self.selIndex = None
         self.table_init()
-        log.setTextEditWidget(parent=self, txtEdit=self.txt_log)
+        log.setLogViewer(parent=self, logViewer=self.txt_log)
         self.txt_log.setReadOnly(True)
 
+        self.thread = QThread()
+
+    @Slot(int)
     def table_section_clicked(self, section):
         if self.rbtn_spiderAndHandle.isChecked() or self.rbtn_onlySpider.isChecked():
             level_index = self.tbl_address.model().index(section, self.level_no, QModelIndex())
@@ -73,6 +83,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
             self.selIndex = level_index
 
+    @Slot(QModelIndex)
     def table_index_clicked(self, index):
         if self.rbtn_spiderAndHandle.isChecked() or self.rbtn_onlySpider.isChecked():
             level_index = self.tbl_address.model().index(index.row(), self.level_no, QModelIndex())
@@ -81,13 +92,14 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
             self.selIndex = level_index
 
+    @Slot()
     def btn_saveMetaFile_clicked(self):
         datas = self.tbl_address.model().datas
 
-        # selModel = self.tbl_address.selectionModel()
-        #
-        # if selModel is None:
-        #     return
+        selModel = self.tbl_address.selectionModel()
+
+        if selModel is None:
+            return
         #
         # indexes = selModel.selectedIndexes()
 
@@ -152,8 +164,15 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             except:
                 log.error("文件存储路径错误，无法保存！", parent=self, dialog=True)
 
+    @Slot(QAbstractButton)
     def buttonBox_clicked(self, button: QAbstractButton):
         if button == self.buttonBox.button(QDialogButtonBox.Ok):
+            self.crawlTilesThread = crawlTilesWorker()
+            self.crawlTilesThread.moveToThread(self.thread)
+            self.crawlTilesThread.crawl.connect(self.crawlTilesThread.work)
+            # self.thread.started.connect(self.crawlTilesThread.work)
+            self.crawlTilesThread.finished.connect(self.threadStop)
+
             rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
             for row in rows:
                 level_index = self.tbl_address.model().index(row, self.level_no, QModelIndex())
@@ -180,6 +199,16 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     elif imgFile == "":
                         imgFile = defaultImageFile(url, level)
                         log.info('第{}行参数缺失非必要参数"输出影像文件"，将使用默认参数{}'.format(row, imgFile))
+
+                    paras = self.paras[url]['paras'][level]
+
+                    self.thread.start()
+                    self.crawlTilesThread.crawl.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
+                                                     float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
+                                                     float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']), tileFolder)
+                    # craw_tilemap(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
+                    #                       float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
+                    #                       float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']), tileFolder)
                 elif self.rbtn_onlySpider.isChecked():
                     tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
                     tileFolder = str(self.tbl_address.model().data(tileFolder_index, Qt.DisplayRole)).strip()
@@ -188,6 +217,13 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                         log.info('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认参数{}'.format(row, tileFolder))
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
             self.close()
+
+    # def craw_tilemap_thread(self, url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path):
+    #
+    #     craw_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path)
+
+    def threadStop(self):
+        self.thread.quit()
 
     def table_init(self):
         self.tbl_address.setStyle(mTableStyle())
@@ -225,6 +261,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     # self.tbl_address.show()
 
+    @Slot()
     def btn_addRow_Clicked(self):
         log.info("增加一行")
         selModel = self.tbl_address.selectionModel()
@@ -353,6 +390,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)
                 self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.2)
 
+    @Slot()
     def open_addressFile(self):
         fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择服务地址文件", os.getcwd(),
                                                                    "All Files(*)")
@@ -392,6 +430,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         except:
             log.error("读取参数文件失败！", dialog=True)
 
+    @Slot()
     def btn_obtainMeta_clicked(self):
         selModel = self.tbl_address.selectionModel()
 
@@ -545,7 +584,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
             self.txt_level.setText(str(level))
             self.txt_originX.setText(str(getInfo['origin_x']))
-            self.txt_originY.setText(str(getInfo['origin_x']))
+            self.txt_originY.setText(str(getInfo['origin_y']))
             self.txt_xmin.setText(str(getInfo['xmin']))
             self.txt_xmax.setText(str(getInfo['xmax']))
             self.txt_ymin.setText(str(getInfo['ymin']))
@@ -553,29 +592,12 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.txt_tilesize.setText(str(getInfo['tilesize']))
             self.txt_resolution.setText(str(getInfo['resolution']))
 
-    # def cmb_selectionchange(self, i):
-    #     self.update_txt_info(i)
-
-    def open_tileInfoFile(self):
-        fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择瓦片信息json文件", os.getcwd(),
-                                                                   "json Files(*.json);;All Files(*)")
-        self.txt_infoPath.setText(fileName)
-
-    def open_tileFolder(self):
-        get_folder = QtWidgets.QFileDialog.getExistingDirectory(self,
-                                                                "选择瓦片文件夹",
-                                                                os.getcwd())
-        self.txt_imageFolderPath.setText(get_folder)
-
-    def accept(self):
-        QMessageBox.information(self, "提示", "OK", QMessageBox.Yes)
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    # style = QStyleFactory.create("windows")
-    # app.setStyle(style)
-    # MainWindow = QDialog()
+    style = QStyleFactory.create("windows")
+    app.setStyle(style)
+    MainWindow = QDialog()
     window = Ui_Window()
     window.show()
     sys.exit(app.exec_())

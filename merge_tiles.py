@@ -57,6 +57,10 @@ try_num = 10
     help='The name of merged file. For example, res/2019_image_data.tif.',
     required=True)
 def main(input_folder, url, level, scope, origin, resolution, tilesize, merged_file):
+    merge_tiles(input_folder, url, level, scope, origin, resolution, tilesize, merged_file)
+
+
+def merge_tiles(input_folder, url, level, scope, origin, resolution, tilesize, merged_file):
     if url is not None:
         if url[-1] == r"/":
             url = url[:-1]

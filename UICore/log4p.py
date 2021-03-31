@@ -7,10 +7,10 @@ import datetime
 import os, sys, io
 import traceback
 
-from PyQt5.QtCore import QObject, pyqtSignal, QThread
+from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtWidgets import QMessageBox, QPlainTextEdit
 
-from UICore.Gv import SplitterState
+from UICore.Gv import SplitterState, singleton
 
 currentframe = lambda: sys._getframe(3)
 _logging_srcfile = os.path.normcase(logging.addLevelName.__code__.co_filename)
@@ -85,6 +85,7 @@ class Handler(QObject, logging.Handler):
             self.stringList.clear()
         self.stringList.append(msg)
 
+@singleton
 class Log:
     def __init__(self, logName=logName):
         logging.setLoggerClass(WrappedLogger)  # 重新绑定logging实例
@@ -94,13 +95,12 @@ class Log:
         self.logger.setLevel(logging.DEBUG)
         self.handle_logs()
 
-    def setTextEditWidget(self, parent, txtEdit: QPlainTextEdit):
+    def setLogViewer(self, parent, logViewer: QPlainTextEdit):
         self.handler = Handler(parent)
-        self.textEdit = txtEdit
-        self.parent = parent
-        self.handler.new_record.connect(self.textEdit.appendPlainText)
-        self.handler.clear_record.connect(self.textEdit.clear)
-        self.handler.set_record.connect(self.textEdit.setPlainText)
+        self.logViewer = logViewer
+        self.handler.new_record.connect(self.logViewer.appendPlainText)
+        self.handler.clear_record.connect(self.logViewer.clear)
+        self.handler.set_record.connect(self.logViewer.setPlainText)
 
     def get_file_sorted(self, file_path):
         """最后修改时间顺序升序排列 os.path.getmtime()->获取文件最后修改时间"""
@@ -147,7 +147,8 @@ class Log:
     def __console(self, level, message):
         # if self.parent.splitter.splitterState == SplitterState.expanded:
         #     self.handler.new_record.connect(self.textEdit.appendPlainText)
-        self.logger.addHandler(self.handler)
+        if self.handler is not None:
+            self.logger.addHandler(self.handler)
 
         formatter = logging.Formatter(
             '[%(asctime)s] [%(filename)s:%(lineno)d] [%(module)s:%(funcName)s] [%(levelname)s]- %(message)s')  # 日志输出格式
@@ -179,7 +180,8 @@ class Log:
         # 这两行代码是为了避免日志输出重复问题
         self.logger.removeHandler(ch)
         self.logger.removeHandler(fh)
-        self.logger.removeHandler(self.handler)
+        if self.handler is not None:
+            self.logger.removeHandler(self.handler)
         # if self.parent.splitter.splitterState == SplitterState.expanded:
         #     self.handler.new_record.disconnect(self.textEdit.appendPlainText)
         fh.close()  # 关闭打开的文件

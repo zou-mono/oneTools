@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 # initialized.
 #
 class Signaller(QtCore.QObject):
+    # signal = Signal(str, logging.LogRecord)
     signal = Signal(str, logging.LogRecord)
 
 #

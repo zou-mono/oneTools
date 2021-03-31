@@ -10,7 +10,7 @@ import click
 import traceback
 from UICore.asyncRequest import send_http
 
-try_num = 3
+try_num = 5
 log = Log(__file__)
 failed_urls = []
 lock = asyncio.Lock()
@@ -39,31 +39,28 @@ lock = asyncio.Lock()
     '--output-path', '-o',
     help='Output folder, need the full path. For example, res/tilemaps',
     required=True)
-def main(url, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, level, output_path):
-    craw_tilemap(url, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, level, output_path)
+def main(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path):
+    craw_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path)
 
 
-def craw_tilemap(url, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, level, output_path):
+def craw_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path):
     """crawler program for tilemap data in http://suplicmap.pnr.sz."""
     start = time.time()
 
     if url[-1] == "/":
         url = url[:-1]
 
-    url_json = url + "?f=pjson"
+    # if not os.path.exists(output_path):
+    #     os.makedirs(output_path)
 
+    # output_path = launderPath(output_path)
+    # level_path = output_path + str(level)
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
-    output_path = launderPath(output_path)
-    level_path = output_path + str(level)
-    if not os.path.exists(level_path):
-        os.makedirs(level_path)
-
-    getInfo = get_json(url_json)
-    out_file = write_info_to_json(getInfo, output_path)
-    log.info('输出影像信息json文件:{}'.format(out_file))
-    # print(getInfo)
+    # getInfo = get_json(url_json)
+    # out_file = write_info_to_json(getInfo, output_path)
+    # log.info('输出影像信息json文件:{}'.format(out_file))
 
     # tile_size = getInfo['tileInfo']['rows']  # 瓦片尺寸
     # x0 = getInfo['tileInfo']['origin']['x']  # 初始x
@@ -91,21 +88,25 @@ def craw_tilemap(url, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, lev
     loop = asyncio.ProactorEventLoop()
     asyncio.set_event_loop(loop)
     # loop = asyncio.get_event_loop()
-    iloop = 0
-    for i in range(min_row, max_row + 1):
-        for j in range(min_col, max_col + 1):
-            # tile_url = url + "/tile/" + str(level) + "/" + str(i) + "/" + str(j)
-            tile_url = f'{url}/tile/{level}/{i}/{j}'
+    try:
+        iloop = 0
+        for i in range(min_row, max_row + 1):
+            for j in range(min_col, max_col + 1):
+                # tile_url = url + "/tile/" + str(level) + "/" + str(i) + "/" + str(j)
+                tile_url = f'{url}/tile/{level}/{i}/{j}'
 
-            if len(tasks) >= 3000:
-                tasks.append(asyncio.ensure_future(output_img_asyc(tile_url, level_path, i, j)))
-                loop.run_until_complete(asyncio.wait(tasks))
-                tasks = []
-                iloop += 1
-                log.debug(iloop)
-                continue
-            else:
-                tasks.append(asyncio.ensure_future(output_img_asyc(tile_url, level_path, i, j)))
+                if len(tasks) >= 3000:
+                    tasks.append(asyncio.ensure_future(output_img_asyc(tile_url, output_path, i, j)))
+                    loop.run_until_complete(asyncio.wait(tasks))
+                    tasks = []
+                    iloop += 1
+                    log.debug(iloop)
+                    continue
+                else:
+                    tasks.append(asyncio.ensure_future(output_img_asyc(tile_url, output_path, i, j)))
+    except:
+        log.error("抓取失败，请检查参数！{}".format(traceback.format_exc()))
+        return False
 
     loop.run_until_complete(asyncio.wait(tasks))
     log.info('协程抓取完成.')
@@ -114,13 +115,14 @@ def craw_tilemap(url, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, lev
         log.info('开始用单线程抓取失败的url...')
         while len(failed_urls) > 0:
             furl = failed_urls.pop()
-            if not output_img2(furl[0], level_path, furl[1], furl[2]):
+            if not output_img2(furl[0], output_path, furl[1], furl[2]):
                 log.error('url:{} error:{}'.format(url, traceback.format_exc()))
 
     end = time.time()
     if lock.locked():
         lock.release()
     log.info('完成抓取.耗时：' + str(end - start))
+    return True
 
 
 def url_json(url):
@@ -218,7 +220,6 @@ def get_col_row(x0, y0, x, y, size, resolution):
 
     return col, row
 
-
 def get_json(url):
     # 定义请求头
     reqheaders = {'Content-Type': 'application/x-www-form-urlencoded',
@@ -241,7 +242,6 @@ def get_json(url):
 
         time.sleep(2)
         continue
-
 
 if __name__ == '__main__':
     main()

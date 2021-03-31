@@ -15,6 +15,17 @@ class SplitterState(Enum):
     expanded = 1
 
 
+def singleton(cls):
+    instances = {}
+
+    def _singleton(*args, **kwargs):
+        if cls not in instances:
+            instances[cls] = cls(*args, **kwargs)
+        return instances[cls]
+
+    return _singleton
+
+
 def defaultTileFolder(url, level):
     url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
     path = os.path.join(os.getcwd(), "data", "tiles", url_encodeStr, str(level))
