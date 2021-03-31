@@ -6,7 +6,7 @@ import asyncio
 import json
 
 HTTP_STATUS_CODES_TO_RETRY = [500, 502, 503, 504]
-log = Log(__file__)
+log = Log()
 
 class FailedRequest(Exception):
     """

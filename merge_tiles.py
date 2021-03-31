@@ -8,7 +8,7 @@ import traceback
 import urllib.request, urllib.parse
 import json
 
-log = Log(__file__)
+log = Log()
 try_num = 10
 
 @click.command()

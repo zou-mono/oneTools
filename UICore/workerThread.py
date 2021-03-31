@@ -3,6 +3,9 @@ import time
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSignal
 from suplicmap_tilemap import craw_tilemap
+from UICore.log4p import Log
+
+log = Log()
 
 class crawlTilesWorker(QtCore.QObject):
     crawl = pyqtSignal(str, int, int, int, float, float, float, float, float, int, str)

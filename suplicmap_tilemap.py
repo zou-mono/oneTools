@@ -11,7 +11,7 @@ import traceback
 from UICore.asyncRequest import send_http
 
 try_num = 5
-log = Log(__file__)
+log = Log()
 failed_urls = []
 lock = asyncio.Lock()
 
