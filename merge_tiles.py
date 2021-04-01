@@ -116,7 +116,9 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
         suffix = "tif"
         merged_file = merged_file + "." + suffix
     cur_path = os.path.dirname(merged_file)
-    temp_file = os.path.join(cur_path, name + "_temp" + "." + suffix)    # 没有纠偏的临时文件
+    if not os.path.exists(os.path.join(cur_path, "tmp")):
+        os.makedirs(os.path.join(cur_path, "tmp"))
+    temp_file = os.path.join(cur_path, "tmp", name + "_temp" + "." + suffix)    # 没有纠偏的临时文件
 
     start = time.time()
 
