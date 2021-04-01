@@ -11,6 +11,8 @@ import traceback
 from UICore.asyncRequest import send_http
 
 try_num = 5
+coroutine_num = 3000  # 协程数
+
 log = Log()
 failed_urls = []
 lock = asyncio.Lock()
@@ -78,6 +80,13 @@ def craw_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_si
     max_col, max_row = get_col_row(x0, y0, xmax, ymin, tile_size, resolution)
     print(str(max_col) + " " + str(max_row))
 
+    if min_row > max_row:
+        log.error("最小行号大于最大行号,请检查参数！")
+        return False
+    elif min_col > max_col:
+        log.error("最小列号大于最大列号,请检查参数！")
+        return False
+
     log.info('开始使用协程抓取...')
     # for i in range(min_row, max_row):
     #     for j in range(min_col, max_col):
@@ -88,6 +97,7 @@ def craw_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_si
     loop = asyncio.ProactorEventLoop()
     asyncio.set_event_loop(loop)
     # loop = asyncio.get_event_loop()
+    total_count = (max_row - min_row + 1) * (max_col - min_col + 1)
     try:
         iloop = 0
         for i in range(min_row, max_row + 1):
@@ -95,28 +105,28 @@ def craw_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_si
                 # tile_url = url + "/tile/" + str(level) + "/" + str(i) + "/" + str(j)
                 tile_url = f'{url}/tile/{level}/{i}/{j}'
 
-                if len(tasks) >= 3000:
+                if len(tasks) >= coroutine_num:
                     tasks.append(asyncio.ensure_future(output_img_asyc(tile_url, output_path, i, j)))
                     loop.run_until_complete(asyncio.wait(tasks))
                     tasks = []
                     iloop += 1
-                    log.debug(iloop)
+                    log.debug("{:.0%}".format(iloop * coroutine_num / total_count))
                     continue
                 else:
                     tasks.append(asyncio.ensure_future(output_img_asyc(tile_url, output_path, i, j)))
+
+        loop.run_until_complete(asyncio.wait(tasks))
+        log.info('协程抓取完成.')
+
+        if len(failed_urls) > 0:
+            log.info('开始用单线程抓取失败的url...')
+            while len(failed_urls) > 0:
+                furl = failed_urls.pop()
+                if not output_img2(furl[0], output_path, furl[1], furl[2]):
+                    log.error('url:{} error:{}'.format(url, traceback.format_exc()))
     except:
         log.error("抓取失败，请检查参数！{}".format(traceback.format_exc()))
         return False
-
-    loop.run_until_complete(asyncio.wait(tasks))
-    log.info('协程抓取完成.')
-
-    if len(failed_urls) > 0:
-        log.info('开始用单线程抓取失败的url...')
-        while len(failed_urls) > 0:
-            furl = failed_urls.pop()
-            if not output_img2(furl[0], output_path, furl[1], furl[2]):
-                log.error('url:{} error:{}'.format(url, traceback.format_exc()))
 
     end = time.time()
     if lock.locked():

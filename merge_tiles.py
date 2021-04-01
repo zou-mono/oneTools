@@ -60,46 +60,52 @@ def main(input_folder, url, level, scope, origin, resolution, tilesize, merged_f
     merge_tiles(input_folder, url, level, scope, origin, resolution, tilesize, merged_file)
 
 
-def merge_tiles(input_folder, url, level, scope, origin, resolution, tilesize, merged_file):
-    if url is not None:
-        if url[-1] == r"/":
-            url = url[:-1]
+def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
+    # if url is not None:
+        # if url[-1] == r"/":
+        #     url = url[:-1]
 
-        url_json = url + "?f=pjson"
-        getInfo = get_json(url_json)
+        # url_json = url + "?f=pjson"
+        # getInfo = get_json(url_json)
 
-        tilesize = getInfo['tileInfo']['rows']  # 瓦片尺寸
-        originX = getInfo['tileInfo']['origin']['x']  # 初始x
-        originY = getInfo['tileInfo']['origin']['y']  # 初始y
-        minX = getInfo['extent']['xmin']  # xmin
-        minY = getInfo['extent']['ymin']  # ymin
-        maxX = getInfo['extent']['xmax']  # xmax
-        maxY = getInfo['extent']['ymax']  # ymax
+        # tilesize = getInfo['tileInfo']['rows']  # 瓦片尺寸
+        # originX = getInfo['tileInfo']['origin']['x']  # 初始x
+        # originY = getInfo['tileInfo']['origin']['y']  # 初始y
+        # minX = getInfo['extent']['xmin']  # xmin
+        # minY = getInfo['extent']['ymin']  # ymin
+        # maxX = getInfo['extent']['xmax']  # xmax
+        # maxY = getInfo['extent']['ymax']  # ymax
 
-        lods = getInfo['tileInfo']['lods']  # lod信息
-        lod = get_lod(lods, level)
-        resolution = lod['resolution']
+        # lods = getInfo['tileInfo']['lods']  # lod信息
+        # lod = get_lod(lods, level)
+        # resolution = lod['resolution']
 
-    else:
-        if origin is None:
-            log.error("missing origin!")
-            return
-        if scope is None:
-            log.error("missing scope!")
-            return
-        if resolution is None:
-            log.error("missing resolution!")
-            return
-
-        originX = origin[0]
-        originY = origin[1]
-        minX = scope[0]
-        maxX = scope[1]
-        minY = scope[2]
-        maxY = scope[3]
+    # else:
+    #     if origin is None:
+    #         log.error("missing origin!")
+    #         return
+    #     if scope is None:
+    #         log.error("missing scope!")
+    #         return
+    #     if resolution is None:
+    #         log.error("missing resolution!")
+    #         return
+    #
+    #     originX = origin[0]
+    #     originY = origin[1]
+    #     minX = scope[0]
+    #     maxX = scope[1]
+    #     minY = scope[2]
+    #     maxY = scope[3]
+    originX = origin[0]
+    originY = origin[1]
+    minX = scope[0]
+    maxX = scope[1]
+    minY = scope[2]
+    maxY = scope[3]
 
     min_col, min_row = get_col_row(originX, originY, minX, maxY, tilesize, resolution)
-    max_col, max_row =  get_col_row(originX, originY, maxX, minY, tilesize, resolution)
+    max_col, max_row = get_col_row(originX, originY, maxX, minY, tilesize, resolution)
 
     tilewidth = max_col - min_col + 1
     tileheight = max_row - min_row + 1

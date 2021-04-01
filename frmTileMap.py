@@ -170,7 +170,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.crawlTilesThread = crawlTilesWorker()
             self.crawlTilesThread.moveToThread(self.thread)
             self.crawlTilesThread.crawl.connect(self.crawlTilesThread.crawlTiles)
-            # self.thread.started.connect(self.crawlTilesThread.work)
+            self.crawlTilesThread.crawlAndMerge.connect(self.crawlTilesThread.crawlAndMergeTiles)
+            # self.thread.started.connect(self.crawlTilesThread.crawlTiles)
             self.crawlTilesThread.finished.connect(self.threadStop)
             self.thread.start()
 
@@ -188,6 +189,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     log.error('第{}行参数缺失必要参数"等级"，请补全！'.format(row))
                     continue
 
+                paras = self.paras[url]['paras'][level]
+
                 if self.rbtn_spiderAndHandle.isChecked():
                     tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
                     imgFile_index = self.tbl_address.model().index(row, 3, QModelIndex())
@@ -197,24 +200,35 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     if tileFolder == "":
                         tileFolder = defaultTileFolder(url, level)
                         log.info('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认参数{}'.format(row, tileFolder))
-                    elif imgFile == "":
+                    else:
+                        url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
+                        tileFolder = os.path.join(tileFolder, url_encodeStr, str(level))
+                        if not os.path.exists(tileFolder):
+                            os.makedirs(tileFolder)
+
+                    if imgFile == "":
                         imgFile = defaultImageFile(url, level)
                         log.info('第{}行参数缺失非必要参数"输出影像文件"，将使用默认参数{}'.format(row, imgFile))
 
-                    paras = self.paras[url]['paras'][level]
-
-                    self.crawlTilesThread.crawl.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
+                    self.crawlTilesThread.crawlAndMerge.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
                                                      float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
-                                                     float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']), tileFolder)
-                    # craw_tilemap(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
-                    #                       float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
-                    #                       float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']), tileFolder)
+                                                     float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']),
+                                                             tileFolder, imgFile)
                 elif self.rbtn_onlySpider.isChecked():
                     tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
                     tileFolder = str(self.tbl_address.model().data(tileFolder_index, Qt.DisplayRole)).strip()
                     if tileFolder == "":
                         tileFolder = defaultTileFolder(url, level)
                         log.info('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认参数{}'.format(row, tileFolder))
+                    else:
+                        url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
+                        tileFolder = os.path.join(tileFolder, url_encodeStr, str(level))
+                        if not os.path.exists(tileFolder):
+                            os.makedirs(tileFolder)
+
+                    self.crawlTilesThread.crawl.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
+                                                     float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
+                                                     float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']), tileFolder)
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
             self.close()
 
