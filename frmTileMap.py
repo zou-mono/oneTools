@@ -51,7 +51,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.resize(self.splitter.width(), self.splitter.height())
 
         self.btn_addRow.clicked.connect(self.btn_addRow_Clicked)
-        self.btn_addressFile.clicked.connect(self.open_addressFile)
         self.btn_removeRow.clicked.connect(self.removeBtn_clicked)
 
         self.rbtn_onlySpider.clicked.connect(self.rbtn_toggled)
@@ -61,57 +60,117 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.btn_obtainMeta.clicked.connect(self.btn_obtainMeta_clicked)
         self.buttonBox.clicked.connect(self.buttonBox_clicked)
         self.btn_saveMetaFile.clicked.connect(self.btn_saveMetaFile_clicked)
-
         self.tbl_address.clicked.connect(self.table_index_clicked)
+
+        self.btn_tileInfoDialog.clicked.connect(self.open_tileInfoFile)
+        self.btn_addressFile.clicked.connect(self.open_addressFile)
+
+        self.txt_originX.editingFinished.connect(self.txt_originX_edited)
+        self.txt_originY.editingFinished.connect(self.txt_originY_edited)
+        self.txt_xmin.editingFinished.connect(self.txt_xmin_edited)
+        self.txt_xmax.editingFinished.connect(self.txt_xmax_edited)
+        self.txt_ymin.editingFinished.connect(self.txt_ymin_edited)
+        self.txt_ymax.editingFinished.connect(self.txt_ymax_edited)
+        self.txt_resolution.editingFinished.connect(self.txt_resolution_edited)
+        self.txt_tilesize.editingFinished.connect(self.txt_tilesize_edited)
 
         self.validateValue()
 
         self.paras = {}  # 存储参数信息
-        self.selIndex = None
+        self.selIndex = QModelIndex()
         self.table_init()
         log.setLogViewer(parent=self, logViewer=self.txt_log)
         self.txt_log.setReadOnly(True)
 
         self.thread = QThread()
 
-    @Slot(int)
-    def table_section_clicked(self, section):
+    def update_para_value(self, key, value):
+        if self.selIndex.row() < 0:
+            print("not sel")
+            return
+        if self.rbtn_onlyHandle.isChecked():
+            tileFolder_index = self.tbl_address.model().index(self.selIndex.row(), 0)
+            tileFolder = self.tbl_address.model().data(tileFolder_index, Qt.DisplayRole)
+            imageFile_index = self.tbl_address.model().index(self.selIndex.row(), 1)
+            imageFile = self.tbl_address.model().data(imageFile_index, Qt.DisplayRole)
+            para_key = tileFolder + "_" + imageFile
+            #  以输入文件夹和输出文件作为关键字
+            if para_key in self.paras:
+                self.paras[para_key][key] = value
+            else:
+                self.paras[para_key] = {
+                    key: value
+                }
+        else:
+            url_index, level_index, url, level = self.return_url_and_level(self.selIndex)
+            if url in self.paras:
+                if level in self.paras[url]['paras']:
+                    self.paras[url]['paras'][level][key] = value
+
+    @Slot()
+    def txt_originX_edited(self):
+        self.update_para_value("origin_x", self.txt_originX.text())
+
+    @Slot()
+    def txt_originY_edited(self):
+        self.update_para_value("origin_y", self.txt_originY.text())
+
+    @Slot()
+    def txt_xmin_edited(self):
+        self.update_para_value("xmin", self.txt_xmin.text())
+
+    @Slot()
+    def txt_xmax_edited(self):
+        self.update_para_value("xmax", self.txt_xmax.text())
+
+    @Slot()
+    def txt_ymin_edited(self):
+        self.update_para_value("ymin", self.txt_ymin.text())
+
+    @Slot()
+    def txt_ymax_edited(self):
+        self.update_para_value("ymax", self.txt_ymax.text())
+
+    @Slot()
+    def txt_resolution_edited(self):
+        self.update_para_value("resolution", self.txt_resolution.text())
+
+    @Slot()
+    def txt_tilesize_edited(self):
+        self.update_para_value("tilesize", self.txt_tilesize.text())
+
+    def row_clicked(self, logicRow):
         if self.rbtn_spiderAndHandle.isChecked() or self.rbtn_onlySpider.isChecked():
-            level_index = self.tbl_address.model().index(section, self.level_no, QModelIndex())
+            level_index = self.tbl_address.model().index(logicRow, self.level_no, QModelIndex())
             level = self.tbl_address.model().data(level_index, Qt.DisplayRole)
             self.update_txt_info(level_index, level)
 
             self.selIndex = level_index
+        elif self.rbtn_onlyHandle.isChecked():
+            sel_index = self.tbl_address.model().index(logicRow, 0, QModelIndex())
+            self.update_txt_info(sel_index)
+            self.selIndex = sel_index
+
+    @Slot(int)
+    def table_section_clicked(self, section):
+        self.row_clicked(section)
 
     @Slot(QModelIndex)
     def table_index_clicked(self, index):
-        if self.rbtn_spiderAndHandle.isChecked() or self.rbtn_onlySpider.isChecked():
-            level_index = self.tbl_address.model().index(index.row(), self.level_no, QModelIndex())
-            level = self.tbl_address.model().data(level_index, Qt.DisplayRole)
-            self.update_txt_info(index, level)
-
-            self.selIndex = level_index
+        self.row_clicked(index.row())
 
     @Slot()
     def btn_saveMetaFile_clicked(self):
         datas = self.tbl_address.model().datas
-
-        selModel = self.tbl_address.selectionModel()
-
-        if selModel is None:
-            return
+        # selModel = self.tbl_address.selectionModel()
+        # if selModel is None:
+        #     return
         #
-        # indexes = selModel.selectedIndexes()
-
-        selRow = -1
-        paras_dict = {}
-        if self.selIndex is not None:
-            # selRows = sorted(set(index.row() for index in
-            #                      self.tbl_address.selectedIndexes()))
-            # selRow = selRows[-1]
-            selRow = self.selIndex.row()
-            print(selRow)
-            paras_dict = self.update_para_dict()
+        # selRow = -1
+        # paras_dict = {}
+        # if self.selIndex is not None:
+        #     selRow = self.selIndex.row()
+        #     paras_dict = self.update_para_dict()
 
         bHasData = False
         for i in datas:
@@ -123,46 +182,56 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 continue
             break
 
-        if bHasData and bool(self.paras):
-            fileName, fileType = QFileDialog.getSaveFileName(self, "请选择保存的参数文件", os.getcwd(),
-                                                             "json file(*.json)")
-            rows = range(0, self.tbl_address.model().rowCount())
+        rows = range(0, len(datas))
+        if self.rbtn_spiderAndHandle.isChecked() or self.rbtn_onlySpider.isChecked():
+            if bHasData and bool(self.paras):
+                fileName, fileType = QFileDialog.getSaveFileName(self, "请选择保存的参数文件", os.getcwd(),
+                                                                 "json file(*.json)")
+                # rows = range(0, self.tbl_address.model().rowCount())
+                for v in self.paras.values():
+                    v['exports'] = []
 
-            for v in self.paras.values():
-                v['exports'] = []
+                for row in rows:
+                    url = datas[row][self.url_no]
 
+                    if url in self.paras.keys():
+                        level = datas[row][self.level_no]
+
+                        if level not in self.paras[url]['paras']:
+                            level = -1
+
+                        # if row == selRow:
+                        #     self.paras[url]['paras'][level] = paras_dict
+
+                        if self.rbtn_spiderAndHandle.isChecked():
+                            self.paras[url]['exports'].append({
+                                'level': level,
+                                'tileFolder': datas[row][2],
+                                'imageFile': datas[row][3]
+                            })
+                        elif self.rbtn_onlySpider.isChecked():
+                            self.paras[url]['exports'].append({
+                                'level': level,
+                                'tileFolder': datas[row][2],
+                                'imageFile': ''
+                            })
+        elif self.rbtn_onlyHandle.isChecked():
+            if bHasData and bool(self.paras):
+                fileName, fileType = QFileDialog.getSaveFileName(self, "请选择保存的参数文件", os.getcwd(),
+                                                                 "json file(*.json)")
             for row in rows:
-                url = datas[row][self.url_no]
+                tileFolder = datas[row][0]
+                imageFile = datas[row][1]
+                key = tileFolder + "_" + imageFile
 
-                if url in self.paras.keys():
-                    # paras = self.paras[url]['exports']['paras']
-                    level = datas[row][self.level_no]
-
-                    if level not in self.paras[url]['paras']:
-                        level = -1
-
-                    if row == selRow:
-                        self.paras[url]['paras'][level] = paras_dict
-
-                    if self.rbtn_spiderAndHandle.isChecked():
-                        self.paras[url]['exports'].append({
-                            'level': level,
-                            'tileFolder': datas[row][2],
-                            'imageFile': datas[row][3]
-                        })
-                    elif self.rbtn_onlySpider.isChecked():
-                        self.paras[url]['exports'].append({
-                            'level': level,
-                            # 'paras': paras,
-                            'tileFolder': datas[row][2],
-                            'imageFile': ''
-                        })
-            try:
-                if fileName != '':
-                    with open(fileName, 'w') as f:
-                        json.dump(self.paras, f)
-            except:
-                log.error("文件存储路径错误，无法保存！", parent=self, dialog=True)
+                self.paras[key]['tileFolder'] = tileFolder
+                self.paras[key]['imageFile'] = imageFile
+        try:
+            if fileName != '':
+                with open(fileName, 'w') as f:
+                    json.dump(self.paras, f)
+        except:
+            log.error("文件存储路径错误，无法保存！", parent=self, dialog=True)
 
     @Slot(QAbstractButton)
     def buttonBox_clicked(self, button: QAbstractButton):
@@ -271,9 +340,16 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     # self.tbl_address.show()
 
+    def return_url_and_level(self, index: QModelIndex):
+        url_index = self.tbl_address.model().index(index.row(), self.url_no)
+        level_index = self.tbl_address.model().index(index.row(), self.level_no)
+        url = self.tbl_address.model().data(url_index, Qt.DisplayRole)
+        level = self.tbl_address.model().data(level_index, Qt.DisplayRole)
+
+        return url_index, level_index, url, level
+
     @Slot()
     def btn_addRow_Clicked(self):
-        log.info("增加一行")
         selModel = self.tbl_address.selectionModel()
         if selModel is None:
             return
@@ -336,6 +412,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         if self.rbtn_onlyHandle.isChecked():
             self.txt_addressFile.setEnabled(False)
             self.btn_addressFile.setEnabled(False)
+            self.txt_addressFile.clear()
 
             self.txt_tileInfoFile.setEnabled(True)
             self.btn_tileInfoDialog.setEnabled(True)
@@ -346,6 +423,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.txt_tilesize.setEnabled(True)
 
             self.txt_level.setEnabled(True)
+            self.btn_obtainMeta.setEnabled(False)
 
             self.model.setHeaderData(0, Qt.Horizontal, "输入瓦片文件夹", Qt.DisplayRole)
             # self.model.setHeaderData(1, Qt.Horizontal, "参数文件", Qt.DisplayRole)
@@ -356,12 +434,16 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.tbl_address.setItemDelegate(delegate)
             self.tbl_address.setColumnWidth(0, self.tbl_address.width() / 2)
             self.tbl_address.setColumnWidth(1, self.tbl_address.width() / 2)
+
+            self.paras = {}
+
         else:
             self.txt_addressFile.setEnabled(True)
             self.btn_addressFile.setEnabled(True)
 
             self.txt_tileInfoFile.setEnabled(False)
             self.btn_tileInfoDialog.setEnabled(False)
+            self.txt_tileInfoFile.clear()
 
             self.txt_originX.setEnabled(False)
             self.txt_originY.setEnabled(False)
@@ -369,6 +451,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.txt_tilesize.setEnabled(False)
 
             self.txt_level.setEnabled(False)
+            self.btn_obtainMeta.setEnabled(True)
 
             # self.model.setHeaderData(0, Qt.Horizontal, "ID", Qt.DisplayRole)
             self.model.setHeaderData(0, Qt.Horizontal, "地址", Qt.DisplayRole)
@@ -400,9 +483,11 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)
                 self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.2)
 
+                self.paras = {}
+
     @Slot()
     def open_addressFile(self):
-        fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择服务地址文件", os.getcwd(),
+        fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择影像服务参数文件", os.getcwd(),
                                                                    "All Files(*)")
         self.txt_addressFile.setText(fileName)
 
@@ -413,30 +498,58 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             with open(fileName, 'r') as f:
                 self.paras = json.load(f)
 
+            self.add_address_rows_from_paras()
+        except:
+            log.error("读取参数文件失败！", dialog=True)
+
+    def add_address_rows_from_paras(self):
+        for kv in self.paras.items():
+            url = kv[0]
+            v = kv[1]
+            imp = v['exports']
+            levels = v['levels']
+
+            for i in range(len(imp)):
+                row = self.model.rowCount(QModelIndex())
+                self.model.addEmptyRow(self.model.rowCount(QModelIndex()), 1, 0)
+
+                url_index = self.tbl_address.model().index(row, self.url_no)
+                level_index = self.tbl_address.model().index(row, self.level_no)
+                self.tbl_address.model().setData(url_index, url)
+                if imp[i]['level'] == -1:
+                    self.tbl_address.model().setData(level_index, "")
+                else:
+                    self.tbl_address.model().setData(level_index, imp[i]['level'])
+                self.tbl_address.model().setData(self.tbl_address.model().index(row, 2), imp[i]['tileFolder'])
+
+                if self.rbtn_spiderAndHandle.isChecked():
+                    self.tbl_address.model().setData(self.tbl_address.model().index(row, 3), imp[i]['imageFile'])
+
+                editor_delegate = self.tbl_address.itemDelegate(level_index)
+                if isinstance(editor_delegate, addressTableDelegate):
+                    self.model.setLevelData(level_index, levels)
+
+    @Slot()
+    def open_tileInfoFile(self):
+        fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择瓦片参数文件", os.getcwd(),
+                                                                   "All Files(*)")
+        self.txt_tileInfoFile.setText(fileName)
+
+        if fileName == "":
+            return
+
+        try:
+            with open(fileName, 'r') as f:
+                self.paras = json.load(f)
+
                 for kv in self.paras.items():
-                    url = kv[0]
-                    v = kv[1]
-                    imp = v['exports']
-                    levels = v['levels']
+                    imp = kv[1]
 
-                    for i in range(len(imp)):
-                        row = self.model.rowCount(QModelIndex())
-                        self.model.addEmptyRow(self.model.rowCount(QModelIndex()), 1, 0)
-                        url_index = self.tbl_address.model().index(row, self.url_no)
-                        level_index = self.tbl_address.model().index(row, self.level_no)
-                        self.tbl_address.model().setData(url_index, url)
-                        if imp[i]['level'] == -1:
-                            self.tbl_address.model().setData(level_index, "")
-                        else:
-                            self.tbl_address.model().setData(level_index, imp[i]['level'])
-                        self.tbl_address.model().setData(self.tbl_address.model().index(row, 2), imp[i]['tileFolder'])
+                    row = self.model.rowCount(QModelIndex())
+                    self.model.addEmptyRow(self.model.rowCount(QModelIndex()), 1, 0)
 
-                        if self.rbtn_spiderAndHandle.isChecked():
-                            self.tbl_address.model().setData(self.tbl_address.model().index(row, 3), imp[i]['imageFile'])
-
-                        editor_delegate = self.tbl_address.itemDelegate(level_index)
-                        if isinstance(editor_delegate, addressTableDelegate):
-                            self.model.setLevelData(level_index, levels)
+                    self.tbl_address.model().setData(self.tbl_address.model().index(row, 0), imp['tileFolder'])
+                    self.tbl_address.model().setData(self.tbl_address.model().index(row, 1), imp['imageFile'])
         except:
             log.error("读取参数文件失败！", dialog=True)
 
@@ -571,10 +684,12 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         }
         return dict
 
-    def update_txt_info(self, index: QModelIndex, level):
+    def update_txt_info(self, index: QModelIndex, level=-1):
         print([index.row(), index.column()])
-        url_index = self.tbl_address.model().index(index.row(), self.url_no)
-        url = self.tbl_address.model().data(url_index, Qt.DisplayRole)
+        key1_index = self.tbl_address.model().index(index.row(), 0)
+        key1 = self.tbl_address.model().data(key1_index, Qt.DisplayRole)
+        key2_index = self.tbl_address.model().index(index.row(), 1)
+        key2 = self.tbl_address.model().data(key2_index, Qt.DisplayRole)
 
         self.txt_level.setText("")
         self.txt_originX.setText("")
@@ -586,22 +701,40 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.txt_tilesize.setText("")
         self.txt_resolution.setText("")
 
-        if url not in self.paras:
-            return
+        bUpdate = False
+        if self.rbtn_spiderAndHandle.isChecked() or self.rbtn_onlySpider.isChecked():
+            if key1 not in self.paras:
+                return
 
-        if level in self.paras[url]['paras']:
-            getInfo = self.paras[url]['paras'][level]
+            if level in self.paras[key1]['paras']:
+                getInfo = self.paras[key1]['paras'][level]
+                self.txt_level.setText(str(level))
+                bUpdate = True
+        else:
+            key = key1 + "_" + key2
+            if key in self.paras:
+                getInfo = self.paras[key]
+                bUpdate = True
+            else:
+                bUpdate = False
 
-            self.txt_level.setText(str(level))
-            self.txt_originX.setText(str(getInfo['origin_x']))
-            self.txt_originY.setText(str(getInfo['origin_y']))
-            self.txt_xmin.setText(str(getInfo['xmin']))
-            self.txt_xmax.setText(str(getInfo['xmax']))
-            self.txt_ymin.setText(str(getInfo['ymin']))
-            self.txt_ymax.setText(str(getInfo['ymax']))
-            self.txt_tilesize.setText(str(getInfo['tilesize']))
-            self.txt_resolution.setText(str(getInfo['resolution']))
-
+        if bUpdate:
+            if 'origin_x' in getInfo:
+                self.txt_originX.setText(str(getInfo['origin_x']))
+            if 'origin_y' in getInfo:
+                self.txt_originY.setText(str(getInfo['origin_y']))
+            if 'xmin' in getInfo:
+                self.txt_xmin.setText(str(getInfo['xmin']))
+            if 'xmax' in getInfo:
+                self.txt_xmax.setText(str(getInfo['xmax']))
+            if 'ymin' in getInfo:
+                self.txt_ymin.setText(str(getInfo['ymin']))
+            if 'ymax' in getInfo:
+                self.txt_ymax.setText(str(getInfo['ymax']))
+            if 'tilesize' in getInfo:
+                self.txt_tilesize.setText(str(getInfo['tilesize']))
+            if 'resolution' in getInfo:
+                self.txt_resolution.setText(str(getInfo['resolution']))
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

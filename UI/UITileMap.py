@@ -479,6 +479,7 @@ class Ui_Dialog(object):
         font = QtGui.QFont()
         font.setFamily("微软雅黑")
         self.txt_log.setFont(font)
+        self.txt_log.setReadOnly(False)
         self.txt_log.setObjectName("txt_log")
 
         self.retranslateUi(Dialog)
@@ -494,7 +495,7 @@ class Ui_Dialog(object):
         self.label_2.setText(_translate("Dialog", "加载批处理瓦片参数文件"))
         self.btn_addRow.setToolTip(_translate("Dialog", "增加服务项"))
         self.btn_removeRow.setToolTip(_translate("Dialog", "删除服务项"))
-        self.btn_obtainMeta.setToolTip(_translate("Dialog", "获取参数数据"))
+        self.btn_obtainMeta.setToolTip(_translate("Dialog", "获取远程参数数据"))
         self.btn_saveMetaFile.setToolTip(_translate("Dialog", "保存参数文件"))
         self.label_23.setText(_translate("Dialog", "瓦片等级:"))
         self.label_19.setText(_translate("Dialog", "初始x坐标:"))

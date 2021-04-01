@@ -16,36 +16,36 @@ try_num = 10
     '--input-folder', '-f',
     help='Tiles folder. For example, D:/tilemap/8',
     required=True)
-@click.option(
-    '--url', '-u',
-    help='Input url. For example, http://suplicmap.pnr.sz/dynaszmap_3/rest/services/SZMAP_DLJT_GKDL/MapServer',
-    required=False)
-@click.option(
-    '--level', '-l',
-    help='tile level. For example, 8',
-    type=int,
-    default=0,
-    required=True)
+# @click.option(
+#     '--url', '-u',
+#     help='Input url. For example, http://suplicmap.pnr.sz/dynaszmap_3/rest/services/SZMAP_DLJT_GKDL/MapServer',
+#     required=False)
+# @click.option(
+#     '--level', '-l',
+#     help='tile level. For example, 8',
+#     type=int,
+#     default=0,
+#     required=True)
 @click.option(
     '--scope', '-s', type=(float, float, float, float),
     help='The geographical range of map, [min_row, max_row, min_col, max_col]. '
          'For example, 80574.81260346594 176816.21260346594 1012.1329692534127 56528.33296925342]. If url is set, will ignore this value. ',
     # default = [113.71108739900001, 114.64969729900001, 22.437257323, 22.872570623],
     # default=[80574.81260346594, 176816.21260346594, 1012.1329692534127, 56528.33296925342],
-    default = [None, None, None, None],
-    required=False)
+    default=[None, None, None, None],
+    required=True)
 @click.option(
     '--origin', type=(float, float),
     help='The origin x and y of tiles. For example, -5123300 10002300. If url is set, will ignore this value.',
     # default=[-180.0, 90.0],
-    default = [None, None],
-    required=False)
+    default=[None, None],
+    required=True)
 @click.option(
     '--resolution',
     help='The tile resolution. For example, 13.229193125052918. If url is set, will ignore this value.',
     type=float,
     # default=0.0013732910156250004, # level 0
-    required=False)
+    required=True)
 @click.option(
     '--tilesize', '-t',
     help='The tile size, the default is 256.',
@@ -56,8 +56,8 @@ try_num = 10
     '--merged-file', '-o',
     help='The name of merged file. For example, res/2019_image_data.tif.',
     required=True)
-def main(input_folder, url, level, scope, origin, resolution, tilesize, merged_file):
-    merge_tiles(input_folder, url, level, scope, origin, resolution, tilesize, merged_file)
+def main(input_folder, scope, origin, resolution, tilesize, merged_file):
+    merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file)
 
 
 def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
@@ -134,7 +134,7 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
     out_g = out_ds.GetRasterBand(2)
     out_b = out_ds.GetRasterBand(3)
 
-    log.info('开始拼接')
+    log.info('开始拼接...')
     icount = 0
     for root, subDir, files in os.walk(input_folder):  # e:/8_res E:/Source code/TrafficDataAnalysis/Spider/res/tilemap/5
         for filename in files:
@@ -191,18 +191,19 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
     log.info("影像金字塔构建成功.")
 
     end = time.time()
-    log.info("所有操作OK!耗时" + str(end - start))
+    # log.info('合并瓦片任务完成！影像存储至{}.'.format(merged_file))
+    log.info("合并瓦片任务完成! 总共耗时{}. 影像存储至{}.".format(str(end - start), merged_file))
 
 
 def create_merge_file(temp_file, tilewidth, tileheight, tilesize):
     try:
-        log.info('开始创建merged_file...')
+        # log.info('开始创建merged_file...')
         dr = gdal.GetDriverByName("GTiff")
         out_ds = dr.Create(temp_file, tilewidth * tilesize, tileheight * tilesize, 3, gdal.GDT_Int16, options=["BIGTIFF=YES", "COMPRESS=LZW", "TILED=YES", "INTERLEAVE=PIXEL"])
-        log.info('创建成功.')
+        # log.info('创建成功.')
         return out_ds
     except:
-        log.error('创建失败!' + traceback.format_exc())
+        log.error('创建影像文件失败!' + traceback.format_exc())
         return None
 
 

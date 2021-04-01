@@ -131,7 +131,8 @@ def craw_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_si
     end = time.time()
     if lock.locked():
         lock.release()
-    log.info('完成抓取.耗时：' + str(end - start))
+    # log.info('爬取瓦片任务完成！瓦片存储至{}.'.format(output_path))
+    log.info('爬取瓦片任务完成！总共耗时:{}. 瓦片存储至{}.'.format(str(end - start), output_path))
     return True
 
 
