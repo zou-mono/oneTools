@@ -10,8 +10,7 @@ import sys
 import json
 import os
 import re
-import base64
-from UICore.Gv import SplitterState, Dock, defaultImageFile, defaultTileFolder
+from UICore.Gv import SplitterState, Dock, defaultImageFile, defaultTileFolder, urlEncodeToFileName
 from widgets.mTable import TableModel, mTableStyle, addressTableDelegate
 from UICore.log4p import Log
 from suplicmap_tilemap import craw_tilemap, get_json
@@ -82,7 +81,14 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         log.setLogViewer(parent=self, logViewer=self.txt_log)
         self.txt_log.setReadOnly(True)
 
+        #  最后运算过程放至到另一个线程避免GUI卡住
         self.thread = QThread()
+        self.crawlTilesThread = crawlTilesWorker()
+        self.crawlTilesThread.moveToThread(self.thread)
+        self.crawlTilesThread.crawl.connect(self.crawlTilesThread.crawlTiles)
+        self.crawlTilesThread.crawlAndMerge.connect(self.crawlTilesThread.crawlAndMergeTiles)
+        self.crawlTilesThread.finished.connect(self.threadStop)
+        self.crawlTilesThread.merge.connect(self.crawlTilesThread.mergeTiles)
 
     def update_para_value(self, key, value):
         if self.selIndex.row() < 0:
@@ -102,7 +108,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     key: value
                 }
         else:
-            url_index, level_index, url, level = self.return_url_and_level(self.selIndex)
+            url_index, level_index, url, level = self.return_url_and_level(self.selIndex.row())
             if url in self.paras:
                 if level in self.paras[url]['paras']:
                     self.paras[url]['paras'][level][key] = value
@@ -236,70 +242,93 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     @Slot(QAbstractButton)
     def buttonBox_clicked(self, button: QAbstractButton):
         if button == self.buttonBox.button(QDialogButtonBox.Ok):
-            self.crawlTilesThread = crawlTilesWorker()
-            self.crawlTilesThread.moveToThread(self.thread)
-            self.crawlTilesThread.crawl.connect(self.crawlTilesThread.crawlTiles)
-            self.crawlTilesThread.crawlAndMerge.connect(self.crawlTilesThread.crawlAndMergeTiles)
-            # self.thread.started.connect(self.crawlTilesThread.crawlTiles)
-            self.crawlTilesThread.finished.connect(self.threadStop)
+            if not self.check_paras():
+                return
+
             self.thread.start()
-
-            rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
-            for row in rows:
-                level_index = self.tbl_address.model().index(row, self.level_no, QModelIndex())
-                url_index = self.tbl_address.model().index(row, self.url_no, QModelIndex())
-                url = str(self.tbl_address.model().data(url_index, Qt.DisplayRole)).strip()
-                level = str(self.tbl_address.model().data(level_index, Qt.DisplayRole)).strip()
-
-                if url == "":
-                    log.error('第{}行参数缺失必要参数"地址"，请补全！'.format(row))
-                    continue
-                if level == "":
-                    log.error('第{}行参数缺失必要参数"等级"，请补全！'.format(row))
-                    continue
-
-                paras = self.paras[url]['paras'][level]
-
-                if self.rbtn_spiderAndHandle.isChecked():
-                    tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
-                    imgFile_index = self.tbl_address.model().index(row, 3, QModelIndex())
-                    tileFolder = str(self.tbl_address.model().data(tileFolder_index, Qt.DisplayRole)).strip()
-                    imgFile = str(self.tbl_address.model().data(imgFile_index, Qt.DisplayRole)).strip()
-
-                    if tileFolder == "":
-                        tileFolder = defaultTileFolder(url, level)
-                        log.info('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认参数{}'.format(row, tileFolder))
-                    else:
-                        url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
-                        tileFolder = os.path.join(tileFolder, url_encodeStr, str(level))
-                        if not os.path.exists(tileFolder):
-                            os.makedirs(tileFolder)
-
-                    if imgFile == "":
-                        imgFile = defaultImageFile(url, level)
-                        log.info('第{}行参数缺失非必要参数"输出影像文件"，将使用默认参数{}'.format(row, imgFile))
-
-                    self.crawlTilesThread.crawlAndMerge.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
-                                                     float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
-                                                     float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']),
-                                                             tileFolder, imgFile)
-                elif self.rbtn_onlySpider.isChecked():
-                    tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
-                    tileFolder = str(self.tbl_address.model().data(tileFolder_index, Qt.DisplayRole)).strip()
-                    if tileFolder == "":
-                        tileFolder = defaultTileFolder(url, level)
-                        log.info('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认参数{}'.format(row, tileFolder))
-                    else:
-                        url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
-                        tileFolder = os.path.join(tileFolder, url_encodeStr, str(level))
-                        if not os.path.exists(tileFolder):
-                            os.makedirs(tileFolder)
-
-                    self.crawlTilesThread.crawl.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
-                                                     float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
-                                                     float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']), tileFolder)
+            self.run_process()
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
             self.close()
+
+    def run_process(self):
+        rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
+        for row in rows:
+            level_index, url_index, url, level = self.return_url_and_level(row)
+
+            if self.rbtn_spiderAndHandle.isChecked():
+                paras = self.paras[url]['paras'][level]
+                tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
+                imgFile_index = self.tbl_address.model().index(row, 3, QModelIndex())
+                tileFolder = str(self.tbl_address.model().data(tileFolder_index, Qt.DisplayRole)).strip()
+                imgFile = str(self.tbl_address.model().data(imgFile_index, Qt.DisplayRole)).strip()
+
+                if tileFolder == "":
+                    tileFolder = defaultTileFolder(url, level)
+                    log.info('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认参数{}'.format(row, tileFolder))
+                else:
+                    url_encodeStr = urlEncodeToFileName(url)
+                    tileFolder = os.path.join(tileFolder, url_encodeStr, str(level))
+                    if not os.path.exists(tileFolder):
+                        os.makedirs(tileFolder)
+
+                if imgFile == "":
+                    imgFile = defaultImageFile(url, level)
+                    log.info('第{}行参数缺失非必要参数"输出影像文件"，将使用默认参数{}'.format(row, imgFile))
+
+                self.crawlTilesThread.crawlAndMerge.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
+                                                         float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
+                                                         float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']),
+                                                         tileFolder, imgFile)
+            elif self.rbtn_onlySpider.isChecked():
+                paras = self.paras[url]['paras'][level]
+                tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
+                tileFolder = str(self.tbl_address.model().data(tileFolder_index, Qt.DisplayRole)).strip()
+                if tileFolder == "":
+                    tileFolder = defaultTileFolder(url, level)
+                    log.info('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认参数{}'.format(row, tileFolder))
+                else:
+                    url_encodeStr = urlEncodeToFileName(url)
+                    tileFolder = os.path.join(tileFolder, url_encodeStr, str(level))
+                    if not os.path.exists(tileFolder):
+                        os.makedirs(tileFolder)
+
+                self.crawlTilesThread.crawl.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
+                                                 float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
+                                                 float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']), tileFolder)
+            elif self.rbtn_onlyHandle.isChecked():
+                key = url + "_" + level
+                paras = self.paras[key]
+                imgFile_index = self.tbl_address.model().index(row, 1, QModelIndex())
+                imgFile = str(self.tbl_address.model().data(imgFile_index, Qt.DisplayRole)).strip()
+                if imgFile == "":
+                    imgFile = defaultImageFile(url, level)
+                    log.info('第{}行参数缺失非必要参数"输出影像文件"，将使用默认参数{}'.format(row, imgFile))
+
+                self.crawlTilesThread.merge.emit(url, int(paras['origin_x']), int(paras['origin_y']),
+                                                 float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
+                                                 float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']), imgFile)
+
+    def check_paras(self):
+        rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
+        for row in rows:
+            level_index = self.tbl_address.model().index(row, self.level_no, QModelIndex())
+            url_index = self.tbl_address.model().index(row, self.url_no, QModelIndex())
+            url = str(self.tbl_address.model().data(url_index, Qt.DisplayRole)).strip()
+            level = str(self.tbl_address.model().data(level_index, Qt.DisplayRole)).strip()
+
+            if self.rbtn_spiderAndHandle.isChecked() or self.rbtn_onlySpider.isChecked():
+                if url == "":
+                    log.error('第{}行参数缺失必要参数"地址"，请补全！'.format(row), dialog=True)
+                    return False
+                if level == "":
+                    log.error('第{}行参数缺失必要参数"等级"，请补全！'.format(row), dialog=True)
+                    return False
+            elif self.rbtn_onlyHandle.isChecked():
+                if url == "":
+                    log.error('第{}行参数缺失必要参数"瓦片文件夹"，请补全！'.format(row), dialog=True)
+                    return False
+        return True
+
 
     def threadStop(self):
         self.thread.quit()
@@ -340,9 +369,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     # self.tbl_address.show()
 
-    def return_url_and_level(self, index: QModelIndex):
-        url_index = self.tbl_address.model().index(index.row(), self.url_no)
-        level_index = self.tbl_address.model().index(index.row(), self.level_no)
+    def return_url_and_level(self, logicRow):
+        url_index = self.tbl_address.model().index(logicRow, self.url_no)
+        level_index = self.tbl_address.model().index(logicRow, self.level_no)
         url = self.tbl_address.model().data(url_index, Qt.DisplayRole)
         level = self.tbl_address.model().data(level_index, Qt.DisplayRole)
 

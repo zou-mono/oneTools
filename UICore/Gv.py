@@ -27,11 +27,17 @@ def singleton(cls):
 
 
 def defaultTileFolder(url, level):
-    url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
+    # url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
+    url_encodeStr = urlEncodeToFileName(url)
     path = os.path.join(os.getcwd(), "data", "tiles", url_encodeStr, str(level))
     if not os.path.exists(path):
         os.makedirs(path)
     return path
+
+
+def urlEncodeToFileName(url):
+    url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
+    return url_encodeStr
 
 
 def defaultImageFile(url, level):
