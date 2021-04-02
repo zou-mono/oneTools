@@ -95,6 +95,8 @@ class mTableStyle(QProxyStyle):
 
 
 class addressTableDelegate(QStyledItemDelegate):
+    startEditor = pyqtSignal(object)
+
     def __init__(self, parent, buttonSection, orientation=Qt.Horizontal):
         # buttonColumn用来记录需要设置按钮的单元格
         # orientation用来表示需要设置按钮的表头方向，horizontal表示所有列都设置按钮, vertical表示所有行都设置按钮
@@ -135,6 +137,8 @@ class addressTableDelegate(QStyledItemDelegate):
                 return self.mAddressDialog
         else:
             return super().createEditor(parent, option, index)
+
+        self.startEditor.emit(index)
 
     def cmb_selectionchange(self, i):
         if i > -1:
@@ -184,9 +188,15 @@ class addressTableDelegate(QStyledItemDelegate):
         return self._isEditing
 
     def commitAndCloseEditor(self):
+        url_index, level_index, url, level = self.mainWindow.return_url_and_level(self.index.row())
+        old_key = url + "_" + level
         editor = self.sender()
         self.commitData.emit(editor)
         self.closeEditor.emit(editor)
+        new_url_index, new_level_index, new_url, new_level = self.mainWindow.return_url_and_level(self.index.row())
+        new_key = new_url + "_" + new_level
+        if old_key != new_key:
+            self.mainWindow.update_all_paras_value(old_key, new_key)
 
     def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: 'QStyleOptionViewItem', index: QModelIndex) -> bool:
         if (event.type() == QEvent.MouseButtonPress and

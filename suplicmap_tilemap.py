@@ -9,6 +9,7 @@ import math
 import click
 import traceback
 from UICore.asyncRequest import send_http
+from UICore.Gv import get_col_row
 
 try_num = 5
 coroutine_num = 3000  # 协程数
@@ -132,7 +133,7 @@ def craw_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_si
     if lock.locked():
         lock.release()
     # log.info('爬取瓦片任务完成！瓦片存储至{}.'.format(output_path))
-    log.info('爬取瓦片任务完成！总共耗时:{}. 瓦片存储至{}.'.format(str(end - start), output_path))
+    log.info('爬取瓦片任务完成！总共耗时:{}秒. 瓦片存储至{}.'.format("{:.2f}".format(end - start), output_path))
     return True
 
 
@@ -224,35 +225,6 @@ def get_lod(lods, level):
         if lod['level'] == level:
             return lod
 
-
-def get_col_row(x0, y0, x, y, size, resolution):
-    col = math.floor(math.fabs((x0 - x) / (size * resolution)))
-    row = math.floor(math.fabs((y0 - y) / (size * resolution)))
-
-    return col, row
-
-def get_json(url):
-    # 定义请求头
-    reqheaders = {'Content-Type': 'application/x-www-form-urlencoded',
-                  'Host': 'suplicmap.pnr.sz',
-                  'Pragma': 'no-cache'}
-    # 请求不同页面的数据
-    trytime = 0
-    while trytime < try_num:
-        try:
-            req = urllib.request.Request(url=url, headers=reqheaders)
-            r = urllib.request.urlopen(req)
-            respData = r.read().decode('utf-8', 'ignore')
-            # return respData
-            res = json.loads(respData)
-            if 'error' not in res.keys():
-                return res
-        except:
-            # log.error('HTTP请求失败！重新尝试...')
-            trytime += 1
-
-        time.sleep(2)
-        continue
 
 if __name__ == '__main__':
     main()

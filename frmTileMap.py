@@ -1,3 +1,4 @@
+import base64
 import time
 
 from PyQt5.QtCore import QRect, Qt, QPersistentModelIndex, QItemSelectionModel, QModelIndex, QThread
@@ -10,11 +11,9 @@ import sys
 import json
 import os
 import re
-from UICore.Gv import SplitterState, Dock, defaultImageFile, defaultTileFolder, urlEncodeToFileName
+from UICore.Gv import SplitterState, Dock, defaultImageFile, defaultTileFolder, urlEncodeToFileName, get_json
 from widgets.mTable import TableModel, mTableStyle, addressTableDelegate
 from UICore.log4p import Log
-from suplicmap_tilemap import craw_tilemap, get_json
-from merge_tiles import merge_tiles
 from UICore.workerThread import crawlTilesWorker
 
 Slot = QtCore.pyqtSlot
@@ -59,7 +58,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.btn_obtainMeta.clicked.connect(self.btn_obtainMeta_clicked)
         self.buttonBox.clicked.connect(self.buttonBox_clicked)
         self.btn_saveMetaFile.clicked.connect(self.btn_saveMetaFile_clicked)
-        self.tbl_address.clicked.connect(self.table_index_clicked)
 
         self.btn_tileInfoDialog.clicked.connect(self.open_tileInfoFile)
         self.btn_addressFile.clicked.connect(self.open_addressFile)
@@ -72,6 +70,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.txt_ymax.editingFinished.connect(self.txt_ymax_edited)
         self.txt_resolution.editingFinished.connect(self.txt_resolution_edited)
         self.txt_tilesize.editingFinished.connect(self.txt_tilesize_edited)
+
+        self.tbl_address.clicked.connect(self.table_index_clicked)
 
         self.validateValue()
 
@@ -90,9 +90,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.crawlTilesThread.finished.connect(self.threadStop)
         self.crawlTilesThread.merge.connect(self.crawlTilesThread.mergeTiles)
 
-    def update_para_value(self, key, value):
-        if self.selIndex.row() < 0:
-            print("not sel")
+    def update_para_value(self, key, editor, bSel=True):
+        value = editor.text()
+        if bSel and self.selIndex.row() < 0:
             return
         if self.rbtn_onlyHandle.isChecked():
             tileFolder_index = self.tbl_address.model().index(self.selIndex.row(), 0)
@@ -112,38 +112,45 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             if url in self.paras:
                 if level in self.paras[url]['paras']:
                     self.paras[url]['paras'][level][key] = value
+        editor.home(False)
+
+    def update_all_paras_value(self, oldValue, newValue):
+        print(oldValue)
+        if self.rbtn_onlyHandle.isChecked():
+            del self.paras[oldValue]
+            self.paras[newValue] = self.update_para_dict()
 
     @Slot()
     def txt_originX_edited(self):
-        self.update_para_value("origin_x", self.txt_originX.text())
+        self.update_para_value("origin_x", self.txt_originX)
 
     @Slot()
     def txt_originY_edited(self):
-        self.update_para_value("origin_y", self.txt_originY.text())
+        self.update_para_value("origin_y", self.txt_originY)
 
     @Slot()
     def txt_xmin_edited(self):
-        self.update_para_value("xmin", self.txt_xmin.text())
+        self.update_para_value("xmin", self.txt_xmin)
 
     @Slot()
     def txt_xmax_edited(self):
-        self.update_para_value("xmax", self.txt_xmax.text())
+        self.update_para_value("xmax", self.txt_xmax)
 
     @Slot()
     def txt_ymin_edited(self):
-        self.update_para_value("ymin", self.txt_ymin.text())
+        self.update_para_value("ymin", self.txt_ymin)
 
     @Slot()
     def txt_ymax_edited(self):
-        self.update_para_value("ymax", self.txt_ymax.text())
+        self.update_para_value("ymax", self.txt_ymax)
 
     @Slot()
     def txt_resolution_edited(self):
-        self.update_para_value("resolution", self.txt_resolution.text())
+        self.update_para_value("resolution", self.txt_resolution)
 
     @Slot()
     def txt_tilesize_edited(self):
-        self.update_para_value("tilesize", self.txt_tilesize.text())
+        self.update_para_value("tilesize", self.txt_tilesize)
 
     def row_clicked(self, logicRow):
         if self.rbtn_spiderAndHandle.isChecked() or self.rbtn_onlySpider.isChecked():
@@ -164,6 +171,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     @Slot(QModelIndex)
     def table_index_clicked(self, index):
         self.row_clicked(index.row())
+        print([index.row(), index.column()])
 
     @Slot()
     def btn_saveMetaFile_clicked(self):
@@ -230,8 +238,13 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 imageFile = datas[row][1]
                 key = tileFolder + "_" + imageFile
 
-                self.paras[key]['tileFolder'] = tileFolder
-                self.paras[key]['imageFile'] = imageFile
+                if key in self.paras:
+                    self.paras[key]['tileFolder'] = tileFolder
+                    self.paras[key]['imageFile'] = imageFile
+                else:
+                    self.paras[key] = self.update_para_dict()
+                    self.paras[key]['tileFolder'] = tileFolder
+                    self.paras[key]['imageFile'] = imageFile
         try:
             if fileName != '':
                 with open(fileName, 'w') as f:
@@ -451,7 +464,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.txt_resolution.setEnabled(True)
             self.txt_tilesize.setEnabled(True)
 
-            self.txt_level.setEnabled(True)
+            self.txt_level.setEnabled(False)
             self.btn_obtainMeta.setEnabled(False)
 
             self.model.setHeaderData(0, Qt.Horizontal, "输入瓦片文件夹", Qt.DisplayRole)
@@ -594,14 +607,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         if self.rbtn_onlyHandle.isChecked():
             return
 
-        # 测试
-        # with open("data/tile_Info.json", 'r') as j:
-        #     self.getInfo = json.load(j)
-        # self.lods = self.getInfo['tileInfo']['lods']
-        # levels = []
-        # for lod in self.lods:
-        #     levels.append(lod["level"])
-
         ## 如果有被选中的行，则只获取被选中行的信息
         if len(indexes) > 0:
             rows = sorted(set(index.row() for index in
@@ -683,7 +688,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     'resolution': resolution
                 }
 
-        url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
+        url_encodeStr = urlEncodeToFileName(url)
         self.paras[url] = {
             'code': url_encodeStr,
             'levels': levels,
@@ -714,7 +719,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         return dict
 
     def update_txt_info(self, index: QModelIndex, level=-1):
-        print([index.row(), index.column()])
+        # print([index.row(), index.column()])
         key1_index = self.tbl_address.model().index(index.row(), 0)
         key1 = self.tbl_address.model().data(key1_index, Qt.DisplayRole)
         key2_index = self.tbl_address.model().index(index.row(), 1)
@@ -750,20 +755,28 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         if bUpdate:
             if 'origin_x' in getInfo:
                 self.txt_originX.setText(str(getInfo['origin_x']))
+                self.txt_originX.home(False)
             if 'origin_y' in getInfo:
                 self.txt_originY.setText(str(getInfo['origin_y']))
+                self.txt_originY.home(False)
             if 'xmin' in getInfo:
                 self.txt_xmin.setText(str(getInfo['xmin']))
+                self.txt_xmin.home(False)
             if 'xmax' in getInfo:
                 self.txt_xmax.setText(str(getInfo['xmax']))
+                self.txt_xmax.home(False)
             if 'ymin' in getInfo:
                 self.txt_ymin.setText(str(getInfo['ymin']))
+                self.txt_ymin.home(False)
             if 'ymax' in getInfo:
                 self.txt_ymax.setText(str(getInfo['ymax']))
+                self.txt_ymax.home(False)
             if 'tilesize' in getInfo:
                 self.txt_tilesize.setText(str(getInfo['tilesize']))
+                self.txt_tilesize.home(False)
             if 'resolution' in getInfo:
                 self.txt_resolution.setText(str(getInfo['resolution']))
+                self.txt_resolution.home(False)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

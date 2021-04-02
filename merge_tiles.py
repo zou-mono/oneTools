@@ -7,6 +7,7 @@ import math
 import traceback
 import urllib.request, urllib.parse
 import json
+from UICore.Gv import get_col_row
 
 log = Log()
 try_num = 10
@@ -61,42 +62,6 @@ def main(input_folder, scope, origin, resolution, tilesize, merged_file):
 
 
 def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
-    # if url is not None:
-        # if url[-1] == r"/":
-        #     url = url[:-1]
-
-        # url_json = url + "?f=pjson"
-        # getInfo = get_json(url_json)
-
-        # tilesize = getInfo['tileInfo']['rows']  # 瓦片尺寸
-        # originX = getInfo['tileInfo']['origin']['x']  # 初始x
-        # originY = getInfo['tileInfo']['origin']['y']  # 初始y
-        # minX = getInfo['extent']['xmin']  # xmin
-        # minY = getInfo['extent']['ymin']  # ymin
-        # maxX = getInfo['extent']['xmax']  # xmax
-        # maxY = getInfo['extent']['ymax']  # ymax
-
-        # lods = getInfo['tileInfo']['lods']  # lod信息
-        # lod = get_lod(lods, level)
-        # resolution = lod['resolution']
-
-    # else:
-    #     if origin is None:
-    #         log.error("missing origin!")
-    #         return
-    #     if scope is None:
-    #         log.error("missing scope!")
-    #         return
-    #     if resolution is None:
-    #         log.error("missing resolution!")
-    #         return
-    #
-    #     originX = origin[0]
-    #     originY = origin[1]
-    #     minX = scope[0]
-    #     maxX = scope[1]
-    #     minY = scope[2]
-    #     maxY = scope[3]
     originX = origin[0]
     originY = origin[1]
     minX = scope[0]
@@ -136,6 +101,8 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
 
     log.info('开始拼接...')
     icount = 0
+    iprop = 1
+    total_count = tilewidth * tileheight
     for root, subDir, files in os.walk(input_folder):  # e:/8_res E:/Source code/TrafficDataAnalysis/Spider/res/tilemap/5
         for filename in files:
             ds = gdal.Open(os.path.join(root, filename))
@@ -158,12 +125,19 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
             # out_b.FlushCache()
 
             icount += 1
-            # print(icount)
-            if icount % 1000 == 0:
-                log.debug(icount)
-    log.info('拼接完成.')
+            # if icount % 1000 == 0:
+            #     log.debug("{:.0%}".format(icount / total_count))
+            if int(icount * 100 / total_count) == iprop * 20:
+                log.debug("{:.0%}".format(icount / total_count))
+                iprop += 1
     out_ds = None
     dr = None
+
+    if icount != total_count:
+        log.error("拼接存在错误，请检查参数或者瓦片的完整性！")
+        return
+    else:
+        log.info('拼接完成.')
 
     log.info("开始影像纠偏...")
     gcp_x0 = math.floor(((minX - originX) - min_col * (resolution * tilesize)) / resolution)
@@ -191,8 +165,7 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
     log.info("影像金字塔构建成功.")
 
     end = time.time()
-    # log.info('合并瓦片任务完成！影像存储至{}.'.format(merged_file))
-    log.info("合并瓦片任务完成! 总共耗时{}. 影像存储至{}.".format(str(end - start), merged_file))
+    log.info("合并瓦片任务完成! 总共耗时{}秒. 影像存储至{}.".format("{:.2f}".format(end - start), merged_file))
 
 
 def create_merge_file(temp_file, tilewidth, tileheight, tilesize):
@@ -205,37 +178,6 @@ def create_merge_file(temp_file, tilewidth, tileheight, tilesize):
     except:
         log.error('创建影像文件失败!' + traceback.format_exc())
         return None
-
-
-def get_col_row(x0, y0, x, y, size, resolution):
-    col = math.floor(math.fabs((x0 - x) / (size * resolution)))
-    row = math.floor(math.fabs((y0 - y) / (size * resolution)))
-
-    return col, row
-
-
-def get_json(url):
-    # 定义请求头
-    reqheaders = {'Content-Type': 'application/x-www-form-urlencoded',
-                  'Host': 'suplicmap.pnr.sz',
-                  'Pragma': 'no-cache'}
-    # 请求不同页面的数据
-    trytime = 0
-    while trytime < try_num:
-        try:
-            req = urllib.request.Request(url=url, headers=reqheaders)
-            r = urllib.request.urlopen(req)
-            respData = r.read().decode('utf-8')
-            # return respData
-            res = json.loads(respData)
-            if 'error' not in res.keys():
-                return res
-        except:
-            # log.error('HTTP请求失败！重新尝试...')
-            trytime += 1
-
-        time.sleep(2)
-        continue
 
 
 def get_lod(lods, level):

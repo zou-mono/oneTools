@@ -1,7 +1,11 @@
 import base64
+import json
+import math
 import os
 import sys
+import time
 from enum import Enum
+import urllib.request, urllib.parse
 
 class Dock(Enum):
     left = 0
@@ -59,3 +63,35 @@ def launderName(name):
         return name
     else:
         return launderName(name)
+
+
+def get_json(url):
+    try_num = 5
+    # 定义请求头
+    reqheaders = {'Content-Type': 'application/x-www-form-urlencoded',
+                  'Host': 'suplicmap.pnr.sz',
+                  'Pragma': 'no-cache'}
+    # 请求不同页面的数据
+    trytime = 0
+    while trytime < try_num:
+        try:
+            req = urllib.request.Request(url=url, headers=reqheaders)
+            r = urllib.request.urlopen(req)
+            respData = r.read().decode('utf-8', 'ignore')
+            # return respData
+            res = json.loads(respData)
+            if 'error' not in res.keys():
+                return res
+        except:
+            # log.error('HTTP请求失败！重新尝试...')
+            trytime += 1
+
+        time.sleep(2)
+        continue
+
+
+def get_col_row(x0, y0, x, y, size, resolution):
+    col = math.floor(math.fabs((x0 - x) / (size * resolution)))
+    row = math.floor(math.fabs((y0 - y) / (size * resolution)))
+
+    return col, row
