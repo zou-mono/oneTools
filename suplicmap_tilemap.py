@@ -9,7 +9,7 @@ import math
 import click
 import traceback
 from UICore.asyncRequest import send_http
-from UICore.Gv import get_col_row
+from UICore.common import get_col_row
 
 try_num = 5
 coroutine_num = 3000  # 协程数
@@ -24,7 +24,8 @@ lock = asyncio.Lock()
               required=True)
 @click.option(
     '--file-name', '-f',
-    help='If need to merge tiles, should offer output name of merged image. For example, 2019_image_data. If no need to merge tiles, omit.',
+    help='If need to merge tiles, should offer output name of merged image. For example, '
+         '2019_image_data. If no need to merge tiles, omit.',
     required=False)
 @click.option(
     '--sr', '-s',

@@ -11,7 +11,8 @@ import sys
 import json
 import os
 import re
-from UICore.Gv import SplitterState, Dock, defaultImageFile, defaultTileFolder, urlEncodeToFileName, get_json
+from UICore.Gv import SplitterState, Dock
+from UICore.common import defaultImageFile, defaultTileFolder, urlEncodeToFileName, get_paraInfo
 from widgets.mTable import TableModel, mTableStyle, addressTableDelegate
 from UICore.log4p import Log
 from UICore.workerThread import crawlTilesWorker
@@ -171,7 +172,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     @Slot(QModelIndex)
     def table_index_clicked(self, index):
         self.row_clicked(index.row())
-        print([index.row(), index.column()])
 
     @Slot()
     def btn_saveMetaFile_clicked(self):
@@ -471,7 +471,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             # self.model.setHeaderData(1, Qt.Horizontal, "参数文件", Qt.DisplayRole)
             self.model.setHeaderData(1, Qt.Horizontal, "输出影像文件", Qt.DisplayRole)
             delegate = addressTableDelegate(self, [{'text': "请选择瓦片文件夹", 'type': "d"},
-                                                   {'text': "请选择输出影像文件", 'type': "f"}])
+                                                   {'text': "请选择或创建影像文件", 'type': "f"}])
             self.tbl_address.setModel(self.model)
             self.tbl_address.setItemDelegate(delegate)
             self.tbl_address.setColumnWidth(0, self.tbl_address.width() / 2)
@@ -624,7 +624,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             if url == "": continue
 
             # if url not in self.paras.keys():
-            getInfo = self.get_paraInfo(url)
+            getInfo = get_paraInfo(url)
             if getInfo is None:
                 log.error(url + "无法获取远程参数信息，请检查地址是否正确以及网络是否连通！")
                 continue
@@ -694,16 +694,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             'levels': levels,
             'paras': paras
         }
-
-    def get_paraInfo(self, url):
-        http = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-        res = re.match(http, string=url)
-        url_json = url + "?f=pjson"
-        if res is not None:
-            getInfo = get_json(url_json)
-            return getInfo
-        else:
-            return None
 
     def update_para_dict(self):
         dict = {

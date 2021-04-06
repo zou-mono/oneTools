@@ -7,7 +7,7 @@ import math
 import traceback
 import urllib.request, urllib.parse
 import json
-from UICore.Gv import get_col_row
+from UICore.common import get_col_row
 
 log = Log()
 try_num = 10

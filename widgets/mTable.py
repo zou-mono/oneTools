@@ -64,7 +64,7 @@ class FileAddressEditor(QWidget):
             self.bClickButton = False
             return True
 
-        if isinstance(source, QLineEdit) and event.type() == QEvent.FocusOut and self.bClickButton == False:
+        if isinstance(source, QLineEdit) and event.type() == QEvent.FocusOut and not self.bClickButton:
             self.editingFinished.emit()
             return True
 
@@ -95,8 +95,6 @@ class mTableStyle(QProxyStyle):
 
 
 class addressTableDelegate(QStyledItemDelegate):
-    startEditor = pyqtSignal(object)
-
     def __init__(self, parent, buttonSection, orientation=Qt.Horizontal):
         # buttonColumn用来记录需要设置按钮的单元格
         # orientation用来表示需要设置按钮的表头方向，horizontal表示所有列都设置按钮, vertical表示所有行都设置按钮
@@ -137,8 +135,6 @@ class addressTableDelegate(QStyledItemDelegate):
                 return self.mAddressDialog
         else:
             return super().createEditor(parent, option, index)
-
-        self.startEditor.emit(index)
 
     def cmb_selectionchange(self, i):
         if i > -1:
@@ -214,6 +210,15 @@ class addressTableDelegate(QStyledItemDelegate):
     def checkIndex(self, table, index):
         if index in table.selectedIndexes() and index == table.currentIndex():
             table.edit(index)
+
+class vectorTableDelegate(addressTableDelegate):
+    def __init__(self, parent, buttonSection, orientation=Qt.Horizontal):
+        # buttonColumn用来记录需要设置按钮的单元格
+        # orientation用来表示需要设置按钮的表头方向，horizontal表示所有列都设置按钮, vertical表示所有行都设置按钮
+        super(addressTableDelegate, self).__init__(parent)
+        self.buttonSection = buttonSection
+        self.orientation = orientation
+        self.mainWindow = parent
 
 
 class TableModel(QAbstractTableModel):
