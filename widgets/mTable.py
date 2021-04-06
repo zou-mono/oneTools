@@ -116,8 +116,19 @@ class addressTableDelegate(QStyledItemDelegate):
                 currentData = self.index.data(Qt.DisplayRole)
 
                 self.cmb_level = QComboBox(parent)
-                if index.row() in index.model().levelData():
-                    datas = index.model().levelData()[index.row()]
+                # if index.row() in index.model().levelData():
+                #     datas = index.model().levelData()[index.row()]
+                #     for data in datas:
+                #         self.cmb_level.addItem(str(data))
+                url_index, level_index, url, level = self.mainWindow.return_url_and_level(self.index.row())
+                key = ""
+                if url in index.model().levelData():
+                    key = url
+                elif url + "_" + level in index.model().levelData():
+                    key = url + "_" + level
+
+                if key != "":
+                    datas = index.model().levelData()[key]
                     for data in datas:
                         self.cmb_level.addItem(str(data))
 
@@ -322,9 +333,11 @@ class TableModel(QAbstractTableModel):
                 return True
         return False
 
-    def setLevelData(self, index: QModelIndex, value):
-        row = index.row()
-        self.levels[row] = value
+    # def setLevelData(self, index: QModelIndex, value):
+    #     row = index.row()
+    #     self.levels[row] = value
+    def setLevelData(self, key, value):
+        self.levels[key] = value
 
     def levelData(self):
         return self.levels

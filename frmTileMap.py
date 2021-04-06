@@ -569,7 +569,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
                 editor_delegate = self.tbl_address.itemDelegate(level_index)
                 if isinstance(editor_delegate, addressTableDelegate):
-                    self.model.setLevelData(level_index, levels)
+                    # self.model.setLevelData(level_index, levels)
+                    self.model.setLevelData(url, levels)
 
     @Slot()
     def open_tileInfoFile(self):
@@ -636,7 +637,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             levels = self.paras[url]['levels']
 
             if isinstance(editor_delegate, addressTableDelegate):
-                self.model.setLevelData(level_index, levels)
+                # self.model.setLevelData(level_index, levels)
+                self.model.setLevelData(url, levels)
 
     def setParaToMemory(self, url, getInfo):
         levels = []
