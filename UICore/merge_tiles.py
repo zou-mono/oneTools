@@ -5,8 +5,6 @@ import time
 import click
 import math
 import traceback
-import urllib.request, urllib.parse
-import json
 from UICore.common import get_col_row
 
 log = Log()

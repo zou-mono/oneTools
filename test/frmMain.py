@@ -1,14 +1,13 @@
-from PyQt5.QtCore import QRect, Qt
-from PyQt5.QtGui import QDoubleValidator, QIntValidator
-from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, QDialogButtonBox, QStyleFactory
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QDoubleValidator
+from PyQt5.QtWidgets import QApplication, QMessageBox, QDialogButtonBox, QStyleFactory
 from PyQt5 import QtWidgets, QtGui
 from frmUI import Ui_Dialog
-from suplicmap_tilemap import get_json
 import sys
 import json
 import os
 from UICore.Gv import SplitterState, Dock
-from widgets.CollapsibleSplitter import CollapsibleSplitter
+
 
 class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self):

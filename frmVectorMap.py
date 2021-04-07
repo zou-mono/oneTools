@@ -6,13 +6,14 @@ import urllib.parse
 from PyQt5.QtGui import QFont, QPalette, QShowEvent
 from UI.UIVectorMap import Ui_Dialog
 from PyQt5.QtWidgets import QApplication, QDialog, QStyleFactory, QVBoxLayout, QDialogButtonBox, QFileDialog, \
-    QHeaderView, QAbstractItemView
+    QHeaderView, QAbstractItemView, QAbstractButton
 from PyQt5.QtCore import Qt, QItemSelectionModel, QModelIndex, QPersistentModelIndex
 from PyQt5 import QtCore
 from UICore.Gv import SplitterState, Dock
 from UICore.common import get_paraInfo, urlEncodeToFileName
 from UICore.log4p import Log
 from widgets.mTable import mTableStyle, TableModel, vectorTableDelegate
+from UICore.suplicmap_vector2 import crawl
 
 Slot = QtCore.pyqtSlot
 
@@ -52,6 +53,7 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.txt_log.setReadOnly(True)
 
         self.btn_addressFile.clicked.connect(self.open_addressFile)
+        self.buttonBox.clicked.connect(self.buttonBox_clicked)
 
         self.btn_addRow.clicked.connect(self.btn_addRow_Clicked)
         self.btn_removeRow.clicked.connect(self.removeBtn_clicked)
@@ -66,6 +68,50 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
         self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)
         self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.2)
+
+    @Slot(QAbstractButton)
+    def buttonBox_clicked(self, button: QAbstractButton):
+        if button == self.buttonBox.button(QDialogButtonBox.Ok):
+            if not self.check_paras():
+                return
+            self.run_process()
+        elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
+            self.close()
+
+    def run_process(self):
+        rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
+        for row in rows:
+            url_index, service_index, url, service = self.return_url_and_level(row)
+            layername_index = self.tbl_address.model().index(row, 2, QModelIndex())
+            output_index = self.tbl_address.model().index(row, 3, QModelIndex())
+            layername = str(self.tbl_address.model().data(layername_index, Qt.DisplayRole)).strip()
+            output = str(self.tbl_address.model().data(output_index, Qt.DisplayRole)).strip()
+
+            filepath, filename = os.path.split(output)
+            if os.path.splitext(filename)[1] != '.gdb':
+                gdb_name = urlEncodeToFileName(url) + ".gdb"
+                output = os.path.join(output, gdb_name)
+
+            key = url + "_" + str(service)
+            sr = self.paras[key]['spatialReference']
+            url_lst = url.split(r'/')
+            service_name = url_lst[-2]
+            url = url + "/" + str(service)
+
+            crawl(url, service_name=service_name, layer_order=service, layer_name=layername, output_path=output, sr=sr)
+
+    def check_paras(self):
+        rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
+        for row in rows:
+            url_index, service_index, url, service = self.return_url_and_level(row)
+
+            if url == "":
+                log.error('第{}行参数缺失必要参数"地址"，请补全！'.format(row), dialog=True)
+                return False
+            if service == "":
+                log.error('第{}行参数缺失必要参数"服务号"，请补全！'.format(row), dialog=True)
+                return False
+        return True
 
     @Slot(int)
     def table_section_clicked(self, section):
@@ -118,12 +164,41 @@ class Ui_Window(QDialog, Ui_Dialog):
             return
 
         try:
-            with open(fileName, 'r') as f:
+            with open(fileName, 'r', encoding='utf-8') as f:
                 self.paras = json.load(f)
 
             self.add_address_rows_from_paras()
         except:
             log.error("读取参数文件失败！", dialog=True)
+
+    def add_address_rows_from_paras(self):
+        keys = self.paras["exports"]
+        for key in keys:
+            if key in self.paras:
+                row = self.model.rowCount(QModelIndex())
+                self.model.addEmptyRow(self.model.rowCount(QModelIndex()), 1, 0)
+
+                url = self.paras[key]['url']
+                service = self.paras[key]['service']
+                output = self.paras[key]['output']
+                layername = self.paras[key]['new_layername']
+
+                url_index = self.tbl_address.model().index(row, 0)
+                self.tbl_address.model().setData(url_index, url)
+                service_index = self.tbl_address.model().index(row, 1)
+                self.tbl_address.model().setData(service_index, service)
+                index = self.tbl_address.model().index(row, 2)
+                self.tbl_address.model().setData(index, layername)
+                index = self.tbl_address.model().index(row, 3)
+                self.tbl_address.model().setData(index, output)
+
+                editor_delegate = self.tbl_address.itemDelegate(service_index)
+                key_all = url + "_*"
+
+                if key_all in self.paras:
+                    services = self.paras[key_all]['services']
+                    if isinstance(editor_delegate, vectorTableDelegate):
+                        self.model.setLevelData(key, services)
 
     @Slot()
     def btn_saveMetaFile_clicked(self):
@@ -149,7 +224,11 @@ class Ui_Window(QDialog, Ui_Dialog):
             for row in rows:
                 url = datas[row][self.url_no]
                 service = datas[row][self.service_no]
-                key = url + "_" + service
+
+                if service == "":
+                    continue
+
+                key = str(url) + "_" + str(service)
 
                 if key in self.paras:
                     self.paras[key]['new_layername'] = datas[row][2]
@@ -157,8 +236,8 @@ class Ui_Window(QDialog, Ui_Dialog):
                     self.paras['exports'].append(key)
         try:
             if fileName != '':
-                with open(fileName, 'w') as f:
-                    json.dump(self.paras, f)
+                with open(fileName, 'w', encoding='UTF-8') as f:
+                    json.dump(self.paras, f, ensure_ascii=False)
         except:
             log.error("文件存储路径错误，无法保存！", parent=self, dialog=True)
 
@@ -194,7 +273,7 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.model = TableModel()
 
         self.model.setHeaderData(0, Qt.Horizontal, "地址", Qt.DisplayRole)
-        self.model.setHeaderData(1, Qt.Horizontal, "服务", Qt.DisplayRole)
+        self.model.setHeaderData(1, Qt.Horizontal, "服务号", Qt.DisplayRole)
         self.model.setHeaderData(2, Qt.Horizontal, "输出图层名", Qt.DisplayRole)
         self.model.setHeaderData(3, Qt.Horizontal, "输出路径", Qt.DisplayRole)
 
@@ -243,7 +322,7 @@ class Ui_Window(QDialog, Ui_Dialog):
             if service != "*" and service != "":
                 layername_index = self.tbl_address.model().index(row, 2)
                 if url + "_" + str(service) in self.paras:
-                    layername = self.paras[url + "_" + str(service)]['paras']['old_layername']
+                    layername = self.paras[url + "_" + str(service)]['old_layername']
                     self.tbl_address.model().setData(layername_index, layername)
 
         print(self.paras)
@@ -252,7 +331,6 @@ class Ui_Window(QDialog, Ui_Dialog):
         xmin = xmax = ymin = ymax = sp = ""
 
         services = ["*"]
-        service = ""
         if 'layers' in getInfo.keys():
             layers = getInfo['layers']
             for layer in layers:
@@ -279,19 +357,18 @@ class Ui_Window(QDialog, Ui_Dialog):
             if 'wkid' in getInfo['spatialReference']:
                 sp = getInfo['spatialReference']['wkid']
 
-        paras = {
+        url_encodeStr = urlEncodeToFileName(url)
+        self.paras[url + "_*"] = {
+            'url': url,
+            'service': "*",
+            'code': url_encodeStr,
+            'services': services,
             'xmin': xmin,
             'xmax': xmax,
             'ymin': ymin,
             'ymax': ymax,
-            'spatialReference': sp
-        }
-
-        url_encodeStr = urlEncodeToFileName(url)
-        self.paras[url + "_*"] = {
-            'code': url_encodeStr,
-            'services': services,
-            'paras': paras
+            'spatialReference': sp,
+            "output": ""
         }
 
         print(self.paras)
@@ -321,7 +398,11 @@ class Ui_Window(QDialog, Ui_Dialog):
                 if 'wkid' in getInfo['extent']['spatialReference']:
                     sp = getInfo['extent']['spatialReference']['wkid']
 
-        paras = {
+        url_encodeStr = urlEncodeToFileName(url)
+        self.paras[key] = {
+            'url': url,
+            'service': service,
+            'code': url_encodeStr,
             'old_layername': layername,
             'xmin': xmin,
             'xmax': xmax,
@@ -330,14 +411,6 @@ class Ui_Window(QDialog, Ui_Dialog):
             'spatialReference': sp,
             'new_layername': "",
             'output': ""
-        }
-
-        url_encodeStr = urlEncodeToFileName(url)
-        self.paras[key] = {
-            'url': url,
-            'service': service,
-            'code': url_encodeStr,
-            'paras': paras
         }
 
     def row_clicked(self, logicRow):
@@ -365,18 +438,21 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.txt_spatialReference.setText("")
         self.lbl_layer.setText("")
 
-        key = key1 + "_" + str(level)
+        if level == -1:
+            key = key1 + "_" + str(key2)
+        else:
+            key = key1 + "_" + str(level)
 
         if key not in self.paras:
             return
 
-        getInfo = self.paras[key]['paras']
+        getInfo = self.paras[key]
 
         if 'old_layername' in getInfo:
             self.lbl_layer.setText(str(getInfo['old_layername']))
             layername_index = self.tbl_address.model().index(index.row(), 2)
             if key1 + "_" + str(level) in self.paras:
-                layername = self.paras[key1 + "_" + str(level)]['paras']['old_layername']
+                layername = self.paras[key1 + "_" + str(level)]['old_layername']
                 self.tbl_address.model().setData(key2_index, level)
                 self.tbl_address.model().setData(layername_index, layername)
         if 'xmin' in getInfo:

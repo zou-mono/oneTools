@@ -266,7 +266,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def run_process(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
         for row in rows:
-            level_index, url_index, url, level = self.return_url_and_level(row)
+            url_index, level_index, url, level = self.return_url_and_level(row)
 
             if self.rbtn_spiderAndHandle.isChecked():
                 paras = self.paras[url]['paras'][level]
@@ -324,10 +324,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def check_paras(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
         for row in rows:
-            level_index = self.tbl_address.model().index(row, self.level_no, QModelIndex())
-            url_index = self.tbl_address.model().index(row, self.url_no, QModelIndex())
-            url = str(self.tbl_address.model().data(url_index, Qt.DisplayRole)).strip()
-            level = str(self.tbl_address.model().data(level_index, Qt.DisplayRole)).strip()
+            url_index, level_index, url, level = self.return_url_and_level(row)
 
             if self.rbtn_spiderAndHandle.isChecked() or self.rbtn_onlySpider.isChecked():
                 if url == "":
