@@ -134,7 +134,7 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
     if lock.locked():
         lock.release()
     # log.info('爬取瓦片任务完成！瓦片存储至{}.'.format(output_path))
-    log.info('爬取瓦片任务完成！总共耗时:{}秒. 瓦片存储至{}.'.format("{:.2f}".format(end - start), output_path))
+    log.info('爬取瓦片任务完成！总共耗时:{}秒. 瓦片存储至{}.'.format("{:.2f} \n".format(end - start), output_path))
     return True
 
 

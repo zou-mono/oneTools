@@ -3,7 +3,7 @@ from PyQt5.QtCore import pyqtSignal
 from UICore.suplicmap_tilemap import crawl_tilemap
 from UICore.merge_tiles import merge_tiles
 from UICore.log4p import Log
-from UICore.suplicmap_vector2 import crawl_vector
+from UICore.suplicmap_vector2 import crawl_vector, crawl_vector_batch
 
 log = Log()
 
@@ -39,6 +39,7 @@ class crawlTilesWorker(QtCore.QObject):
 
 class crawlVectorWorker(QtCore.QObject):
     crawl = pyqtSignal(str, str, str, str, str, int)
+    crawlBatch = pyqtSignal(str, str, str, object)
     finished = pyqtSignal()
 
     def __init__(self):
@@ -46,6 +47,10 @@ class crawlVectorWorker(QtCore.QObject):
 
     def crawlVector(self, url, service_name, layer_order, layer_name, output_path, sr):
         crawl_vector(url, service_name, layer_order, layer_name, output_path, sr)
+        self.finished.emit()
+
+    def crawlVectorBatch(self, url, key, output, paras):
+        crawl_vector_batch(url, key, output, paras)
         self.finished.emit()
 
 

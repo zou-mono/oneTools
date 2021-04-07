@@ -81,7 +81,7 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, lo
         query_url = url + "/query"
         url_json = url + "?f=pjson"
 
-    log.info("\n开始创建文件数据库...")
+    log.info("开始创建文件数据库...")
 
     gdb, out_layer, OID = createFileGDB(output_path, layer_name, url_json, service_name, layer_order)
 
@@ -160,6 +160,22 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, lo
         log.info('未成功完成抓取, 死链接数目为:' + str(dead_link) + '. 耗时：' + str(end - start) + '\n')
     return True, ''
 
+
+def crawl_vector_batch(url, key, output, paras):
+    services = paras[key]['services']
+    for service in services:
+        if service != "*":
+            new_key = url + "_" + str(service)
+            sr = paras[new_key]['spatialReference']
+            url_lst = url.split(r'/')
+            service_name = url_lst[-2]
+            res_url = url + "/" + str(service)
+            layername = paras[new_key]['old_layername']
+
+            if layername == "":
+                layername = None
+
+            crawl_vector(res_url, service_name=service_name, layer_order=service, layer_name=layername, output_path=output, sr=sr)
 
 def getIds(query_url, loop_pos):
     # 定义请求头
@@ -447,6 +463,8 @@ def output_data(url, query_clause, out_layer):
 
 def parseDateField(fields):
     fields = fields['fields']
+    if fields is None:
+        return None
     order = 0
     DateFields = []
     for field in fields:
@@ -458,6 +476,8 @@ def parseDateField(fields):
 
 def parseOIDField(fields):
     fields = fields['fields']
+    if fields is None:
+        return None
     order = 0
     for field in fields:
         if field['type'] == "esriFieldTypeOID":

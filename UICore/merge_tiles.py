@@ -163,7 +163,7 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
     log.info("影像金字塔构建成功.")
 
     end = time.time()
-    log.info("合并瓦片任务完成! 总共耗时{}秒. 影像存储至{}.".format("{:.2f}".format(end - start), merged_file))
+    log.info("合并瓦片任务完成! 总共耗时{}秒. 影像存储至{}.\n".format("{:.2f}".format(end - start), merged_file))
 
 
 def create_merge_file(temp_file, tilewidth, tileheight, tilesize):

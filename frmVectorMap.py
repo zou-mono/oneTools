@@ -14,7 +14,7 @@ from UICore.common import get_paraInfo, urlEncodeToFileName
 from UICore.log4p import Log
 from UICore.workerThread import crawlVectorWorker
 from widgets.mTable import mTableStyle, TableModel, vectorTableDelegate
-from UICore.suplicmap_vector2 import crawl_vector
+from UICore.suplicmap_vector2 import crawl_vector, crawl_vector_batch
 
 Slot = QtCore.pyqtSlot
 
@@ -69,6 +69,7 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.crawlVectorThread = crawlVectorWorker()
         self.crawlVectorThread.moveToThread(self.thread)
         self.crawlVectorThread.crawl.connect(self.crawlVectorThread.crawlVector)
+        self.crawlVectorThread.crawlBatch.connect(self.crawlVectorThread.crawlVectorBatch)
         self.crawlVectorThread.finished.connect(self.threadStop)
 
     def showEvent(self, a0: QShowEvent) -> None:
@@ -106,13 +107,17 @@ class Ui_Window(QDialog, Ui_Dialog):
                 output = os.path.join(output, gdb_name)
 
             key = url + "_" + str(service)
-            sr = self.paras[key]['spatialReference']
-            url_lst = url.split(r'/')
-            service_name = url_lst[-2]
-            url = url + "/" + str(service)
+            if service != "*":
+                sr = self.paras[key]['spatialReference']
+                url_lst = url.split(r'/')
+                service_name = url_lst[-2]
+                res_url = url + "/" + str(service)
 
-            self.crawlVectorThread.crawl.emit(url, service_name, str(service), layername, output, sr)
-            # crawl(url, service_name=service_name, layer_order=service, layer_name=layername, output_path=output, sr=sr)
+                # crawl_vector(res_url, service_name=service_name, layer_order=service, layer_name=layername, output_path=output, sr=sr)
+                self.crawlVectorThread.crawl.emit(res_url, service_name, str(service), layername, output, sr)
+            else:
+                self.crawlVectorThread.crawlBatch.emit(url, key, output, self.paras)
+                # crawl_vector_batch(url, key, output, self.paras)
 
     def check_paras(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
