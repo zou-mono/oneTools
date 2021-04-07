@@ -7,13 +7,14 @@ from PyQt5.QtGui import QFont, QPalette, QShowEvent
 from UI.UIVectorMap import Ui_Dialog
 from PyQt5.QtWidgets import QApplication, QDialog, QStyleFactory, QVBoxLayout, QDialogButtonBox, QFileDialog, \
     QHeaderView, QAbstractItemView, QAbstractButton
-from PyQt5.QtCore import Qt, QItemSelectionModel, QModelIndex, QPersistentModelIndex
+from PyQt5.QtCore import Qt, QItemSelectionModel, QModelIndex, QPersistentModelIndex, QThread
 from PyQt5 import QtCore
 from UICore.Gv import SplitterState, Dock
 from UICore.common import get_paraInfo, urlEncodeToFileName
 from UICore.log4p import Log
+from UICore.workerThread import crawlVectorWorker
 from widgets.mTable import mTableStyle, TableModel, vectorTableDelegate
-from UICore.suplicmap_vector2 import crawl
+from UICore.suplicmap_vector2 import crawl_vector
 
 Slot = QtCore.pyqtSlot
 
@@ -63,17 +64,29 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.tbl_address.clicked.connect(self.table_index_clicked)
         self.tbl_address.verticalHeader().sectionClicked.connect(self.table_section_clicked)
 
+        #  最后运算过程放至到另一个线程避免GUI卡住
+        self.thread = QThread()
+        self.crawlVectorThread = crawlVectorWorker()
+        self.crawlVectorThread.moveToThread(self.thread)
+        self.crawlVectorThread.crawl.connect(self.crawlVectorThread.crawlVector)
+        self.crawlVectorThread.finished.connect(self.threadStop)
+
     def showEvent(self, a0: QShowEvent) -> None:
         self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.4)
         self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
         self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)
         self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.2)
 
+    def threadStop(self):
+        self.thread.quit()
+
     @Slot(QAbstractButton)
     def buttonBox_clicked(self, button: QAbstractButton):
         if button == self.buttonBox.button(QDialogButtonBox.Ok):
             if not self.check_paras():
                 return
+
+            self.thread.start()
             self.run_process()
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
             self.close()
@@ -98,7 +111,8 @@ class Ui_Window(QDialog, Ui_Dialog):
             service_name = url_lst[-2]
             url = url + "/" + str(service)
 
-            crawl(url, service_name=service_name, layer_order=service, layer_name=layername, output_path=output, sr=sr)
+            self.crawlVectorThread.crawl.emit(url, service_name, str(service), layername, output, sr)
+            # crawl(url, service_name=service_name, layer_order=service, layer_name=layername, output_path=output, sr=sr)
 
     def check_paras(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))

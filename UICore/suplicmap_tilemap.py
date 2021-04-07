@@ -44,10 +44,10 @@ lock = asyncio.Lock()
     help='Output folder, need the full path. For example, res/tilemaps',
     required=True)
 def main(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path):
-    craw_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path)
+    crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path)
 
 
-def craw_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path):
+def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path):
     """crawler program for tilemap data in http://suplicmap.pnr.sz."""
     start = time.time()
 

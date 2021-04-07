@@ -65,10 +65,10 @@ def main(url, layer_name, sr, loop_pos, output_path):
     url_lst = url.split(r'/')
     layer_order = url_lst[-1]
     service_name = url_lst[-3]
-    crawl(url, service_name, layer_order, layer_name, output_path, sr, loop_pos)
+    crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, loop_pos)
 
 
-def crawl(url, service_name, layer_order, layer_name, output_path, sr, loop_pos=-1):
+def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, loop_pos=-1):
     start = time.time()
 
     global epsg
