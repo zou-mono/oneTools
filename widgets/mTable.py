@@ -124,8 +124,10 @@ class addressTableDelegate(QStyledItemDelegate):
                 key = ""
                 if url in index.model().levelData():
                     key = url
-                elif url + "_" + level in index.model().levelData():
+                if url + "_" + level in index.model().levelData():
                     key = url + "_" + level
+                if url + "_*" in index.model().levelData():
+                    key = url + "_*"
 
                 if key != "":
                     datas = index.model().levelData()[key]
@@ -150,7 +152,6 @@ class addressTableDelegate(QStyledItemDelegate):
     def cmb_selectionchange(self, i):
         if i > -1:
             self.mainWindow.update_txt_info(self.index, self.cmb_level.currentText())
-            # self.mainWindow.txt_level.setText(str(self.cmb_level.currentText()))
 
     def mBtn_address_clicked(self, parent, title, type):
             if type == 'f':
@@ -172,6 +173,7 @@ class addressTableDelegate(QStyledItemDelegate):
             # allItems = [editor.itemText(i) for i in range(editor.count())]
             # model.setData(index, allItems)
             model.setData(index, editor.currentText())
+            print(editor.currentText())
         else:
             super(addressTableDelegate, self).setModelData(editor, model, index)
         self._isEditing = False
@@ -203,7 +205,7 @@ class addressTableDelegate(QStyledItemDelegate):
         new_url_index, new_level_index, new_url, new_level = self.mainWindow.return_url_and_level(self.index.row())
         new_key = new_url + "_" + new_level
         if old_key != new_key:
-            self.mainWindow.update_all_paras_value(old_key, new_key)
+            self.mainWindow.update_all_paras_value(old_key, new_key, new_url, new_level)
 
     def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: 'QStyleOptionViewItem', index: QModelIndex) -> bool:
         if (event.type() == QEvent.MouseButtonPress and
@@ -221,6 +223,7 @@ class addressTableDelegate(QStyledItemDelegate):
     def checkIndex(self, table, index):
         if index in table.selectedIndexes() and index == table.currentIndex():
             table.edit(index)
+
 
 class vectorTableDelegate(addressTableDelegate):
     def __init__(self, parent, buttonSection, orientation=Qt.Horizontal):

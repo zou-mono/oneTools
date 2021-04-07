@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import urllib.parse
 
 from PyQt5.QtGui import QFont, QPalette, QShowEvent
 from UI.UIVectorMap import Ui_Dialog
@@ -55,6 +56,7 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.btn_addRow.clicked.connect(self.btn_addRow_Clicked)
         self.btn_removeRow.clicked.connect(self.removeBtn_clicked)
         self.btn_obtainMeta.clicked.connect(self.btn_obtainMeta_clicked)
+        self.btn_saveMetaFile.clicked.connect(self.btn_saveMetaFile_clicked)
 
         self.tbl_address.clicked.connect(self.table_index_clicked)
         self.tbl_address.verticalHeader().sectionClicked.connect(self.table_section_clicked)
@@ -123,6 +125,43 @@ class Ui_Window(QDialog, Ui_Dialog):
         except:
             log.error("读取参数文件失败！", dialog=True)
 
+    @Slot()
+    def btn_saveMetaFile_clicked(self):
+        datas = self.tbl_address.model().datas
+
+        bHasData = False
+        for i in datas:
+            for j in i:
+                if j != '':
+                    bHasData = True
+                    break
+            else:
+                continue
+            break
+
+        rows = range(0, len(datas))
+        if bHasData and bool(self.paras):
+            fileName, fileType = QFileDialog.getSaveFileName(self, "请选择保存的参数文件", os.getcwd(),
+                                                             "json file(*.json)")
+
+            self.paras['exports'] = []
+
+            for row in rows:
+                url = datas[row][self.url_no]
+                service = datas[row][self.service_no]
+                key = url + "_" + service
+
+                if key in self.paras:
+                    self.paras[key]['new_layername'] = datas[row][2]
+                    self.paras[key]['output'] = datas[row][3]
+                    self.paras['exports'].append(key)
+        try:
+            if fileName != '':
+                with open(fileName, 'w') as f:
+                    json.dump(self.paras, f)
+        except:
+            log.error("文件存储路径错误，无法保存！", parent=self, dialog=True)
+
     def table_init(self):
         self.tbl_address.setStyle(mTableStyle())
 
@@ -183,48 +222,48 @@ class Ui_Window(QDialog, Ui_Dialog):
         for row in rows:
             url_index, service_index, url, service = self.return_url_and_level(row)
             editor_delegate = self.tbl_address.itemDelegate(service_index)
-            key = url + "_" + service
 
             if url == "": continue
 
             getInfo = get_paraInfo(url)
+
+            key = url + "_*"
             if getInfo is None:
                 log.error(url + "无法获取远程参数信息，请检查地址是否正确以及网络是否连通！")
                 continue
             else:
                 log.info(url + "参数信息获取成功！")
 
-            self.setParaToMemory(url, service, getInfo)
+            self.setAllParaToMemory(url, getInfo)
 
-            # print("test")
-            services = self.paras[key]['ids']
-
+            services = self.paras[key]['services']
             if isinstance(editor_delegate, vectorTableDelegate):
-                self.model.setLevelData(service_index, services)
+                self.model.setLevelData(key, services)
 
-    def setParaToMemory(self, url, service, getInfo):
-        xmin = xmax = ymin = ymax = sp = id = layername = ""
+            if service != "*" and service != "":
+                layername_index = self.tbl_address.model().index(row, 2)
+                if url + "_" + str(service) in self.paras:
+                    layername = self.paras[url + "_" + str(service)]['paras']['old_layername']
+                    self.tbl_address.model().setData(layername_index, layername)
 
-        key = url + "_" + service
+        print(self.paras)
 
-        ids = ["*"]
+    def setAllParaToMemory(self, url, getInfo):
+        xmin = xmax = ymin = ymax = sp = ""
+
+        services = ["*"]
+        service = ""
         if 'layers' in getInfo.keys():
             layers = getInfo['layers']
             for layer in layers:
-                if 'parentLayerId' in layer:
-                    if layer['parentLayerId'] == -1:
+                if 'subLayerIds' in layer:
+                    if layer['subLayerIds'] is None:
                         if 'id' in layer:
-                            id = layer['id']
-                            ids.append(id)
-                        if 'name' in layer:
-                            layername = layer['name']
-        elif 'id' in getInfo.keys():
-            id = getInfo['id']
-            ids.append(id)
-            if 'name' in getInfo.keys():
-                layername = getInfo['name']
-
-        if id == "": return
+                            service = layer['id']
+                            services.append(service)
+                            new_url = url + "/" + str(service)
+                            layer_getInfo = get_paraInfo(new_url)
+                            self.setParaToMemory(url, str(service), layer_getInfo)
 
         if 'fullExtent' in getInfo.keys():
             if 'xmin' in getInfo['fullExtent']:
@@ -236,6 +275,39 @@ class Ui_Window(QDialog, Ui_Dialog):
             if 'ymax' in getInfo['fullExtent']:
                 ymax = getInfo['fullExtent']['ymax']
 
+        if 'spatialReference' in getInfo.keys():
+            if 'wkid' in getInfo['spatialReference']:
+                sp = getInfo['spatialReference']['wkid']
+
+        paras = {
+            'xmin': xmin,
+            'xmax': xmax,
+            'ymin': ymin,
+            'ymax': ymax,
+            'spatialReference': sp
+        }
+
+        url_encodeStr = urlEncodeToFileName(url)
+        self.paras[url + "_*"] = {
+            'code': url_encodeStr,
+            'services': services,
+            'paras': paras
+        }
+
+        print(self.paras)
+
+    def setParaToMemory(self, url, service, getInfo):
+        xmin = xmax = ymin = ymax = sp = layername = ""
+
+        key = url + "_" + service
+
+        if 'id' in getInfo.keys():
+            service = getInfo['id']
+            if 'name' in getInfo.keys():
+                layername = getInfo['name']
+
+        if service == "": return
+
         if 'extent' in getInfo.keys():
             if 'xmin' in getInfo['extent']:
                 xmin = getInfo['extent']['xmin']
@@ -245,31 +317,28 @@ class Ui_Window(QDialog, Ui_Dialog):
                 ymin = getInfo['extent']['ymin']
             if 'ymax' in getInfo['extent']:
                 ymax = getInfo['extent']['ymax']
+            if 'spatialReference' in getInfo['extent']:
+                if 'wkid' in getInfo['extent']['spatialReference']:
+                    sp = getInfo['extent']['spatialReference']['wkid']
 
-        if 'spatialReference' in getInfo.keys():
-            if 'wkid' in getInfo['spatialReference']:
-                sp = getInfo['spatialReference']['wkid']
-
-        paras = {}
-        paras[id] = {
-            'id': id,
-            'layername': layername,
+        paras = {
+            'old_layername': layername,
             'xmin': xmin,
             'xmax': xmax,
             'ymin': ymin,
             'ymax': ymax,
             'spatialReference': sp,
-            'layer_name': "",
+            'new_layername': "",
             'output': ""
         }
 
         url_encodeStr = urlEncodeToFileName(url)
         self.paras[key] = {
+            'url': url,
+            'service': service,
             'code': url_encodeStr,
-            'ids': ids,
             'paras': paras
         }
-        print(self.paras)
 
     def row_clicked(self, logicRow):
         sel_index = self.tbl_address.model().index(logicRow, 0, QModelIndex())
@@ -281,11 +350,7 @@ class Ui_Window(QDialog, Ui_Dialog):
         level_index = self.tbl_address.model().index(logicRow, self.service_no)
         url = self.tbl_address.model().data(url_index, Qt.DisplayRole)
         level = self.tbl_address.model().data(level_index, Qt.DisplayRole)
-
         return url_index, level_index, url, level
-
-    def update_all_paras_value(self, oldValue, newValue):
-        pass
 
     def update_txt_info(self, index: QModelIndex, level=-1):
         key1_index = self.tbl_address.model().index(index.row(), 0)
@@ -298,31 +363,37 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.txt_ymin.setText("")
         self.txt_ymax.setText("")
         self.txt_spatialReference.setText("")
+        self.lbl_layer.setText("")
 
-        bUpdate = False
-        key = key1 + "_" + key2
-        if key in self.paras:
-            getInfo = self.paras[key]
-            bUpdate = True
+        key = key1 + "_" + str(level)
 
-        if bUpdate:
-            if 'layername' in getInfo:
-                self.lbl_layer.setText(str(getInfo['layername']))
-            if 'xmin' in getInfo:
-                self.txt_xmin.setText(str(getInfo['xmin']))
-                self.txt_xmin.home(False)
-            if 'xmax' in getInfo:
-                self.txt_xmax.setText(str(getInfo['xmax']))
-                self.txt_xmax.home(False)
-            if 'ymin' in getInfo:
-                self.txt_ymin.setText(str(getInfo['ymin']))
-                self.txt_ymin.home(False)
-            if 'ymax' in getInfo:
-                self.txt_ymax.setText(str(getInfo['ymax']))
-                self.txt_ymax.home(False)
-            if 'spatialReference' in getInfo:
-                self.txt_spatialReference.setText(str(getInfo['spatialReference']))
-                self.txt_spatialReference.home(False)
+        if key not in self.paras:
+            return
+
+        getInfo = self.paras[key]['paras']
+
+        if 'old_layername' in getInfo:
+            self.lbl_layer.setText(str(getInfo['old_layername']))
+            layername_index = self.tbl_address.model().index(index.row(), 2)
+            if key1 + "_" + str(level) in self.paras:
+                layername = self.paras[key1 + "_" + str(level)]['paras']['old_layername']
+                self.tbl_address.model().setData(key2_index, level)
+                self.tbl_address.model().setData(layername_index, layername)
+        if 'xmin' in getInfo:
+            self.txt_xmin.setText(str(getInfo['xmin']))
+            self.txt_xmin.home(False)
+        if 'xmax' in getInfo:
+            self.txt_xmax.setText(str(getInfo['xmax']))
+            self.txt_xmax.home(False)
+        if 'ymin' in getInfo:
+            self.txt_ymin.setText(str(getInfo['ymin']))
+            self.txt_ymin.home(False)
+        if 'ymax' in getInfo:
+            self.txt_ymax.setText(str(getInfo['ymax']))
+            self.txt_ymax.home(False)
+        if 'spatialReference' in getInfo:
+            self.txt_spatialReference.setText(str(getInfo['spatialReference']))
+            self.txt_spatialReference.home(False)
 
 
 if __name__ == '__main__':

@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(1255, 903)
+        Dialog.resize(1255, 750)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/icons/icons/AnimationCreateGroup16.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         Dialog.setWindowIcon(icon)
@@ -375,7 +375,7 @@ class Ui_Dialog(object):
         self.btn_removeRow.setToolTip(_translate("Dialog", "删除服务项"))
         self.btn_obtainMeta.setToolTip(_translate("Dialog", "获取远程参数数据"))
         self.btn_saveMetaFile.setToolTip(_translate("Dialog", "保存参数文件"))
-        self.label_2.setText(_translate("Dialog", "图层名:"))
+        self.label_2.setText(_translate("Dialog", "服务器图层名:"))
         self.label.setText(_translate("Dialog", "获取坐标范围:"))
         self.label_26.setText(_translate("Dialog", "ymax:"))
         self.label_25.setText(_translate("Dialog", "xmin:"))

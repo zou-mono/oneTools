@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1255</width>
-    <height>903</height>
+    <height>750</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -344,7 +344,7 @@
                 </font>
                </property>
                <property name="text">
-                <string>图层名:</string>
+                <string>服务器图层名:</string>
                </property>
               </widget>
              </item>

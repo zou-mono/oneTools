@@ -115,7 +115,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     self.paras[url]['paras'][level][key] = value
         editor.home(False)
 
-    def update_all_paras_value(self, oldValue, newValue):
+    def update_all_paras_value(self, oldValue, newValue, url, level):
         print(oldValue)
         if self.rbtn_onlyHandle.isChecked():
             del self.paras[oldValue]
@@ -616,8 +616,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
 
         for row in rows:
-            level_index = self.tbl_address.model().index(row, self.level_no, QModelIndex())
-            url_index = self.tbl_address.model().index(row, self.url_no, QModelIndex())
+            url_index, level_index, url, level = self.return_url_and_level(row)
             editor_delegate = self.tbl_address.itemDelegate(level_index)
 
             url = str(self.tbl_address.model().data(url_index, Qt.DisplayRole)).strip()

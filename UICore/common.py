@@ -9,6 +9,7 @@ import urllib.request, urllib.parse
 
 log = Log()
 
+
 def get_json(url):
     try_num = 5
     # 定义请求头
@@ -33,6 +34,7 @@ def get_json(url):
         time.sleep(2)
         continue
 
+
 def get_paraInfo(url):
     http = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
     res = re.match(http, string=url)
@@ -42,6 +44,7 @@ def get_paraInfo(url):
         return getInfo
     else:
         return None
+
 
 def defaultTileFolder(url, level):
     # url_encodeStr = str(base64.b64encode(url.encode("utf-8")), "utf-8")
