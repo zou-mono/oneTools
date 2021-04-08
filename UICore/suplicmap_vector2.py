@@ -89,7 +89,7 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, lo
     OID_NAME = OID
 
     if out_layer is None or gdb is None:
-        return False, '创建数据库失败！'
+        return False, '创建数据库失败！\n'
 
     log.info("文件数据库创建成功, 位置为{}, 图层名称为{}".format(os.path.abspath(output_path), out_layer.GetName()))
 

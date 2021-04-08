@@ -46,7 +46,9 @@ class crawlVectorWorker(QtCore.QObject):
         super(crawlVectorWorker, self).__init__()
 
     def crawlVector(self, url, service_name, layer_order, layer_name, output_path, sr):
-        crawl_vector(url, service_name, layer_order, layer_name, output_path, sr)
+        flag, message = crawl_vector(url, service_name, layer_order, layer_name, output_path, sr)
+        if not flag:
+            log.error(message)
         self.finished.emit()
 
     def crawlVectorBatch(self, url, key, output, paras):

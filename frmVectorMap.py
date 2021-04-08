@@ -141,6 +141,11 @@ class Ui_Window(QDialog, Ui_Dialog):
                 url_lst = url.split(r'/')
                 service_name = url_lst[-2]
                 filepath, filename = os.path.split(output)
+
+                if layername == "":
+                    layername = self.paras[key]['old_layername']
+                    log.warning('第{}行参数缺失非必要参数"输出图层名"，将使用默认值"{}".'.format(row + 1, layername))
+
                 if os.path.splitext(filename)[1] != '.gdb':
                     gdb_name = service_name + ".gdb"
                     if output == "":
@@ -150,11 +155,9 @@ class Ui_Window(QDialog, Ui_Dialog):
                         self.paras[key]['output'] = output
                         log.warning('第{}行缺失非必要参数"输出路径"，将使用默认值"{}".'.format(row + 1, output))
                     else:
+                        output = os.path.join(output, gdb_name)
+                        self.paras[key]['output'] = output
                         log.warning('第{}行"输出路径"参数缺失输出gdb数据库名，将使用默认值"{}".'.format(row + 1, gdb_name))
-
-                if layername == "":
-                    layername = self.paras[key]['old_layername']
-                    log.warning('第{}行参数缺失非必要参数"输出图层名"，将使用默认值"{}".'.format(row + 1, layername))
             else:
                 filepath, filename = os.path.split(output)
                 key_all = url + "_*"

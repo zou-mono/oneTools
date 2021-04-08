@@ -333,6 +333,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 if level == "":
                     log.error('第{}行参数缺失必要参数"等级"，请补全！'.format(row), dialog=True)
                     return False
+
             elif self.rbtn_onlyHandle.isChecked():
                 if url == "":
                     log.error('第{}行参数缺失必要参数"瓦片文件夹"，请补全！'.format(row), dialog=True)
