@@ -96,33 +96,38 @@ class Ui_Window(QDialog, Ui_Dialog):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
         for row in rows:
             url_index, service_index, url, service = self.return_url_and_level(row)
-            layername_index = self.tbl_address.model().index(row, 2, QModelIndex())
-            output_index = self.tbl_address.model().index(row, 3, QModelIndex())
-            layername = str(self.tbl_address.model().data(layername_index, Qt.DisplayRole)).strip()
-            output = str(self.tbl_address.model().data(output_index, Qt.DisplayRole)).strip()
+            # layername_index = self.tbl_address.model().index(row, 2, QModelIndex())
+            # output_index = self.tbl_address.model().index(row, 3, QModelIndex())
+            # layername = str(self.tbl_address.model().data(layername_index, Qt.DisplayRole)).strip()
+            # output = str(self.tbl_address.model().data(output_index, Qt.DisplayRole)).strip()
 
-            filepath, filename = os.path.split(output)
-            if os.path.splitext(filename)[1] != '.gdb':
-                gdb_name = urlEncodeToFileName(url) + ".gdb"
-                output = os.path.join(output, gdb_name)
-
-            key = url + "_" + str(service)
             if service != "*":
+                key = url + "_" + str(service)
                 sr = self.paras[key]['spatialReference']
-                url_lst = url.split(r'/')
-                service_name = url_lst[-2]
+                service = self.paras[key]['service']
+                service_name = self.paras[key]['service_name']
+                layername = self.paras[key]['new_layername']
                 res_url = url + "/" + str(service)
+                output = self.paras[key]['output']
+
+                if layername == "":
+                    layername = self.paras[key]['old_layername']
 
                 # crawl_vector(res_url, service_name=service_name, layer_order=service, layer_name=layername, output_path=output, sr=sr)
                 self.crawlVectorThread.crawl.emit(res_url, service_name, str(service), layername, output, sr)
             else:
-                self.crawlVectorThread.crawlBatch.emit(url, key, output, self.paras)
-                # crawl_vector_batch(url, key, output, self.paras)
+                key_all = url + "_*"
+                output = self.paras[key_all]['output']
+                self.crawlVectorThread.crawlBatch.emit(url, key_all, output, self.paras)
 
     def check_paras(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
         for row in rows:
             url_index, service_index, url, service = self.return_url_and_level(row)
+            layername_index = self.tbl_address.model().index(row, 2, QModelIndex())
+            output_index = self.tbl_address.model().index(row, 3, QModelIndex())
+            layername = str(self.tbl_address.model().data(layername_index, Qt.DisplayRole)).strip()
+            output = str(self.tbl_address.model().data(output_index, Qt.DisplayRole)).strip()
 
             if url == "":
                 log.error('第{}行参数缺失必要参数"地址"，请补全！'.format(row), dialog=True)
@@ -130,6 +135,34 @@ class Ui_Window(QDialog, Ui_Dialog):
             if service == "":
                 log.error('第{}行参数缺失必要参数"服务号"，请补全！'.format(row), dialog=True)
                 return False
+
+            if service != "*":
+                key = url + "_" + str(service)
+                url_lst = url.split(r'/')
+                service_name = url_lst[-2]
+                filepath, filename = os.path.split(output)
+                if os.path.splitext(filename)[1] != '.gdb':
+                    gdb_name = service_name + ".gdb"
+                    if output == "":
+                        if not os.path.exists("res"):
+                            os.makedirs("res")
+                        output = os.path.join(os.path.abspath("res"), gdb_name)
+                        self.paras[key]['output'] = output
+                        log.warning('第{}行缺失非必要参数"输出路径"，将使用默认值"{}".'.format(row + 1, output))
+                    else:
+                        log.warning('第{}行"输出路径"参数缺失输出gdb数据库名，将使用默认值"{}".'.format(row + 1, gdb_name))
+
+                if layername == "":
+                    layername = self.paras[key]['old_layername']
+                    log.warning('第{}行参数缺失非必要参数"输出图层名"，将使用默认值"{}".'.format(row + 1, layername))
+            else:
+                filepath, filename = os.path.split(output)
+                key_all = url + "_*"
+                if os.path.splitext(filename)[1] != '.gdb':
+                    gdb_name = urlEncodeToFileName(url) + ".gdb"
+                    output = os.path.join(output, gdb_name)
+                    self.paras[key_all]['output'] = output
+                    log.warning('第{}行参数缺失非必要参数"输出路径"，将使用默认值"{}".'.format(row + 1, output))
         return True
 
     @Slot(int)
@@ -418,9 +451,12 @@ class Ui_Window(QDialog, Ui_Dialog):
                     sp = getInfo['extent']['spatialReference']['wkid']
 
         url_encodeStr = urlEncodeToFileName(url)
+        url_lst = url.split(r'/')
+        service_name = url_lst[-2]
         self.paras[key] = {
             'url': url,
             'service': service,
+            'service_name': service_name,
             'code': url_encodeStr,
             'old_layername': layername,
             'xmin': xmin,

@@ -91,8 +91,7 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, lo
     if out_layer is None or gdb is None:
         return False, '创建数据库失败！'
 
-    log.info("文件数据库创建成功.")
-    log.info("保存位置为" + os.path.abspath(output_path) + ", 图层名称为" + out_layer.GetName())
+    log.info("文件数据库创建成功, 位置为{}, 图层名称为{}".format(os.path.abspath(output_path), out_layer.GetName()))
 
     log.info(f'开始使用协程抓取服务{service_name}的第{layer_order}个图层...')
 
@@ -155,9 +154,9 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, lo
         lock.release()
     end = time.time()
     if dead_link == 0:
-        log.info('成功完成抓取.耗时：' + str(end - start) + '\n')
+        log.info('成功完成抓取. 总共耗时:{}秒. 数据保存至{}.\n'.format("{:.2f}".format(end-start), output_path))
     else:
-        log.info('未成功完成抓取, 死链接数目为:' + str(dead_link) + '. 耗时：' + str(end - start) + '\n')
+        log.info('未成功完成抓取, 死链接数目为:{}. 总共耗时{}秒. 数据存储至{}.\n'.format(dead_link, "{:.2f}".format(end-start), output_path))
     return True, ''
 
 
@@ -522,5 +521,5 @@ def parseTypeField(FieldType):
 
 
 if __name__ == '__main__':
-    ogr.UseExceptions(level=gdal.CE_Debug)
+    ogr.UseExceptions()
     main()

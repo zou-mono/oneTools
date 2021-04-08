@@ -277,7 +277,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
                 if tileFolder == "":
                     tileFolder = defaultTileFolder(url, level)
-                    log.info('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认参数{}'.format(row, tileFolder))
+                    log.warning('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认值"{}".'.format(row + 1, tileFolder))
                 else:
                     url_encodeStr = urlEncodeToFileName(url)
                     tileFolder = os.path.join(tileFolder, url_encodeStr, str(level))
@@ -286,7 +286,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
                 if imgFile == "":
                     imgFile = defaultImageFile(url, level)
-                    log.info('第{}行参数缺失非必要参数"输出影像文件"，将使用默认参数{}'.format(row, imgFile))
+                    log.warning('第{}行参数缺失非必要参数"输出影像文件"，将使用默认值"{}".'.format(row + 1, imgFile))
 
                 self.crawlTilesThread.crawlAndMerge.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
                                                          float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
@@ -298,7 +298,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 tileFolder = str(self.tbl_address.model().data(tileFolder_index, Qt.DisplayRole)).strip()
                 if tileFolder == "":
                     tileFolder = defaultTileFolder(url, level)
-                    log.info('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认参数{}'.format(row, tileFolder))
+                    log.warning('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认值"{}".'.format(row + 1, tileFolder))
                 else:
                     url_encodeStr = urlEncodeToFileName(url)
                     tileFolder = os.path.join(tileFolder, url_encodeStr, str(level))
@@ -315,7 +315,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 imgFile = str(self.tbl_address.model().data(imgFile_index, Qt.DisplayRole)).strip()
                 if imgFile == "":
                     imgFile = defaultImageFile(url, level)
-                    log.info('第{}行参数缺失非必要参数"输出影像文件"，将使用默认参数{}'.format(row, imgFile))
+                    log.warning('第{}行参数缺失非必要参数"输出影像文件"，将使用默认值"{}".'.format(row + 1, imgFile))
 
                 self.crawlTilesThread.merge.emit(url, int(paras['origin_x']), int(paras['origin_y']),
                                                  float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
