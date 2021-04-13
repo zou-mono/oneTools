@@ -167,8 +167,13 @@ def crawl_vector_batch(url, key, output, paras):
             new_key = url + "_" + str(service)
             sr = paras[new_key]['spatialReference']
             url_lst = url.split(r'/')
-            service_name = url_lst[-2]
-            res_url = url + "/" + str(service)
+            if url_lst[-1] == "":
+                service_name = url_lst[-3]
+                res_url = url + str(service)
+            else:
+                service_name = url_lst[-2]
+                res_url = url + "/" + str(service)
+
             layername = paras[new_key]['old_layername']
 
             if layername == "":
@@ -297,12 +302,15 @@ def createFileGDB(output_path, layer_name, url_json, service_name, layer_order):
 
         if layer_name is None:
             layer_name = check_name(geoObjs['name'])
+        else:
+            layer_name = check_name(layer_name)
         layer_alias_name = f'{service_name}#{layer_order}#{layer_name}'
 
         srs = osr.SpatialReference()
         srs.ImportFromEPSG(epsg)
 
         # out_layer = gdb.CreateLayer(layer_name, srs=srs, geom_type=temp_layer.GetGeomType(),options=["LAYER_ALIAS=电动"])
+
 
         out_layer = gdb.CreateLayer(layer_name, srs=srs, geom_type=GeoType,
                                     options=[f'FEATURE_DATASET={service_name}', f'LAYER_ALIAS={layer_alias_name}'])
@@ -426,6 +434,9 @@ async def output_data_async(url, query_clause, out_layer, startID, endID):
     try:
         respData = await get_json_by_query_async(url, query_clause)
         esri_json = ogr.GetDriverByName('ESRIJSON')
+        if not isinstance(respData, str):
+            raise Exception("返回数据不是str类型！")
+
         geoObjs = esri_json.Open(respData, 0)
         if geoObjs is not None:
             json_Layer = geoObjs.GetLayer()
@@ -439,7 +450,7 @@ async def output_data_async(url, query_clause, out_layer, startID, endID):
         await lock.acquire()
         failed_urls.append([url, query_clause, startID, endID])
         lock.release()
-        log.error('url:{} data:{} error:{}'.format(url, query_clause, traceback.format_exc()))
+        log.error('url:{} data:{} error:{}'.format(url, query_clause, err))
 
 
 def output_data(url, query_clause, out_layer):

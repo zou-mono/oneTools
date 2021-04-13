@@ -97,9 +97,9 @@ class Ui_Window(QDialog, Ui_Dialog):
         for row in rows:
             url_index, service_index, url, service = self.return_url_and_level(row)
             # layername_index = self.tbl_address.model().index(row, 2, QModelIndex())
-            # output_index = self.tbl_address.model().index(row, 3, QModelIndex())
+            output_index = self.tbl_address.model().index(row, 3, QModelIndex())
             # layername = str(self.tbl_address.model().data(layername_index, Qt.DisplayRole)).strip()
-            # output = str(self.tbl_address.model().data(output_index, Qt.DisplayRole)).strip()
+            output = str(self.tbl_address.model().data(output_index, Qt.DisplayRole)).strip()
 
             if service != "*":
                 key = url + "_" + str(service)
@@ -108,7 +108,9 @@ class Ui_Window(QDialog, Ui_Dialog):
                 service_name = self.paras[key]['service_name']
                 layername = self.paras[key]['new_layername']
                 res_url = url + "/" + str(service)
-                output = self.paras[key]['output']
+
+                if self.paras[key]['output'] != "":
+                    output = self.paras[key]['output']
 
                 if layername == "":
                     layername = self.paras[key]['old_layername']
@@ -117,7 +119,9 @@ class Ui_Window(QDialog, Ui_Dialog):
                 self.crawlVectorThread.crawl.emit(res_url, service_name, str(service), layername, output, sr)
             else:
                 key_all = url + "_*"
-                output = self.paras[key_all]['output']
+                if self.paras[key_all]['output'] != "":
+                    output = self.paras[key_all]['output']
+
                 self.crawlVectorThread.crawlBatch.emit(url, key_all, output, self.paras)
 
     def check_paras(self):
@@ -380,7 +384,6 @@ class Ui_Window(QDialog, Ui_Dialog):
                     layername = self.paras[url + "_" + str(service)]['old_layername']
                     self.tbl_address.model().setData(layername_index, layername)
 
-        print(self.paras)
 
     def setAllParaToMemory(self, url, getInfo):
         xmin = xmax = ymin = ymax = sp = ""
@@ -425,8 +428,6 @@ class Ui_Window(QDialog, Ui_Dialog):
             'spatialReference': sp,
             "output": ""
         }
-
-        print(self.paras)
 
     def setParaToMemory(self, url, service, getInfo):
         xmin = xmax = ymin = ymax = sp = layername = ""
