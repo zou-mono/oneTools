@@ -57,7 +57,7 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.buttonBox.clicked.connect(self.buttonBox_clicked)
 
         self.btn_addRow.clicked.connect(self.btn_addRow_Clicked)
-        self.btn_removeRow.clicked.connect(self.removeBtn_clicked)
+        self.btn_removeRow.clicked.connect(self.btn_removeBtn_clicked)
         self.btn_obtainMeta.clicked.connect(self.btn_obtainMeta_clicked)
         self.btn_saveMetaFile.clicked.connect(self.btn_saveMetaFile_clicked)
 
@@ -203,7 +203,7 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.tbl_address.setFocus()
 
     @Slot()
-    def removeBtn_clicked(self):
+    def btn_removeBtn_clicked(self):
         index_list = []
         selModel = self.tbl_address.selectionModel()
         if selModel is None:

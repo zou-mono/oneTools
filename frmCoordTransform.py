@@ -1,24 +1,20 @@
 from PyQt5.QtCore import QRect, Qt, QPersistentModelIndex, QItemSelectionModel, QModelIndex, QThread, QObject
 from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
 from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, QDialogButtonBox, QStyleFactory, \
-    QAbstractItemView, QHeaderView, QComboBox, QAbstractButton, QFileDialog, QWidget, QListView, QTreeView
+    QAbstractItemView, QHeaderView, QComboBox, QAbstractButton, QFileDialog
 from PyQt5 import QtWidgets, QtGui, QtCore
 from osgeo import osr
 
-# from UI.UICoordTransform import Ui_Dialog
-# from UI.listview_dialog import Ui_Dialog
 import UI.UICoordTransform
 import UI.listview_dialog
 import sys
 import json
 import os
-import re
 
 from UICore.DataFactory import workspaceFactory
 from UICore.Gv import SplitterState, Dock, DataType, srs_dict, srs_list
 from UICore.common import defaultImageFile, defaultTileFolder, urlEncodeToFileName, get_paraInfo, get_srs_by_epsg
-from widgets.mTable import TableModel, mTableStyle, addressTableDelegate, layernameDelegate, srsDelegate, \
-    outputPathDelegate
+from widgets.mTable import TableModel, mTableStyle, layernameDelegate, srsDelegate, outputPathDelegate
 from UICore.log4p import Log
 
 Slot = QtCore.pyqtSlot
@@ -66,19 +62,17 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
         self.btn_addressFile.clicked.connect(self.open_addressFile)
         self.btn_addRow.clicked.connect(self.btn_addRow_clicked)
-        self.btn_removeRow.clicked.connect(self.removeBtn_clicked)
+        self.btn_removeRow.clicked.connect(self.btn_removeBtn_clicked)
+        self.btn_saveMetaFile.clicked.connect(self.btn_saveMetaFile_clicked)
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
         self.rbtn_file.click()
-
-        self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.16)
-        self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.16)
-        self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.18)
-        self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.18)
-        self.tbl_address.setColumnWidth(4, self.tbl_address.width() * 0.16)
-        self.tbl_address.setColumnWidth(5, self.tbl_address.width() * 0.15)
+        self.table_layout()
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
+        self.table_layout()
+
+    def table_layout(self):
         self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.16)
         self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.16)
         self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.18)
@@ -109,7 +103,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
                 if dataset is not None:
                     in_layer = dataset.GetLayer()
-                    self.add_file_to_row(in_layer, fileName, layer_name)
+                    self.add_layer_to_row(in_layer, fileName, layer_name)
 
                     dataset.Release()
                     dataset = None
@@ -128,9 +122,9 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 if selected_names is not None:
                     for selected_name in selected_names:
                         layer = wks.openLayer(selected_name)
-                        self.add_file_to_row(layer, fileName, selected_name)
+                        self.add_layer_to_row(layer, fileName, selected_name)
 
-    def add_file_to_row(self, in_layer, fileName, layer_name):
+    def add_layer_to_row(self, in_layer, fileName, layer_name):
         in_srs = in_layer.GetSpatialRef()
         if in_srs is not None:
             in_srs = osr.SpatialReference(in_srs.ExportToWkt())
@@ -156,7 +150,65 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
     @Slot()
     def open_addressFile(self):
-        pass
+        fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择坐标转换参数文件", os.getcwd(),
+                                                                   "All Files(*)")
+        self.txt_addressFile.setText(fileName)
+
+        if fileName == "":
+            return
+
+        try:
+            with open(fileName, 'r', encoding='utf-8') as f:
+                self.paras = json.load(f)
+
+            self.add_address_rows_from_paras()
+        except:
+            log.error("读取参数文件失败！", dialog=True)
+
+    def add_address_rows_from_paras(self):
+        imps = self.paras['exports']
+        for imp in imps:
+            row = self.model.rowCount(QModelIndex())
+            self.model.addEmptyRow(self.model.rowCount(QModelIndex()), 1, 0)
+
+            self.tbl_address.model().setData(self.tbl_address.model().index(row, 0), imp['in_path'])
+            self.tbl_address.model().setData(self.tbl_address.model().index(row, 1), imp['in_layer'])
+            self.tbl_address.model().setData(self.tbl_address.model().index(row, 2), imp['in_srs'])
+            self.tbl_address.model().setData(self.tbl_address.model().index(row, 3), imp['out_srs'])
+            self.tbl_address.model().setData(self.tbl_address.model().index(row, 4), imp['out_path'])
+            self.tbl_address.model().setData(self.tbl_address.model().index(row, 5), imp['out_layer'])
+
+    @Slot()
+    def btn_saveMetaFile_clicked(self):
+        fileName, fileType = QFileDialog.getSaveFileName(self, "请选择保存的参数文件", os.getcwd(),
+                                                         "json file(*.json)")
+
+        datas = self.tbl_address.model().datas
+        logicRows = range(0, len(datas))
+
+        results = []
+
+        for logicRow in logicRows:
+            row_data = {
+                'in_path': datas[logicRow][0],
+                'in_layer': datas[logicRow][1],
+                'in_srs': datas[logicRow][2],
+                'out_srs': datas[logicRow][3],
+                'out_path': datas[logicRow][4],
+                'out_layer': datas[logicRow][5]
+            }
+            results.append(row_data)
+
+        res = {
+            'exports': results
+        }
+
+        try:
+            if fileName != '':
+                with open(fileName, 'w', encoding='UTF-8') as f:
+                    json.dump(res, f, ensure_ascii=False)
+        except:
+            log.error("文件存储路径错误，无法保存！", parent=self, dialog=True)
 
     def table_init(self):
         self.tbl_address.setStyle(mTableStyle())
@@ -209,7 +261,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.tbl_address.setItemDelegateForColumn(4, outputpath_delegate)
 
     @Slot()
-    def removeBtn_clicked(self):
+    def btn_removeBtn_clicked(self):
         index_list = []
         selModel = self.tbl_address.selectionModel()
         if selModel is None:

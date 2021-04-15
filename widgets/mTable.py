@@ -286,11 +286,6 @@ class srsDelegate(addressTableDelegate):
             for data in srs_list:
                 self.cmb_srs.addItem(str(data))
 
-            if currentData == -1:
-                self.cmb_srs.setCurrentText("")
-            else:
-                self.cmb_srs.setCurrentText(str(currentData))
-
             self.cmb_srs.currentIndexChanged.connect(self.cmb_selectionchange)
             return self.cmb_srs
         else:

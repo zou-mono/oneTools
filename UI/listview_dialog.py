@@ -24,7 +24,7 @@ class Ui_Dialog(object):
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.lv_name = QtWidgets.QListWidget(Dialog)
         self.lv_name.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        self.lv_name.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        self.lv_name.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.lv_name.setObjectName("lv_name")
         self.verticalLayout_2.addWidget(self.lv_name)
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()

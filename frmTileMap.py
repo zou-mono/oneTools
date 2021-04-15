@@ -51,7 +51,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.resize(self.splitter.width(), self.splitter.height())
 
         self.btn_addRow.clicked.connect(self.btn_addRow_Clicked)
-        self.btn_removeRow.clicked.connect(self.removeBtn_clicked)
+        self.btn_removeRow.clicked.connect(self.btn_removeBtn_clicked)
 
         self.rbtn_onlySpider.clicked.connect(self.rbtn_toggled)
         self.rbtn_onlyHandle.clicked.connect(self.rbtn_toggled)
@@ -248,8 +248,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     self.paras[key]['imageFile'] = imageFile
         try:
             if fileName != '':
-                with open(fileName, 'w') as f:
-                    json.dump(self.paras, f)
+                with open(fileName, 'w', encoding='UTF-8') as f:
+                    json.dump(self.paras, f, ensure_ascii=False)
         except:
             log.error("文件存储路径错误，无法保存！", parent=self, dialog=True)
 
@@ -417,7 +417,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         selModel.select(next_index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
         self.tbl_address.setFocus()
 
-    def removeBtn_clicked(self):
+    def btn_removeBtn_clicked(self):
         index_list = []
         selModel = self.tbl_address.selectionModel()
         if selModel is None:
@@ -554,7 +554,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             return
 
         try:
-            with open(fileName, 'r') as f:
+            with open(fileName, 'r', encoding='utf-8') as f:
                 self.paras = json.load(f)
 
             self.add_address_rows_from_paras()
