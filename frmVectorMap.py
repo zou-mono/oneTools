@@ -3,7 +3,7 @@ import os
 import sys
 import urllib.parse
 
-from PyQt5.QtGui import QFont, QPalette, QShowEvent
+from PyQt5.QtGui import QFont, QPalette, QShowEvent, QResizeEvent
 from UI.UIVectorMap import Ui_Dialog
 from PyQt5.QtWidgets import QApplication, QDialog, QStyleFactory, QVBoxLayout, QDialogButtonBox, QFileDialog, \
     QHeaderView, QAbstractItemView, QAbstractButton
@@ -73,6 +73,12 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.crawlVectorThread.finished.connect(self.threadStop)
 
     def showEvent(self, a0: QShowEvent) -> None:
+        self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.4)
+        self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
+        self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)
+        self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.2)
+
+    def resizeEvent(self, a0: QResizeEvent) -> None:
         self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.4)
         self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
         self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)

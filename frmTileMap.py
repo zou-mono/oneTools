@@ -379,7 +379,19 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
         self.rbtn_spiderAndHandle.click()
 
-    # self.tbl_address.show()
+    def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
+        if self.rbtn_onlyHandle.isChecked():
+            self.tbl_address.setColumnWidth(0, self.tbl_address.width() / 2)
+            self.tbl_address.setColumnWidth(1, self.tbl_address.width() / 2)
+        elif self.rbtn_onlySpider.isChecked():
+            self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.4)
+            self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
+            self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.4)
+        elif self.rbtn_spiderAndHandle.isChecked():
+            self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.4)
+            self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
+            self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)
+            self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.2)
 
     def return_url_and_level(self, logicRow):
         url_index = self.tbl_address.model().index(logicRow, self.url_no)
@@ -451,33 +463,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.txt_level.setText("")
 
         if self.rbtn_onlyHandle.isChecked():
-            self.txt_addressFile.setEnabled(False)
-            self.btn_addressFile.setEnabled(False)
-            self.txt_addressFile.clear()
-
-            self.txt_tileInfoFile.setEnabled(True)
-            self.btn_tileInfoDialog.setEnabled(True)
-
-            self.txt_originX.setEnabled(True)
-            self.txt_originY.setEnabled(True)
-            self.txt_resolution.setEnabled(True)
-            self.txt_tilesize.setEnabled(True)
-
-            self.txt_level.setEnabled(False)
-            self.btn_obtainMeta.setEnabled(False)
-
-            self.model.setHeaderData(0, Qt.Horizontal, "输入瓦片文件夹", Qt.DisplayRole)
-            # self.model.setHeaderData(1, Qt.Horizontal, "参数文件", Qt.DisplayRole)
-            self.model.setHeaderData(1, Qt.Horizontal, "输出影像文件", Qt.DisplayRole)
-            delegate = addressTableDelegate(self, [{'text': "请选择瓦片文件夹", 'type': "d"},
-                                                   {'text': "请选择或创建影像文件", 'type': "f"}])
-            self.tbl_address.setModel(self.model)
-            self.tbl_address.setItemDelegate(delegate)
-            self.tbl_address.setColumnWidth(0, self.tbl_address.width() / 2)
-            self.tbl_address.setColumnWidth(1, self.tbl_address.width() / 2)
-
-            self.paras = {}
-
+            self.table_init_onlyHandle()
         else:
             self.txt_addressFile.setEnabled(True)
             self.btn_addressFile.setEnabled(True)
@@ -494,37 +480,69 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.txt_level.setEnabled(False)
             self.btn_obtainMeta.setEnabled(True)
 
-            # self.model.setHeaderData(0, Qt.Horizontal, "ID", Qt.DisplayRole)
             self.model.setHeaderData(0, Qt.Horizontal, "地址", Qt.DisplayRole)
 
             if self.rbtn_onlySpider.isChecked():
-                self.model.setHeaderData(1, Qt.Horizontal, "等级", Qt.DisplayRole)
-                self.model.setHeaderData(2, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
-
-                delegate = addressTableDelegate(self, [None, {'type': 'c'},
-                                                       {'text': "请选择输出瓦片文件夹", 'type': "d"}])
-                self.tbl_address.setModel(self.model)
-                self.tbl_address.setItemDelegate(delegate)
-                self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.4)
-                self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
-                self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.4)
-
+                self.table_init_onlySpider()
             elif self.rbtn_spiderAndHandle.isChecked():
-                self.model.setHeaderData(1, Qt.Horizontal, "等级", Qt.DisplayRole)
-                self.model.setHeaderData(2, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
-                self.model.setHeaderData(3, Qt.Horizontal, "输出影像文件", Qt.DisplayRole)
+                self.table_init_spiderAndHandle()
 
-                delegate = addressTableDelegate(self, [None, {'type': 'c'},
-                                                       {'text': "请选择输出瓦片文件夹", 'type': "d"},
-                                                       {'text': "请选择输出影像文件", 'type': "f"}])
-                self.tbl_address.setModel(self.model)
-                self.tbl_address.setItemDelegate(delegate)
-                self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.4)
-                self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
-                self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)
-                self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.2)
+    def table_init_onlyHandle(self):
+        self.txt_addressFile.setEnabled(False)
+        self.btn_addressFile.setEnabled(False)
+        self.txt_addressFile.clear()
 
-                self.paras = {}
+        self.txt_tileInfoFile.setEnabled(True)
+        self.btn_tileInfoDialog.setEnabled(True)
+
+        self.txt_originX.setEnabled(True)
+        self.txt_originY.setEnabled(True)
+        self.txt_resolution.setEnabled(True)
+        self.txt_tilesize.setEnabled(True)
+
+        self.txt_level.setEnabled(False)
+        self.btn_obtainMeta.setEnabled(False)
+
+        self.model.setHeaderData(0, Qt.Horizontal, "输入瓦片文件夹", Qt.DisplayRole)
+        # self.model.setHeaderData(1, Qt.Horizontal, "参数文件", Qt.DisplayRole)
+        self.model.setHeaderData(1, Qt.Horizontal, "输出影像文件", Qt.DisplayRole)
+        delegate = addressTableDelegate(self, [{'text': "请选择瓦片文件夹", 'type': "d"},
+                                               {'text': "请选择或创建影像文件", 'type': "f"}])
+        self.tbl_address.setModel(self.model)
+        self.tbl_address.setItemDelegate(delegate)
+        self.tbl_address.setColumnWidth(0, self.tbl_address.width() / 2)
+        self.tbl_address.setColumnWidth(1, self.tbl_address.width() / 2)
+
+        self.paras = {}
+
+    def table_init_onlySpider(self):
+        self.model.setHeaderData(1, Qt.Horizontal, "等级", Qt.DisplayRole)
+        self.model.setHeaderData(2, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
+
+        delegate = addressTableDelegate(self, [None, {'type': 'c'},
+                                               {'text': "请选择输出瓦片文件夹", 'type': "d"}])
+        self.tbl_address.setModel(self.model)
+        self.tbl_address.setItemDelegate(delegate)
+        self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.4)
+        self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
+        self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.4)
+
+    def table_init_spiderAndHandle(self):
+        self.model.setHeaderData(1, Qt.Horizontal, "等级", Qt.DisplayRole)
+        self.model.setHeaderData(2, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
+        self.model.setHeaderData(3, Qt.Horizontal, "输出影像文件", Qt.DisplayRole)
+
+        delegate = addressTableDelegate(self, [None, {'type': 'c'},
+                                               {'text': "请选择输出瓦片文件夹", 'type': "d"},
+                                               {'text': "请选择输出影像文件", 'type': "f"}])
+        self.tbl_address.setModel(self.model)
+        self.tbl_address.setItemDelegate(delegate)
+        self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.4)
+        self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
+        self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)
+        self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.2)
+
+        self.paras = {}
 
     @Slot()
     def open_addressFile(self):
