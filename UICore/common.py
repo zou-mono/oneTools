@@ -4,6 +4,8 @@ import math
 import os
 import re
 import time
+
+from UICore.Gv import srs_dict, SpatialReference
 from UICore.log4p import Log
 import urllib.request, urllib.parse
 
@@ -86,3 +88,22 @@ def get_col_row(x0, y0, x, y, size, resolution):
     row = math.floor(math.fabs((y0 - y) / (size * resolution)))
 
     return col, row
+
+
+def get_srs_by_epsg(name: str):
+    if name == "2435":
+        return srs_dict[SpatialReference.sz_Local]
+    elif name == "4490":
+        return srs_dict[SpatialReference.gcs_2000]
+    elif name == "4547":
+        return srs_dict[SpatialReference.pcs_2000]
+    elif name == "4526":
+        return srs_dict[SpatialReference.pcs_2000_zone]
+    elif name == "4326":
+        return srs_dict[SpatialReference.wgs84]
+    elif name == "4610":
+        return srs_dict[SpatialReference.gcs_xian80]
+    elif name == "2383":
+        return srs_dict[SpatialReference.pcs_xian80]
+    elif name == "2362":
+        return srs_dict[SpatialReference.pcs_xian80_zone]

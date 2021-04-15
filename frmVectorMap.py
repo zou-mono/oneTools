@@ -384,7 +384,6 @@ class Ui_Window(QDialog, Ui_Dialog):
                     layername = self.paras[url + "_" + str(service)]['old_layername']
                     self.tbl_address.model().setData(layername_index, layername)
 
-
     def setAllParaToMemory(self, url, getInfo):
         xmin = xmax = ymin = ymax = sp = ""
 

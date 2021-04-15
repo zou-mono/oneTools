@@ -10,6 +10,9 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QAbstractItemVie
     QProxyStyle, QStyleOption, QTableView, QStyledItemDelegate, QWidget, QLineEdit, QPushButton, QFileDialog, QStyle, \
     QStyleOptionButton, QHBoxLayout, QComboBox
 
+from UICore.Gv import srs_list
+
+
 class FileAddressEditor(QWidget):
     editingFinished = pyqtSignal()
     clickButton = pyqtSignal()
@@ -70,8 +73,8 @@ class FileAddressEditor(QWidget):
 
         return super().eventFilter(source, event)
 
-class mTableStyle(QProxyStyle):
 
+class mTableStyle(QProxyStyle):
     def drawPrimitive(self, element, option, painter, widget=None):
         """
         Draw a line across the entire row rather than just the column
@@ -96,7 +99,7 @@ class mTableStyle(QProxyStyle):
 
 class addressTableDelegate(QStyledItemDelegate):
     def __init__(self, parent, buttonSection, orientation=Qt.Horizontal):
-        # buttonColumn用来记录需要设置按钮的单元格
+        # buttonSection用来记录需要设置按钮的单元格
         # orientation用来表示需要设置按钮的表头方向，horizontal表示所有列都设置按钮, vertical表示所有行都设置按钮
         super(addressTableDelegate, self).__init__(parent)
         self.buttonSection = buttonSection
@@ -170,8 +173,6 @@ class addressTableDelegate(QStyledItemDelegate):
         if isinstance(editor, FileAddressEditor):
             model.setData(index, editor.text())
         elif isinstance(editor, QComboBox):
-            # allItems = [editor.itemText(i) for i in range(editor.count())]
-            # model.setData(index, allItems)
             model.setData(index, editor.currentText())
             print(editor.currentText())
         else:
@@ -186,9 +187,6 @@ class addressTableDelegate(QStyledItemDelegate):
             idx = editor.findData(data)
             if idx > -1:
                 editor.setCurrentIndex(idx)
-            # datas = index.model().data(index, Qt.EditRole)
-            # for data in datas:
-            #     editor.addItem(str(data))
         else:
             super(addressTableDelegate, self).setEditorData(editor, index)
         self._isEditing = True
@@ -233,6 +231,110 @@ class vectorTableDelegate(addressTableDelegate):
         self.buttonSection = buttonSection
         self.orientation = orientation
         self.mainWindow = parent
+
+class layernameDelegate(addressTableDelegate):
+    def __init__(self, parent, buttonSection, orientation=Qt.Horizontal):
+        # buttonSection用来记录需要设置按钮的单元格
+        # orientation用来表示需要设置按钮的表头方向，horizontal表示所有列都设置按钮, vertical表示所有行都设置按钮
+        super(layernameDelegate, self).__init__(parent, buttonSection, orientation)
+        self.buttonSection = buttonSection
+        self.orientation = orientation
+        self.mainWindow = parent
+
+    def createEditor(self, parent: QWidget, option: 'QStyleOptionViewItem', index: QModelIndex) -> QWidget:
+        section = index.column() if self.orientation == Qt.Horizontal else index.row()
+        self.index = index
+
+        if self.buttonSection is not None:
+            currentData = self.index.data(Qt.DisplayRole)
+
+            self.cmb_layername = QComboBox(parent)
+            url_index, layername_index, url, layername = self.mainWindow.return_url_and_layername(self.index.row())
+            datas = index.model().levelData()[url]
+            for data in datas:
+                self.cmb_layername.addItem(str(data))
+
+            if currentData == -1:
+                self.cmb_layername.setCurrentText("")
+            else:
+                self.cmb_layername.setCurrentText(str(currentData))
+
+            self.cmb_layername.currentIndexChanged.connect(self.cmb_selectionchange)
+            return self.cmb_layername
+        else:
+            return super().createEditor(parent, option, index)
+
+    def cmb_selectionchange(self, i):
+        print(i)
+
+class srsDelegate(addressTableDelegate):
+    def __init__(self, parent, buttonSection, orientation=Qt.Horizontal):
+        # buttonSection用来记录需要设置按钮的单元格
+        # orientation用来表示需要设置按钮的表头方向，horizontal表示所有列都设置按钮, vertical表示所有行都设置按钮
+        super(srsDelegate, self).__init__(parent, buttonSection, orientation)
+        self.buttonSection = buttonSection
+        self.orientation = orientation
+        self.mainWindow = parent
+
+    def createEditor(self, parent: QWidget, option: 'QStyleOptionViewItem', index: QModelIndex) -> QWidget:
+        self.index = index
+
+        if self.buttonSection is not None:
+            currentData = self.index.data(Qt.DisplayRole)
+
+            self.cmb_srs = QComboBox(parent)
+            for data in srs_list:
+                self.cmb_srs.addItem(str(data))
+
+            if currentData == -1:
+                self.cmb_srs.setCurrentText("")
+            else:
+                self.cmb_srs.setCurrentText(str(currentData))
+
+            self.cmb_srs.currentIndexChanged.connect(self.cmb_selectionchange)
+            return self.cmb_srs
+        else:
+            return super().createEditor(parent, option, index)
+
+    def cmb_selectionchange(self, i):
+        print(i)
+
+
+class outputPathDelegate(addressTableDelegate):
+    def __init__(self, parent, buttonSection, orientation=Qt.Horizontal):
+        # buttonSection用来记录需要设置按钮的单元格
+        # orientation用来表示需要设置按钮的表头方向，horizontal表示所有列都设置按钮, vertical表示所有行都设置按钮
+        super(outputPathDelegate, self).__init__(parent, buttonSection, orientation)
+        self.buttonSection = buttonSection
+        self.orientation = orientation
+        self.mainWindow = parent
+
+    def createEditor(self, parent: QWidget, option: 'QStyleOptionViewItem', index: QModelIndex) -> QWidget:
+        self.index = index
+        title = self.buttonSection['text'] if 'text' in self.buttonSection else "请选择..."
+        type = self.buttonSection['type'] if 'type' in self.buttonSection else "f"
+
+        if self.buttonSection is not None:
+            self.mAddressDialog = FileAddressEditor(parent, option, type)
+            self.mAddressDialog.clickButton.connect(lambda: self.mBtn_address_clicked(parent, title, type))
+            self.mAddressDialog.editingFinished.connect(self.commitAndCloseEditor)
+            return self.mAddressDialog
+        else:
+            return super().createEditor(parent, option, index)
+
+    def mBtn_address_clicked(self, parent, title, type):
+        fileName = QFileDialog.getExistingDirectory(parent, title, os.getcwd(), QFileDialog.ShowDirsOnly)
+
+        if not sip.isdeleted(self.mAddressDialog):
+            self.mAddressDialog.setText(fileName)
+            self.commitAndCloseEditor()
+        else:
+            print("deleted, {}".format(fileName))
+
+    def commitAndCloseEditor(self):
+        editor = self.sender()
+        self.commitData.emit(editor)
+        self.closeEditor.emit(editor)
 
 
 class TableModel(QAbstractTableModel):

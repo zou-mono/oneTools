@@ -436,4 +436,3 @@ class Ui_Dialog(object):
         self.label_28.setText(_translate("Dialog", "分辨率:"))
         self.label_29.setText(_translate("Dialog", "瓦片尺寸:"))
 from widgets.CollapsibleSplitter import CollapsibleSplitter
-import icons_rc

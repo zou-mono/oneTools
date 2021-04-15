@@ -5,6 +5,14 @@ from osgeo import gdal
 input = r"D:\Data\深圳坐标\配准中心线（深圳坐标）.shp"
 shp_driver = ogr.GetDriverByName("ESRI Shapefile")
 inDs = shp_driver.Open(input, 1)
+print(inDs.GetLayerCount())
+
+layer = inDs.GetLayer()
+spatialRef = layer.GetSpatialRef()
+print(spatialRef)
+
+srs = osr.SpatialReference(spatialRef.ExportToWkt())
+print(srs)
 
 tmp_output = r"D:\Data\深圳坐标\test\配准中心线_bj54.geojson"
 # geojson_driver = ogr.GetDriverByName("ESRI Shapefile")
