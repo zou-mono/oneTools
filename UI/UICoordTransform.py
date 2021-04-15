@@ -194,8 +194,8 @@ class Ui_Dialog(object):
         self.rbtn_file.setText(_translate("Dialog", "图形文件"))
         self.rbtn_filedb.setText(_translate("Dialog", "ESRI文件数据库(FileGDB)"))
         self.label_1.setText(_translate("Dialog", "加载批处理坐标转换参数文件"))
-        self.btn_addRow.setToolTip(_translate("Dialog", "增加服务项"))
-        self.btn_removeRow.setToolTip(_translate("Dialog", "删除服务项"))
+        self.btn_addRow.setToolTip(_translate("Dialog", "打开需要转换的数据"))
+        self.btn_removeRow.setToolTip(_translate("Dialog", "删除一行"))
         self.btn_saveMetaFile.setToolTip(_translate("Dialog", "保存参数文件"))
 from widgets.CollapsibleSplitter import CollapsibleSplitter
 import icons_rc

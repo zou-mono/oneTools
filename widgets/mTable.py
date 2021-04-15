@@ -297,7 +297,8 @@ class srsDelegate(addressTableDelegate):
             return super().createEditor(parent, option, index)
 
     def cmb_selectionchange(self, i):
-        print(i)
+        if i > -1:
+            self.mainWindow.update_outlayername(self.index, self.cmb_srs.itemText(i))
 
 
 class outputPathDelegate(addressTableDelegate):

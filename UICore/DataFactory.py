@@ -1,3 +1,5 @@
+import traceback
+
 from osgeo import ogr
 from UICore.log4p import Log
 from UICore.Gv import DataType
@@ -28,11 +30,16 @@ class workspaceFactory(object):
             log.error("缺失相应的图形文件读取引擎！", dialog=True)
             return None
         else:
-            self.dataset = self.driver.Open(file, 1)
-            return self.dataset
+            try:
+                self.dataset = self.driver.Open(file, 1)
+                return self.dataset
+            except:
+                log.error("打开文件发生错误. \n{}".format(traceback.format_exc()))
+                return None
 
     def openLayer(self, name):
-        pass
+        if self.dataset is not None:
+            return self.dataset.GetLayer(name)
 
     def getLayers(self):
         if self.dataset is not None:
@@ -52,28 +59,24 @@ class workspaceFactory(object):
         else:
             return []
 
+
 class shapefileWorkspaceFactory(workspaceFactory):
     def __init__(self):
+        super().__init__()
         driverName = "ESRI Shapefile"
         self.driver = ogr.GetDriverByName(driverName)
-        self.featsClassList = []
-        self.dataset = None
-        self.layer_names = []
 
 
 class geojsonWorkspaceFactory(workspaceFactory):
     def __init__(self):
+        super().__init__()
         driverName = "GeoJSON"
         self.driver = ogr.GetDriverByName(driverName)
-        self.featsClassList = []
-        self.dataset = None
-        self.layer_names = []
 
 
 class filegdbWorkspaceFactory(workspaceFactory):
     def __init__(self):
+        super().__init__()
         driverName = "FileGDB"
         self.driver = ogr.GetDriverByName(driverName)
-        self.featsClassList = []
-        self.dataset = None
-        self.layer_names = []
+
