@@ -125,9 +125,10 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 lst_names = wks.getLayerNames()
                 selected_names = nameListDialog().openListDialog(lst_names)
 
-                for selected_name in selected_names:
-                    layer = wks.openLayer(selected_name)
-                    self.add_file_to_row(layer, fileName, selected_name)
+                if selected_names is not None:
+                    for selected_name in selected_names:
+                        layer = wks.openLayer(selected_name)
+                        self.add_file_to_row(layer, fileName, selected_name)
 
     def add_file_to_row(self, in_layer, fileName, layer_name):
         in_srs = in_layer.GetSpatialRef()
@@ -256,7 +257,6 @@ class nameListDialog(QtWidgets.QDialog, UI.listview_dialog.Ui_Dialog):
 
         if result == 1:
             return self.select_names
-
 
     def pushButton_clicked(self):
         sel_items = self.lv_name.selectedItems()
