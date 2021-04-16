@@ -91,6 +91,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
             wks = None
             for fileName in fileNames:
+                save_srs_list = srs_list
                 if fileType == 'ESRI Shapefile(*.shp)':
                     wks = workspaceFactory().get_factory(DataType.shapefile)
                 elif fileType == 'GeoJson(*.geojson)':
@@ -104,7 +105,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 if dataset is not None:
                     in_layer = dataset.GetLayer()
                     row = self.add_layer_to_row(in_layer, fileName, layer_name)
-                    self.add_delegate_to_row(row, fileName, [layer_name])
+                    self.add_delegate_to_row(row, fileName, [layer_name], save_srs_list)
 
                     dataset.Release()
                     dataset = None
@@ -128,7 +129,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                         rows.append(row)
 
                     for row in rows:
-                        self.add_delegate_to_row(row, fileName, lst_names)
+                        self.add_delegate_to_row(row, fileName, lst_names, srs_list)
 
     def add_layer_to_row(self, in_layer, fileName, layer_name):
         in_srs = in_layer.GetSpatialRef()
@@ -151,31 +152,17 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
         return row
 
-    def add_delegate_to_row(self, row, fileName, lst_layer_name):
+    def add_delegate_to_row(self, row, fileName, lst_layer_name, lst_srs):
         in_layername_index = self.tbl_address.model().index(row, self.in_layername_no)
         in_srs_index = self.tbl_address.model().index(row, self.in_srs_no)
         out_srs_index = self.tbl_address.model().index(row, self.out_srs_no)
-
         editor_delegate = self.tbl_address.itemDelegate(in_layername_index)
-        if isinstance(editor_delegate, layernameDelegate):
-            levelData = {
-                'layer_names': lst_layer_name
-            }
 
-            self.model.setLevelData(fileName, levelData)
-        #
-        # in_srs_delegate = self.tbl_address.itemDelegate(in_srs_index)
-        # out_srs_delegate = self.tbl_address.itemDelegate(out_srs_index)
-        # if isinstance(in_srs_delegate, srsDelegate) or isinstance(in_srs_delegate, out_srs_delegate):
-        #     if 'in_srs' not in self.model.levels:
-        #         levelData = {
-        #             'in_srs': [layer_name]
-        #         }
-        #     else:
-        #         levelData = self.model.levels['layer_names']
-        #         levelData.append(layer_name)
-        #
-        #     self.model.setLevelData(fileName, levelData)
+        levelData = {
+            'layer_names': lst_layer_name,
+            'srs_list': lst_srs
+        }
+        self.model.setLevelData(fileName, levelData)
 
     @Slot()
     def open_addressFile(self):
@@ -192,6 +179,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
             self.add_address_rows_from_paras()
         except:
+            self.model.removeRows(self.model.rowCount(QModelIndex()) - 1, 1, QModelIndex())
             log.error("读取参数文件失败！", dialog=True)
 
     def add_address_rows_from_paras(self):
@@ -200,7 +188,19 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
             row = self.model.rowCount(QModelIndex())
             self.model.addEmptyRow(self.model.rowCount(QModelIndex()), 1, 0)
 
-            # self.model.setLevelData(imp['in_path'], )
+            self.model.setLevelData(imp['in_path'], {
+                'layer_names': imp['layer_names'],
+                'srs_list': imp['srs_list']
+            })
+
+            in_srs_index = self.tbl_address.model().index(row, self.in_srs_no)
+            out_srs_index = self.tbl_address.model().index(row, self.out_srs_no)
+            in_srs_delegate = self.tbl_address.itemDelegate(in_srs_index)
+            out_srs_delegate = self.tbl_address.itemDelegate(out_srs_index)
+            if isinstance(in_srs_delegate, srsDelegate):
+                in_srs_delegate.set_srs_list(imp['srs_list'])
+            if isinstance(out_srs_delegate, srsDelegate):
+                out_srs_delegate.set_srs_list(imp['srs_list'])
 
             self.tbl_address.model().setData(self.tbl_address.model().index(row, 0), imp['in_path'])
             self.tbl_address.model().setData(self.tbl_address.model().index(row, 1), imp['in_layer'])
@@ -213,6 +213,9 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
     def btn_saveMetaFile_clicked(self):
         fileName, fileType = QFileDialog.getSaveFileName(self, "请选择保存的参数文件", os.getcwd(),
                                                          "json file(*.json)")
+
+        if fileName == "":
+            return
 
         datas = self.tbl_address.model().datas
         levels = self.tbl_address.model().levelData()
@@ -229,8 +232,8 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 'out_srs': datas[logicRow][3],
                 'out_path': datas[logicRow][4],
                 'out_layer': datas[logicRow][5],
-                # 'layer_names': levels[key]
-                # 'in_srs_list':
+                'layer_names': levels[key]['layer_names'],
+                'srs_list': levels[key]['srs_list']
                 # 'out_srs_list':
             }
             results.append(row_data)

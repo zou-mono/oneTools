@@ -253,6 +253,9 @@ class layernameDelegate(addressTableDelegate):
             for data in datas:
                 self.cmb_layername.addItem(str(data))
 
+            if currentData is not None:
+                self.cmb_layername.setCurrentText(str(currentData))
+
             self.cmb_layername.currentIndexChanged.connect(self.cmb_selectionchange)
             return self.cmb_layername
         else:
@@ -275,10 +278,14 @@ class srsDelegate(addressTableDelegate):
 
     def createEditor(self, parent: QWidget, option: 'QStyleOptionViewItem', index: QModelIndex) -> QWidget:
         self.index = index
+        currentData = self.index.data(Qt.DisplayRole)
 
         self.cmb_srs = QComboBox(parent)
         for data in self.srs_list:
             self.cmb_srs.addItem(str(data))
+
+        if currentData is not None:
+            self.cmb_srs.setCurrentText(str(currentData))
 
         self.cmb_srs.currentIndexChanged.connect(self.cmb_selectionchange)
         return self.cmb_srs
