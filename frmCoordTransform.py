@@ -137,16 +137,46 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.model.addEmptyRow(row, 1, 0)
         url_index = self.tbl_address.model().index(row, self.url_no)
         in_layername_index = self.tbl_address.model().index(row, self.in_layername_no)
-        in_srs_index = self.tbl_address.model().index(row, 2)
+        in_srs_index = self.tbl_address.model().index(row, self.in_srs_no)
 
         self.tbl_address.model().setData(url_index, fileName)
         self.tbl_address.model().setData(in_layername_index, layer_name)
         self.tbl_address.model().setData(in_srs_index, srs_desc)
 
+        self.add_delegate_to_row(row, fileName, layer_name)
+
+    def add_delegate_to_row(self, row, fileName, layer_name):
+        in_layername_index = self.tbl_address.model().index(row, self.in_layername_no)
+        in_srs_index = self.tbl_address.model().index(row, self.in_srs_no)
+        out_srs_index = self.tbl_address.model().index(row, self.out_srs_no)
+
         editor_delegate = self.tbl_address.itemDelegate(in_layername_index)
+        # if isinstance(editor_delegate, layernameDelegate):
+        #     levelData = [layer_name]
+        #     self.model.setLevelData(fileName, levelData)
         if isinstance(editor_delegate, layernameDelegate):
-            levelData = [layer_name]
+            if 'layer_names' not in self.model.levels:
+                levelData = {
+                    'layer_names': [layer_name]
+                }
+            else:
+                levelData = self.model.levels['layer_names']
+                levelData.append(layer_name)
+
             self.model.setLevelData(fileName, levelData)
+        #
+        # in_srs_delegate = self.tbl_address.itemDelegate(in_srs_index)
+        # out_srs_delegate = self.tbl_address.itemDelegate(out_srs_index)
+        # if isinstance(in_srs_delegate, srsDelegate) or isinstance(in_srs_delegate, out_srs_delegate):
+        #     if 'in_srs' not in self.model.levels:
+        #         levelData = {
+        #             'in_srs': [layer_name]
+        #         }
+        #     else:
+        #         levelData = self.model.levels['layer_names']
+        #         levelData.append(layer_name)
+        #
+        #     self.model.setLevelData(fileName, levelData)
 
     @Slot()
     def open_addressFile(self):
@@ -171,6 +201,8 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
             row = self.model.rowCount(QModelIndex())
             self.model.addEmptyRow(self.model.rowCount(QModelIndex()), 1, 0)
 
+            # self.model.setLevelData(imp['in_path'], )
+
             self.tbl_address.model().setData(self.tbl_address.model().index(row, 0), imp['in_path'])
             self.tbl_address.model().setData(self.tbl_address.model().index(row, 1), imp['in_layer'])
             self.tbl_address.model().setData(self.tbl_address.model().index(row, 2), imp['in_srs'])
@@ -184,18 +216,23 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                                                          "json file(*.json)")
 
         datas = self.tbl_address.model().datas
+        levels = self.tbl_address.model().levelData()
         logicRows = range(0, len(datas))
 
         results = []
 
         for logicRow in logicRows:
+            key = datas[logicRow][0]
             row_data = {
                 'in_path': datas[logicRow][0],
                 'in_layer': datas[logicRow][1],
                 'in_srs': datas[logicRow][2],
                 'out_srs': datas[logicRow][3],
                 'out_path': datas[logicRow][4],
-                'out_layer': datas[logicRow][5]
+                'out_layer': datas[logicRow][5],
+                # 'layer_names': levels[key]
+                # 'in_srs_list':
+                # 'out_srs_list':
             }
             results.append(row_data)
 
@@ -240,6 +277,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.url_no = 0  # 输入路径字段的序号
         self.in_layername_no = 1  # 输入图层的序号
         self.out_layername_no = 5 # 输出图层的序号
+        self.in_srs_no = 2
         self.out_srs_no = 3 # 输出坐标系的序号
 
         self.model = TableModel()
@@ -254,7 +292,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
         layername_delegate = layernameDelegate(self, {'type': 'c'})
         self.tbl_address.setItemDelegateForColumn(1, layername_delegate)
-        srs_delegate = srsDelegate(self, {'type': 'c'})
+        srs_delegate = srsDelegate(self, srs_list)
         self.tbl_address.setItemDelegateForColumn(2, srs_delegate)
         self.tbl_address.setItemDelegateForColumn(3, srs_delegate)
         outputpath_delegate = outputPathDelegate(self, {'type': 'd'})

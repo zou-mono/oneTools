@@ -10,8 +10,6 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QAbstractItemVie
     QProxyStyle, QStyleOption, QTableView, QStyledItemDelegate, QWidget, QLineEdit, QPushButton, QFileDialog, QStyle, \
     QStyleOptionButton, QHBoxLayout, QComboBox
 
-from UICore.Gv import srs_list
-
 
 class FileAddressEditor(QWidget):
     editingFinished = pyqtSignal()
@@ -174,7 +172,7 @@ class addressTableDelegate(QStyledItemDelegate):
             model.setData(index, editor.text())
         elif isinstance(editor, QComboBox):
             model.setData(index, editor.currentText())
-            print(editor.currentText())
+            # print(editor.currentText())
         else:
             super(addressTableDelegate, self).setModelData(editor, model, index)
         self._isEditing = False
@@ -268,32 +266,38 @@ class layernameDelegate(addressTableDelegate):
         print(i)
 
 class srsDelegate(addressTableDelegate):
-    def __init__(self, parent, buttonSection, orientation=Qt.Horizontal):
-        # buttonSection用来记录需要设置按钮的单元格
+    def __init__(self, parent, srs_list, orientation=Qt.Horizontal):
+        # srs_list用来存储可转换的坐标
         # orientation用来表示需要设置按钮的表头方向，horizontal表示所有列都设置按钮, vertical表示所有行都设置按钮
-        super(srsDelegate, self).__init__(parent, buttonSection, orientation)
-        self.buttonSection = buttonSection
+        super(srsDelegate, self).__init__(parent, srs_list, orientation)
+        self.srs_list = srs_list
         self.orientation = orientation
         self.mainWindow = parent
+
+    def set_srs_list(self, srs_list):
+        self.srs_list = srs_list
 
     def createEditor(self, parent: QWidget, option: 'QStyleOptionViewItem', index: QModelIndex) -> QWidget:
         self.index = index
 
-        if self.buttonSection is not None:
-            currentData = self.index.data(Qt.DisplayRole)
+        currentData = self.index.data(Qt.DisplayRole)
 
-            self.cmb_srs = QComboBox(parent)
-            for data in srs_list:
-                self.cmb_srs.addItem(str(data))
+        self.cmb_srs = QComboBox(parent)
+        for data in self.srs_list:
+            self.cmb_srs.addItem(str(data))
 
-            self.cmb_srs.currentIndexChanged.connect(self.cmb_selectionchange)
-            return self.cmb_srs
-        else:
-            return super().createEditor(parent, option, index)
+        self.cmb_srs.setCurrentText("")
+        self.cmb_srs.currentIndexChanged.connect(self.cmb_selectionchange)
+        return self.cmb_srs
+
+    def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex) -> None:
+        model.setData(index, editor.currentText())
+        self.mainWindow.update_outlayername(self.index, editor.currentText())
 
     def cmb_selectionchange(self, i):
-        if i > -1:
-            self.mainWindow.update_outlayername(self.index, self.cmb_srs.itemText(i))
+        pass
+        # if i > -1:
+        #     self.mainWindow.update_outlayername(self.index, self.cmb_srs.itemText(i))
 
 
 class outputPathDelegate(addressTableDelegate):
