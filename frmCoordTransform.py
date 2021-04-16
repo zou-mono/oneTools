@@ -103,7 +103,8 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
                 if dataset is not None:
                     in_layer = dataset.GetLayer()
-                    self.add_layer_to_row(in_layer, fileName, layer_name)
+                    row = self.add_layer_to_row(in_layer, fileName, layer_name)
+                    self.add_delegate_to_row(row, fileName, [layer_name])
 
                     dataset.Release()
                     dataset = None
@@ -119,10 +120,15 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 lst_names = wks.getLayerNames()
                 selected_names = nameListDialog().openListDialog(lst_names)
 
+                rows = []
                 if selected_names is not None:
                     for selected_name in selected_names:
                         layer = wks.openLayer(selected_name)
-                        self.add_layer_to_row(layer, fileName, selected_name)
+                        row = self.add_layer_to_row(layer, fileName, selected_name)
+                        rows.append(row)
+
+                    for row in rows:
+                        self.add_delegate_to_row(row, fileName, lst_names)
 
     def add_layer_to_row(self, in_layer, fileName, layer_name):
         in_srs = in_layer.GetSpatialRef()
@@ -143,25 +149,18 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.tbl_address.model().setData(in_layername_index, layer_name)
         self.tbl_address.model().setData(in_srs_index, srs_desc)
 
-        self.add_delegate_to_row(row, fileName, layer_name)
+        return row
 
-    def add_delegate_to_row(self, row, fileName, layer_name):
+    def add_delegate_to_row(self, row, fileName, lst_layer_name):
         in_layername_index = self.tbl_address.model().index(row, self.in_layername_no)
         in_srs_index = self.tbl_address.model().index(row, self.in_srs_no)
         out_srs_index = self.tbl_address.model().index(row, self.out_srs_no)
 
         editor_delegate = self.tbl_address.itemDelegate(in_layername_index)
-        # if isinstance(editor_delegate, layernameDelegate):
-        #     levelData = [layer_name]
-        #     self.model.setLevelData(fileName, levelData)
         if isinstance(editor_delegate, layernameDelegate):
-            if 'layer_names' not in self.model.levels:
-                levelData = {
-                    'layer_names': [layer_name]
-                }
-            else:
-                levelData = self.model.levels['layer_names']
-                levelData.append(layer_name)
+            levelData = {
+                'layer_names': lst_layer_name
+            }
 
             self.model.setLevelData(fileName, levelData)
         #
@@ -328,7 +327,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
             out_srs_index = self.tbl_address.model().index(index.row(), self.out_srs_no)
             out_layername_index = self.tbl_address.model().index(index.row(), self.out_layername_no)
             layer_name = self.tbl_address.model().data(in_layername_index, Qt.DisplayRole)
-            self.tbl_address.model().setData(out_srs_index, text)
+            # self.tbl_address.model().setData(out_srs_index, text)
             self.tbl_address.model().setData(out_layername_index, "{}_{}".format(layer_name, text))
 
 

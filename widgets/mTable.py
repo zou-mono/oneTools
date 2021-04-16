@@ -135,7 +135,7 @@ class addressTableDelegate(QStyledItemDelegate):
                     for data in datas:
                         self.cmb_level.addItem(str(data))
 
-                if currentData == -1:
+                if currentData is None:
                     self.cmb_level.setCurrentText("")
                 else:
                     self.cmb_level.setCurrentText(str(currentData))
@@ -230,6 +230,7 @@ class vectorTableDelegate(addressTableDelegate):
         self.orientation = orientation
         self.mainWindow = parent
 
+
 class layernameDelegate(addressTableDelegate):
     def __init__(self, parent, buttonSection, orientation=Qt.Horizontal):
         # buttonSection用来记录需要设置按钮的单元格
@@ -248,14 +249,9 @@ class layernameDelegate(addressTableDelegate):
 
             self.cmb_layername = QComboBox(parent)
             url_index, layername_index, url, layername = self.mainWindow.return_url_and_layername(self.index.row())
-            datas = index.model().levelData()[url]
+            datas = index.model().levelData()[url]['layer_names']
             for data in datas:
                 self.cmb_layername.addItem(str(data))
-
-            if currentData == -1:
-                self.cmb_layername.setCurrentText("")
-            else:
-                self.cmb_layername.setCurrentText(str(currentData))
 
             self.cmb_layername.currentIndexChanged.connect(self.cmb_selectionchange)
             return self.cmb_layername
@@ -263,7 +259,7 @@ class layernameDelegate(addressTableDelegate):
             return super().createEditor(parent, option, index)
 
     def cmb_selectionchange(self, i):
-        print(i)
+        pass
 
 class srsDelegate(addressTableDelegate):
     def __init__(self, parent, srs_list, orientation=Qt.Horizontal):
@@ -280,13 +276,10 @@ class srsDelegate(addressTableDelegate):
     def createEditor(self, parent: QWidget, option: 'QStyleOptionViewItem', index: QModelIndex) -> QWidget:
         self.index = index
 
-        currentData = self.index.data(Qt.DisplayRole)
-
         self.cmb_srs = QComboBox(parent)
         for data in self.srs_list:
             self.cmb_srs.addItem(str(data))
 
-        self.cmb_srs.setCurrentText("")
         self.cmb_srs.currentIndexChanged.connect(self.cmb_selectionchange)
         return self.cmb_srs
 
