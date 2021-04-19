@@ -13,6 +13,7 @@
       <option name="ignoredIdentifiers">
         <list>
           <option value="UICore.log4p.splitterState" />
+          <option value="UICore.DataFactory.SpatialReference" />
         </list>
       </option>
     </inspection_tool>

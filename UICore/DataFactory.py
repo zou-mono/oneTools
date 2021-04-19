@@ -23,6 +23,9 @@ class workspaceFactory(object):
         elif factory == DataType.fileGDB:
             self.wks = filegdbWorkspaceFactory()
 
+        if self.wks is None:
+            log.error("不支持的空间数据格式!")
+
         return self.wks
 
     def openFromFile(self, file):
@@ -79,4 +82,3 @@ class filegdbWorkspaceFactory(workspaceFactory):
         super().__init__()
         driverName = "FileGDB"
         self.driver = ogr.GetDriverByName(driverName)
-

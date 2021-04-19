@@ -41,6 +41,13 @@ class DataType(Enum):
     csv = 4
 
 
+DataType_dict = {
+    DataType.shapefile: "ESRI Shapefile",
+    DataType.geojson: "geojson",
+    DataType.fileGDB: "FileGDB",
+    DataType.cad_dwg: "CAD"
+}
+
 def singleton(cls):
     instances = {}
 

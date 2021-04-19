@@ -13,7 +13,7 @@ import os
 
 from UICore.DataFactory import workspaceFactory
 from UICore.Gv import SplitterState, Dock, DataType, srs_dict, srs_list
-from UICore.common import defaultImageFile, defaultTileFolder, urlEncodeToFileName, get_paraInfo, get_srs_by_epsg
+from UICore.common import defaultImageFile, defaultTileFolder, urlEncodeToFileName, get_paraInfo, get_srs_desc_by_epsg
 from widgets.mTable import TableModel, mTableStyle, layernameDelegate, srsDelegate, outputPathDelegate
 from UICore.log4p import Log
 
@@ -64,6 +64,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.btn_addRow.clicked.connect(self.btn_addRow_clicked)
         self.btn_removeRow.clicked.connect(self.btn_removeBtn_clicked)
         self.btn_saveMetaFile.clicked.connect(self.btn_saveMetaFile_clicked)
+        self.buttonBox.clicked.connect(self.buttonBox_clicked)
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
         self.rbtn_file.click()
@@ -136,7 +137,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         if in_srs is not None:
             in_srs = osr.SpatialReference(in_srs.ExportToWkt())
             srs_epsg = in_srs.GetAttrValue("AUTHORITY", 1)
-            srs_desc = get_srs_by_epsg(srs_epsg)
+            srs_desc = get_srs_desc_by_epsg(srs_epsg)
         else:
             srs_desc = None
 
@@ -208,6 +209,17 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
             self.tbl_address.model().setData(self.tbl_address.model().index(row, 3), imp['out_srs'])
             self.tbl_address.model().setData(self.tbl_address.model().index(row, 4), imp['out_path'])
             self.tbl_address.model().setData(self.tbl_address.model().index(row, 5), imp['out_layer'])
+
+    @Slot(QAbstractButton)
+    def buttonBox_clicked(self, button: QAbstractButton):
+        if button == self.buttonBox.button(QDialogButtonBox.Ok):
+            if not self.check_paras():
+                return
+
+            self.thread.start()
+            self.run_process()
+        elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
+            self.close()
 
     @Slot()
     def btn_saveMetaFile_clicked(self):

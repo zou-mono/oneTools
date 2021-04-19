@@ -1,8 +1,19 @@
 from osgeo import ogr
 import osgeo.osr as osr
 from osgeo import gdal
+import os
 
-input = r"D:\Data\深圳坐标\配准中心线（深圳坐标）.shp"
+a = r"D:\Data\深圳坐标\配准中心线（深圳坐标）.shp"
+b = r"D:\Data\深圳坐标\配准中心线（深圳坐标）.gdb"
+c = r"D:\Data\深圳坐标\配准中心线（深圳坐标）"
+print([os.path.dirname(a), os.path.dirname(b), os.path.dirname(c)])
+print([os.path.basename(a), os.path.basename(b), os.path.basename(c)])
+if os.path.basename(c).find('.') > 0:
+    print("yes")
+else:
+    print("no")
+
+input = r"D:\Data\信息中心_深圳_2016building.shp"
 shp_driver = ogr.GetDriverByName("ESRI Shapefile")
 inDs = shp_driver.Open(input, 1)
 print(inDs.GetLayerCount())

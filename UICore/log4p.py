@@ -100,6 +100,7 @@ class Log:
         self.logger = logging.getLogger(filename)
         self.logger.setLevel(logging.DEBUG)
         self.handle_logs()
+        self.handler = None
 
     def setLogViewer(self, parent, logViewer: QPlainTextEdit):
         self.handler = Handler(parent)
