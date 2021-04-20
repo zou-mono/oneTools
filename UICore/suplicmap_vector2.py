@@ -311,7 +311,6 @@ def createFileGDB(output_path, layer_name, url_json, service_name, layer_order):
 
         # out_layer = gdb.CreateLayer(layer_name, srs=srs, geom_type=temp_layer.GetGeomType(),options=["LAYER_ALIAS=电动"])
 
-
         out_layer = gdb.CreateLayer(layer_name, srs=srs, geom_type=GeoType,
                                     options=[f'FEATURE_DATASET={service_name}', f'LAYER_ALIAS={layer_alias_name}'])
         # LayerDefn = out_layer.GetLayerDefn()

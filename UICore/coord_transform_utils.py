@@ -78,6 +78,7 @@ def main(inpath, inlayer, insrs, outpath, outlayer, outsrs):
     out_srs.ImportFromEPSG(outsrs)
 
     out_format = get_suffix(outpath)
+
     tfer = Transformer(out_format, inpath, outpath, outlayer)
     tfer.transform(SpatialReference.sz_Local, SpatialReference.pcs_2000, in_srs, out_srs)
 
@@ -132,19 +133,20 @@ class Transformer(object):
     def transform(self, srcSRS, dstSRS, in_srs, out_srs):
         if srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.pcs_2000:
             self.sz_local_to_pcs_2000(in_srs, out_srs)
+        # elif srcSRS == SpatialReference.pcs_2000 and dstSRS == SpatialReference.sz_Local:
+
 
     def sz_local_to_pcs_2000(self, in_srs, out_srs):
-        self.outlayername = launderName(self.outlayername)
         in_srs_wkt = osr.SpatialReference(in_srs.ExportToWkt())
         order0 = in_srs_wkt.GetAttrValue("AXIS", 1)
 
         if order0 == "NORTH":
             para_sz_pcs_2000 = "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
-                2472660.600279, 391090.578943, 0.999997415382, -3518.95267316
+                2472660.600279, 391090.578943, 0.999997415382, 3518.95267316
             )
         else:
             para_sz_pcs_2000 = "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
-                391090.578943, 2472660.600279, 0.999997415382, 3518.95267316
+                391090.578943, 2472660.600279, 0.999997415382, -3518.95267316
             )
 
         out_format = DataType_dict[self.out_format]
@@ -155,6 +157,27 @@ class Transformer(object):
 
         gdal.VectorTranslate(self.outpath, self.inpath, options=translateOptions)
 
+    # def pcs_2000_to_sz_local(self, in_srs, out_srs):
+    #     self.outlayername = launderName(self.outlayername)
+    #     in_srs_wkt = osr.SpatialReference(in_srs.ExportToWkt())
+    #     order0 = in_srs_wkt.GetAttrValue("AXIS", 1)
+    #
+    #     if order0 == "NORTH":
+    #         para_sz_pcs_2000 = "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
+    #             2472660.600279, 391090.578943, 0.999997415382, -3518.95267316
+    #         )
+    #     else:
+    #         para_sz_pcs_2000 = "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
+    #             391090.578943, 2472660.600279, 0.999997415382, 3518.95267316
+    #         )
+    #
+    #     out_format = DataType_dict[self.out_format]
+    #     translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=in_srs, dstSRS=out_srs,
+    #                                                    coordinateOperation=para_sz_pcs_2000,
+    #                                                    accessMode="overwrite", layerName=self.outlayername,
+    #                                                    layerCreationOptions=self.lco)
+    #
+    #     gdal.VectorTranslate(self.outpath, self.inpath, options=translateOptions)
 
 if __name__ == '__main__':
     main()
