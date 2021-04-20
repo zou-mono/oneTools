@@ -100,7 +100,9 @@ def get_srs_desc_by_epsg(name: str):
     elif name == "2362":
         return srs_dict[SpatialReference.pcs_xian80_zone]
 
+
 srs_list = ["深圳独立", "CGCS2000投影", "WGS84", "百度地理", "火星", "CGCS2000地理",
             "CGCS2000投影(包含带号)", "西安80地理", "西安80投影", "西安80投影(包含带号)"]
+
 
 

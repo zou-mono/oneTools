@@ -110,15 +110,33 @@ def get_srs_desc_by_epsg(name: str):
 
 
 def overwrite_cpg_file(outpath, outfile, encoding):
+    f = None
     try:
         cpg_file = os.path.join(outpath, outfile + ".cpg")
-        if not os.path.exists(cpg_file):
-            os.makedirs(cpg_file)
+        if not os.path.exists(outpath):
+            os.makedirs(outpath)
 
         with open(cpg_file, "w+") as f:
             f.seek(0)
             f.truncate() #清空文件
             f.write(encoding)
     finally:
-        if f:
+        if f is not None:
             f.close()
+
+
+def helmert_para(insrs, outsrs, first_order="NORTH"):
+    if insrs == SpatialReference.sz_Local and outsrs == SpatialReference.gcs_2000:
+        if first_order == "NORTH":
+            return "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
+                2472660.600279, 391090.578943, 0.999997415382, 3518.95267316)
+        else:
+            return "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
+                391090.578943, 2472660.600279, 0.999997415382, -3518.95267316)
+    elif insrs == SpatialReference.gcs_2000 and outsrs == SpatialReference.sz_Local:
+        if first_order == "NORTH":
+            return "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
+                -2465635.316383, -433217.228947, 1.000002584625, -3518.95267316)
+        else:
+            return "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
+                -433217.228947, -2465635.316383, 1.000002584625, 3518.95267316)

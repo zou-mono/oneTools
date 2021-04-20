@@ -7,7 +7,7 @@ from osgeo import ogr, osr, gdal
 
 from UICore.DataFactory import workspaceFactory
 from UICore.Gv import DataType, DataType_dict
-from UICore.common import launderName, overwrite_cpg_file
+from UICore.common import launderName, overwrite_cpg_file, helmert_para
 from UICore.log4p import Log
 from UICore.Gv import SpatialReference
 
@@ -64,18 +64,21 @@ def main(inpath, inlayer, insrs, outpath, outlayer, outsrs):
     # in_dataset = in_wks.openFromFile(inpath)
     in_layer = in_wks.openLayer(inlayer)
 
-    srs_epsg = get_srs(in_layer)
-    in_srs = osr.SpatialReference()
-    if srs_epsg is not None:
-        in_srs.ImportFromEPSG(srs_epsg)
-    elif insrs > 0:
-        try:
-            in_srs.ImportFromEPSG(insrs)
-        except:
-            log.error("指定空间参考在ESPG中不存在!")
-            return False
+    if insrs > 0:
+        srs_epsg = get_srs(in_layer)
+        in_srs = osr.SpatialReference()
+        if srs_epsg is not None:
+            in_srs.ImportFromEPSG(srs_epsg)
+        else:
+            try:
+                in_srs.ImportFromEPSG(insrs)
+            except:
+                log.error("指定空间参考在ESPG中不存在!")
+                return False
+    elif insrs == -1 or insrs == -2:
+        pass
     else:
-        log.error("输入数据缺失空间参考，请补充!")
+        log.error("不支持输入空间数据的坐标转换!")
         return False
 
     out_srs = osr.SpatialReference()
@@ -143,6 +146,10 @@ class Transformer(object):
             self.sz_local_to_pcs_2000(in_srs, out_srs)
         elif srcSRS == SpatialReference.pcs_2000 and dstSRS == SpatialReference.sz_Local:
             self.pcs_2000_to_sz_local(in_srs, out_srs)
+        elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.gcs_2000:
+            self.sz_local_to_gcs_2000(in_srs, out_srs)
+        elif srcSRS == SpatialReference.gcs_2000 and dstSRS == SpatialReference.sz_Local:
+            self.gcs_2000_to_sz_local(in_srs, out_srs)
 
         if self.out_format == DataType.shapefile:
             out_path = os.path.dirname(self.outpath)
@@ -158,45 +165,72 @@ class Transformer(object):
         in_srs_wkt = osr.SpatialReference(in_srs.ExportToWkt())
         order0 = in_srs_wkt.GetAttrValue("AXIS", 1)
 
-        if order0 == "NORTH":
-            para_sz_pcs_2000 = "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
-                2472660.600279, 391090.578943, 0.999997415382, 3518.95267316
-            )
-        else:
-            para_sz_pcs_2000 = "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
-                391090.578943, 2472660.600279, 0.999997415382, -3518.95267316
-            )
+        para_sz_to_pcs_2000 = helmert_para(SpatialReference.sz_Local, SpatialReference.pcs_2000, order0)
 
         out_format = DataType_dict[self.out_format]
         translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=in_srs, dstSRS=out_srs,
-                                                       coordinateOperation=para_sz_pcs_2000,
+                                                       coordinateOperation=para_sz_to_pcs_2000,
                                                        accessMode="overwrite", layerName=self.outlayername,
                                                        layerCreationOptions=self.lco)
 
         gdal.VectorTranslate(self.outpath, self.inpath, options=translateOptions)
 
     def pcs_2000_to_sz_local(self, in_srs, out_srs):
-        in_srs_wkt = osr.SpatialReference(in_srs.ExportToWkt())
-        order0 = in_srs_wkt.GetAttrValue("AXIS", 1)
+        order0 = get_axis_order(in_srs)
 
-        if order0 == "NORTH":
-            para_sz_pcs_2000 = "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
-                -2465635.316383, -433217.228947, 1.000002584625, -3518.95267316
-            )
-        else:
-            para_sz_pcs_2000 = "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
-                -433217.228947, -2465635.316383, 1.000002584625, 3518.95267316
-            )
+        para_pcs_2000_to_sz = helmert_para(SpatialReference.pcs_2000, SpatialReference.sz_Local, order0)
 
         out_format = DataType_dict[self.out_format]
         translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=in_srs, dstSRS=out_srs,
-                                                       coordinateOperation=para_sz_pcs_2000,
+                                                       coordinateOperation=para_pcs_2000_to_sz,
                                                        accessMode="overwrite", layerName=self.outlayername,
                                                        layerCreationOptions=self.lco)
 
         gdal.VectorTranslate(self.outpath, self.inpath, options=translateOptions)
 
+    def sz_local_to_gcs_2000(self, in_srs, out_srs):
+        order0 = get_axis_order(in_srs)
 
+        para_sz_to_pcs_2000 = helmert_para(SpatialReference.sz_Local, SpatialReference.pcs_2000, order0)
+
+        temp_srs = osr.SpatialReference()
+        temp_srs.ImportFromEPSG(4547)
+        out_format = DataType_dict[self.out_format]
+        translateOptions = gdal.VectorTranslateOptions(format="geojson", srcSRS=in_srs, dstSRS=temp_srs,
+                                                       coordinateOperation=para_sz_to_pcs_2000,
+                                                       layerName="temp_layer")
+        tmp_outpath = os.path.join(os.path.dirname(self.outpath), "temp_layer.geojson")
+        gdal.VectorTranslate(tmp_outpath, self.inpath, options=translateOptions)
+
+        translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=temp_srs, dstSRS=out_srs,
+                                                       accessMode="overwrite", layerName=self.outlayername,
+                                                       layerCreationOptions=self.lco)
+        gdal.VectorTranslate(self.outpath, tmp_outpath, options=translateOptions)
+
+    def gcs_2000_to_sz_local(self, in_srs, out_srs):
+        temp_srs = osr.SpatialReference()
+        temp_srs.ImportFromEPSG(4547)
+
+        translateOptions = gdal.VectorTranslateOptions(format="geojson", srcSRS=in_srs, dstSRS=temp_srs,
+                                                       layerName="temp_layer")
+        tmp_outpath = os.path.join(os.path.dirname(self.outpath), "temp_layer.geojson")
+        gdal.VectorTranslate(tmp_outpath, self.inpath, options=translateOptions)
+
+        para_pcs_2000_to_sz = helmert_para(SpatialReference.pcs_2000, SpatialReference.sz_Local)
+
+        out_format = DataType_dict[self.out_format]
+        translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=temp_srs, dstSRS=out_srs,
+                                                       coordinateOperation=para_pcs_2000_to_sz,
+                                                       accessMode="overwrite", layerName=self.outlayername,
+                                                       layerCreationOptions=self.lco)
+        gdal.VectorTranslate(self.outpath, tmp_outpath, options=translateOptions)
+
+
+# 获取axis order，先北后东还是先东后北
+def get_axis_order(srs):
+    srs_wkt = osr.SpatialReference(srs.ExportToWkt())
+    order0 = srs_wkt.GetAttrValue("AXIS", 1)
+    return order0
 
 if __name__ == '__main__':
     main()
