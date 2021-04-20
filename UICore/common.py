@@ -83,7 +83,7 @@ def defaultImageFile(url, level):
 def launderName(name):
     dir = os.path.dirname(name)
     basename, suffix = os.path.splitext(name)
-    if os.path.exists(name) and os.path.isfile(name):
+    if os.path.exists(name):
         basename = basename + "_1"
         name = os.path.join(dir, basename + suffix)
 
@@ -100,23 +100,23 @@ def get_col_row(x0, y0, x, y, size, resolution):
     return col, row
 
 
-def get_srs_desc_by_epsg(name: str):
-    if name == "2435":
-        return srs_dict[SpatialReference.sz_Local]
-    elif name == "4490":
-        return srs_dict[SpatialReference.gcs_2000]
-    elif name == "4547":
-        return srs_dict[SpatialReference.pcs_2000]
-    elif name == "4526":
-        return srs_dict[SpatialReference.pcs_2000_zone]
-    elif name == "4326":
-        return srs_dict[SpatialReference.wgs84]
-    elif name == "4610":
-        return srs_dict[SpatialReference.gcs_xian80]
-    elif name == "2383":
-        return srs_dict[SpatialReference.pcs_xian80]
-    elif name == "2362":
-        return srs_dict[SpatialReference.pcs_xian80_zone]
+# def get_srs_desc_by_epsg(name: str):
+#     if name == "2435":
+#         return srs_dict[SpatialReference.sz_Local]
+#     elif name == "4490":
+#         return srs_dict[SpatialReference.gcs_2000]
+#     elif name == "4547":
+#         return srs_dict[SpatialReference.pcs_2000]
+#     elif name == "4526":
+#         return srs_dict[SpatialReference.pcs_2000_zone]
+#     elif name == "4326":
+#         return srs_dict[SpatialReference.wgs84]
+#     elif name == "4610":
+#         return srs_dict[SpatialReference.gcs_xian80]
+#     elif name == "2383":
+#         return srs_dict[SpatialReference.pcs_xian80]
+#     elif name == "2362":
+#         return srs_dict[SpatialReference.pcs_xian80_zone]
 
 
 def overwrite_cpg_file(outpath, outfile, encoding):
@@ -150,3 +150,10 @@ def helmert_para(insrs, outsrs, first_order="NORTH"):
         else:
             return "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
                 -433217.228947, -2465635.316383, 1.000002584625, 3518.95267316)
+    elif insrs == SpatialReference.pcs_xian80 and outsrs == SpatialReference.sz_Local:
+        if first_order == "NORTH":
+            return "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
+                -2465659.407210, -433097.707045, 1.000009894628, -3518.45262840)
+        else:
+            return "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
+                -433097.707045, -2465659.407210, 1.000009894628, 3518.45262840)
