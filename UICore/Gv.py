@@ -20,17 +20,17 @@ class SplitterState(Enum):
     expanded = 1
 
 
-class SpatialReference(Enum):
-    sz_Local = 0
-    gcs_2000 = 1
-    pcs_2000 = 2
-    pcs_2000_zone = 3
-    wgs84 = 4
-    bd09 = 5
-    gcj02 = 6
-    gcs_xian80 = 7
-    pcs_xian80 = 8
-    pcs_xian80_zone = 9
+class SpatialReference:
+    sz_Local = 2435
+    gcs_2000 = 4490
+    pcs_2000 = 4547
+    pcs_2000_zone = 4526
+    wgs84 = 4326
+    bd09 = -1
+    gcj02 = -2
+    gcs_xian80 = 4610
+    pcs_xian80 = 2383
+    pcs_xian80_zone = 2363
 
 
 class DataType(Enum):
@@ -70,6 +70,35 @@ srs_dict = {
     SpatialReference.pcs_xian80: "西安80投影",
     SpatialReference.pcs_xian80_zone: "西安80投影(包含带号)"
 }
+
+# epsg_dict = {
+#     SpatialReference.sz_Local: 2435,
+#     SpatialReference.gcs_2000: 4490,
+#     SpatialReference.pcs_2000: 4547,
+#     SpatialReference.pcs_2000_zone: 4526,
+#     SpatialReference.wgs84: 4326,
+#     SpatialReference.gcs_xian80: 4610,
+#     SpatialReference.pcs_xian80: 2383,
+#     SpatialReference.pcs_xian80_zone: 2363
+# }
+
+def get_srs_desc_by_epsg(name: str):
+    if name == "2435":
+        return srs_dict[SpatialReference.sz_Local]
+    elif name == "4490":
+        return srs_dict[SpatialReference.gcs_2000]
+    elif name == "4547":
+        return srs_dict[SpatialReference.pcs_2000]
+    elif name == "4526":
+        return srs_dict[SpatialReference.pcs_2000_zone]
+    elif name == "4326":
+        return srs_dict[SpatialReference.wgs84]
+    elif name == "4610":
+        return srs_dict[SpatialReference.gcs_xian80]
+    elif name == "2383":
+        return srs_dict[SpatialReference.pcs_xian80]
+    elif name == "2362":
+        return srs_dict[SpatialReference.pcs_xian80_zone]
 
 srs_list = ["深圳独立", "CGCS2000投影", "WGS84", "百度地理", "火星", "CGCS2000地理",
             "CGCS2000投影(包含带号)", "西安80地理", "西安80投影", "西安80投影(包含带号)"]

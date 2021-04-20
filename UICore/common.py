@@ -107,3 +107,18 @@ def get_srs_desc_by_epsg(name: str):
         return srs_dict[SpatialReference.pcs_xian80]
     elif name == "2362":
         return srs_dict[SpatialReference.pcs_xian80_zone]
+
+
+def overwrite_cpg_file(outpath, outfile, encoding):
+    try:
+        cpg_file = os.path.join(outpath, outfile + ".cpg")
+        if not os.path.exists(cpg_file):
+            os.makedirs(cpg_file)
+
+        with open(cpg_file, "w+") as f:
+            f.seek(0)
+            f.truncate() #清空文件
+            f.write(encoding)
+    finally:
+        if f:
+            f.close()
