@@ -12,6 +12,16 @@ import urllib.request, urllib.parse
 log = Log()
 
 
+def is_already_opened_in_write_mode(filename):
+    if os.path.exists(filename):
+        try:
+            # 通过尝试修改名字是否报错来判断是否被使用
+            os.rename(filename, filename)
+        except IOError:
+            return True
+    return False
+
+
 def get_json(url):
     try_num = 5
     # 定义请求头
@@ -126,14 +136,14 @@ def overwrite_cpg_file(outpath, outfile, encoding):
 
 
 def helmert_para(insrs, outsrs, first_order="NORTH"):
-    if insrs == SpatialReference.sz_Local and outsrs == SpatialReference.gcs_2000:
+    if insrs == SpatialReference.sz_Local and outsrs == SpatialReference.pcs_2000:
         if first_order == "NORTH":
             return "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
                 2472660.600279, 391090.578943, 0.999997415382, 3518.95267316)
         else:
             return "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
                 391090.578943, 2472660.600279, 0.999997415382, -3518.95267316)
-    elif insrs == SpatialReference.gcs_2000 and outsrs == SpatialReference.sz_Local:
+    elif insrs == SpatialReference.pcs_2000 and outsrs == SpatialReference.sz_Local:
         if first_order == "NORTH":
             return "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
                 -2465635.316383, -433217.228947, 1.000002584625, -3518.95267316)

@@ -7,7 +7,7 @@ from osgeo import ogr, osr, gdal
 
 from UICore.DataFactory import workspaceFactory
 from UICore.Gv import DataType, DataType_dict
-from UICore.common import launderName, overwrite_cpg_file, helmert_para
+from UICore.common import launderName, overwrite_cpg_file, helmert_para, is_already_opened_in_write_mode
 from UICore.log4p import Log
 from UICore.Gv import SpatialReference
 
@@ -150,6 +150,8 @@ class Transformer(object):
             self.sz_local_to_gcs_2000(in_srs, out_srs)
         elif srcSRS == SpatialReference.gcs_2000 and dstSRS == SpatialReference.sz_Local:
             self.gcs_2000_to_sz_local(in_srs, out_srs)
+        elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.wgs84:
+            self.sz_local_to_wgs84(in_srs, out_srs)
 
         if self.out_format == DataType.shapefile:
             out_path = os.path.dirname(self.outpath)
@@ -200,6 +202,7 @@ class Transformer(object):
                                                        coordinateOperation=para_sz_to_pcs_2000,
                                                        layerName="temp_layer")
         tmp_outpath = os.path.join(os.path.dirname(self.outpath), "temp_layer.geojson")
+        tmp_outpath = launderLayerName(tmp_outpath)
         gdal.VectorTranslate(tmp_outpath, self.inpath, options=translateOptions)
 
         translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=temp_srs, dstSRS=out_srs,
@@ -214,6 +217,7 @@ class Transformer(object):
         translateOptions = gdal.VectorTranslateOptions(format="geojson", srcSRS=in_srs, dstSRS=temp_srs,
                                                        layerName="temp_layer")
         tmp_outpath = os.path.join(os.path.dirname(self.outpath), "temp_layer.geojson")
+        tmp_outpath = launderLayerName(tmp_outpath)
         gdal.VectorTranslate(tmp_outpath, self.inpath, options=translateOptions)
 
         para_pcs_2000_to_sz = helmert_para(SpatialReference.pcs_2000, SpatialReference.sz_Local)
@@ -224,6 +228,14 @@ class Transformer(object):
                                                        accessMode="overwrite", layerName=self.outlayername,
                                                        layerCreationOptions=self.lco)
         gdal.VectorTranslate(self.outpath, tmp_outpath, options=translateOptions)
+
+    def sz_local_to_wgs84(self, in_srs, out_srs):
+        self.sz_local_to_gcs_2000(in_srs, out_srs)
+
+
+def launderLayerName(path):
+    if is_already_opened_in_write_mode(path):
+        return launderName(path)
 
 
 # 获取axis order，先北后东还是先东后北
