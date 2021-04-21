@@ -1,6 +1,9 @@
+import os
 import traceback
 
-from osgeo import ogr
+from osgeo import ogr, osr
+
+from UICore.common import launderName
 from UICore.log4p import Log
 from UICore.Gv import DataType
 
@@ -9,24 +12,22 @@ log = Log()
 
 class workspaceFactory(object):
     def __init__(self):
-        self.dataset = None
+        self.datasource = None
         self.driver = None
-        self.layers = []
-        self.wks = None
-        self.layer_names = []
 
     def get_factory(self, factory):
+        wks = None
         if factory == DataType.shapefile:
-            self.wks = shapefileWorkspaceFactory()
+            wks = shapefileWorkspaceFactory()
         elif factory == DataType.geojson:
-            self.wks = geojsonWorkspaceFactory()
+            wks = geojsonWorkspaceFactory()
         elif factory == DataType.fileGDB:
-            self.wks = filegdbWorkspaceFactory()
+            wks = filegdbWorkspaceFactory()
 
-        if self.wks is None:
+        if wks is None:
             log.error("不支持的空间数据格式!")
 
-        return self.wks
+        return wks
 
     def openFromFile(self, file):
         if self.driver is None:
@@ -34,33 +35,73 @@ class workspaceFactory(object):
             return None
         else:
             try:
-                self.dataset = self.driver.Open(file, 1)
-                return self.dataset
+                self.datasource = self.driver.Open(file, 1)
+                return self.datasource
             except:
                 log.error("打开文件发生错误. \n{}".format(traceback.format_exc()))
                 return None
 
     def openLayer(self, name):
-        if self.dataset is not None:
-            return self.dataset.GetLayer(name)
+        if self.datasource is not None:
+            return self.datasource.GetLayer(name)
 
     def getLayers(self):
-        if self.dataset is not None:
-            for layer_idx in range(self.dataset.GetLayerCount()):
-                layer = self.dataset.GetLayerByIndex(layer_idx)
-                self.layers.append(layer)
-            return self.layers
+        layers = []
+        if self.datasource is not None:
+            for layer_idx in range(self.datasource.GetLayerCount()):
+                layer = self.datasource.GetLayerByIndex(layer_idx)
+                layers.append(layer)
+            return layers
         else:
             return []
 
     def getLayerNames(self):
-        if self.dataset is not None:
-            for layer_idx in range(self.dataset.GetLayerCount()):
-                layer = self.dataset.GetLayerByIndex(layer_idx)
-                self.layer_names.append(layer.GetName())
-            return self.layer_names
+        layer_names = []
+        if self.datasource is not None:
+            for layer_idx in range(self.datasource.GetLayerCount()):
+                layer = self.datasource.GetLayerByIndex(layer_idx)
+                layer_names.append(layer.GetName())
+            return layer_names
         else:
             return []
+
+    def cloneLayer(self, in_layer, output_path, out_layer_name, out_srs, out_format):
+        if self.driver is None:
+            return None
+
+        try:
+            in_defn = in_layer.GetLayerDefn()
+
+            if os.path.exists(output_path):
+                log.info("datasource已存在，在已有datasource基础上创建图层.")
+
+                if out_format == DataType.shapefile:
+                    output_path = launderName(output_path)
+                    out_layer_name, suffix = os.path.splitext(os.path.basename(output_path))
+                    outDS = self.driver.CreateDataSource(output_path)
+                elif out_format == DataType.fileGDB:
+                    outDS = self.openFromFile(output_path)
+            else:
+                outDS = self.driver.CreateDataSource(output_path)
+
+            srs = osr.SpatialReference()
+            srs.ImportFromEPSG(out_srs)
+
+            out_layer = outDS.CreateLayer(out_layer_name, srs=srs, geom_type=in_layer.GetGeomType())
+
+            if out_layer is None:
+                raise Exception("创建图层失败.")
+
+            for i in range(in_defn.GetFieldCount()):
+                fieldName = in_defn.GetFieldDefn(i).GetName()
+                fieldTypeCode = in_defn.GetFieldDefn(i).GetType()
+                new_field = ogr.FieldDefn(fieldName, fieldTypeCode)
+                out_layer.CreateField(new_field)
+
+            return output_path, out_layer.GetName()
+        except Exception as e:
+            log.error("{}\n{}".format(e, traceback.format_exc()))
+            return None
 
 
 class shapefileWorkspaceFactory(workspaceFactory):

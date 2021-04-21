@@ -100,25 +100,25 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 elif fileType == 'CAD drawing(*.dwg)':
                     print('dwg')
 
-                dataset = wks.openFromFile(fileName)
+                datasource = wks.openFromFile(fileName)
                 layer_name = wks.getLayerNames()[0]
 
-                if dataset is not None:
-                    in_layer = dataset.GetLayer()
+                if datasource is not None:
+                    in_layer = datasource.GetLayer()
                     row = self.add_layer_to_row(in_layer, fileName, layer_name)
                     self.add_delegate_to_row(row, fileName, [layer_name], save_srs_list)
 
-                    dataset.Release()
-                    dataset = None
+                    datasource.Release()
+                    datasource = None
                     in_layer = None
 
         elif self.rbtn_filedb.isChecked():
             fileName = QtWidgets.QFileDialog.getExistingDirectory(self, "选择需要转换的GDB数据库",
                                                                   os.getcwd(), QFileDialog.ShowDirsOnly)
             wks = workspaceFactory().get_factory(DataType.fileGDB)
-            dataset = wks.openFromFile(fileName)
+            datasource = wks.openFromFile(fileName)
 
-            if dataset is not None:
+            if datasource is not None:
                 lst_names = wks.getLayerNames()
                 selected_names = nameListDialog().openListDialog(lst_names)
 

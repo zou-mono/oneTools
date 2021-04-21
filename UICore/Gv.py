@@ -26,8 +26,8 @@ class SpatialReference:
     pcs_2000 = 4547
     pcs_2000_zone = 4526
     wgs84 = 4326
-    bd09 = -1
-    gcj02 = -2
+    bd09 = -2
+    gcj02 = -1
     gcs_xian80 = 4610
     pcs_xian80 = 2383
     pcs_xian80_zone = 2362
