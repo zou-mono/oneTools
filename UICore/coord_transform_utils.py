@@ -189,7 +189,7 @@ class Transformer(object):
         elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.pcs_2000:
             self.pcs_xian80_to_pcs_2000(self.inpath, self.outpath, self.outlayername, self.out_format)
         elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.gcs_2000:
-            self.pcs_xian80_to_gcs_2000()
+            self.pcs_xian80_to_gcs_2000(srcSRS, dstSRS)
         elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.pcs_2000_zone:
             self.pcs_xian80_to_pcs_2000_zone()
         elif srcSRS == SpatialReference.gcs_xian80 and dstSRS == SpatialReference.sz_Local:
@@ -202,6 +202,12 @@ class Transformer(object):
             self.pcs_xian80_zone_to_sz_local()
         elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.pcs_2000:
             self.pcs_xian80_zone_to_pcs_2000()
+        elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.wgs84:
+            self.pcs_xian80_to_wgs84(srcSRS, dstSRS)
+        elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.gcs_2000:
+            self.pcs_xian80_zone_to_gcs_2000(srcSRS, dstSRS)
+        elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.wgs84:
+            self.pcs_xian80_zone_to_wgs84(srcSRS, dstSRS)
         else:
             log.error("不支持从{}到{}的转换!".format(srs_dict[srcSRS], srs_dict[dstSRS]))
             return False
@@ -296,11 +302,11 @@ class Transformer(object):
 
         self.pcs_2000_to_sz_local(tmp_outpath, self.outpath, self.out_format, self.outlayername)
 
-    def sz_local_to_wgs84(self, in_srs, out_srs):
-        self.sz_local_to_gcs_2000(in_srs, out_srs)
+    def sz_local_to_wgs84(self, srcSRS, dstSRS):
+        self.sz_local_to_gcs_2000(srcSRS, dstSRS)
 
-    def wgs84_to_sz_local(self, in_srs, out_srs):
-        self.gcs_2000_to_sz_local(in_srs, out_srs)
+    def wgs84_to_sz_local(self, srcSRS, dstSRS):
+        self.gcs_2000_to_sz_local(srcSRS, dstSRS)
 
     def sz_local_to_pcs_2000_zone(self, inpath, outpath, outlayer, outformat):
         in_srs = osr.SpatialReference()
@@ -417,11 +423,11 @@ class Transformer(object):
         self.pcs_xian80_to_sz_local(inpath, tmp_outpath, "temp_layer_2435", DataType.geojson)
         self.sz_local_to_pcs_2000(tmp_outpath, outpath, outlayer, outformat)
 
-    def pcs_xian80_to_gcs_2000(self):
+    def pcs_xian80_to_gcs_2000(self, srcSRS, dstSRS):
         in_srs = osr.SpatialReference()
-        in_srs.ImportFromEPSG(2383)
+        in_srs.ImportFromEPSG(srcSRS)
         out_srs = osr.SpatialReference()
-        out_srs.ImportFromEPSG(4490)
+        out_srs.ImportFromEPSG(dstSRS)
         temp_srs = osr.SpatialReference()
         temp_srs.ImportFromEPSG(4547)
 
@@ -522,6 +528,37 @@ class Transformer(object):
         gdal.VectorTranslate(tmp_outpath, self.inpath, options=translateOptions)
 
         self.pcs_xian80_to_pcs_2000(tmp_outpath, self.outpath, self.outlayername, self.out_format)
+
+    def pcs_xian80_to_wgs84(self, srcSRS, dstSRS):
+        self.pcs_xian80_to_gcs_2000(srcSRS, dstSRS)
+
+    def pcs_xian80_zone_to_gcs_2000(self, srcSRS, dstSRS):
+        in_srs = osr.SpatialReference()
+        in_srs.ImportFromEPSG(srcSRS)
+        out_srs = osr.SpatialReference()
+        out_srs.ImportFromEPSG(dstSRS)
+        temp_srs1 = osr.SpatialReference()
+        temp_srs1.ImportFromEPSG(2383)
+
+        tmp_outpath1 = os.path.join(os.path.dirname(self.outpath), "temp_layer_2383.geojson")
+        translateOptions = gdal.VectorTranslateOptions(format="geojson", srcSRS=in_srs, dstSRS=temp_srs1,
+                                                       layerName="temp_layer_2383")
+        gdal.VectorTranslate(tmp_outpath1, self.inpath, options=translateOptions)
+
+        tmp_outpath2 = os.path.join(os.path.dirname(self.outpath), "temp_layer_2383.geojson")
+        self.pcs_xian80_to_pcs_2000(tmp_outpath2, tmp_outpath1, self.outlayername, self.out_format)
+
+        temp_srs2 = osr.SpatialReference()
+        temp_srs2.ImportFromEPSG(4547)
+        out_format = DataType_dict[self.out_format]
+        translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=temp_srs2, dstSRS=out_srs,
+                                                       accessMode="overwrite", layerName=self.outlayername,
+                                                       layerCreationOptions=self.lco)
+        gdal.VectorTranslate(tmp_outpath1, self.inpath, options=translateOptions)
+
+    def pcs_xian80_zone_to_wgs84(self, srcSRS, dstSRS):
+        self.pcs_xian80_to_gcs_2000(srcSRS, dstSRS)
+
 
 def launderLayerName(path):
     if is_already_opened_in_write_mode(path):
