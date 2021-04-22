@@ -14,7 +14,7 @@ import re
 import aiohttp
 import asyncio
 from UICore.asyncRequest import send_http
-from UICore.common import urlEncodeToFileName
+from UICore.common import urlEncodeToFileName, check_layer_name
 
 try_num = 5
 num_return = 1000  # 返回条数
@@ -249,7 +249,7 @@ def addField(feature, defn, OID_NAME, out_layer):
             if fieldName == "OBJECTID" or fieldName == OID_NAME:
                 continue
 
-            fieldName = check_name(fieldName)
+            fieldName = check_layer_name(fieldName)
 
             try:
                 ofeature.SetField(fieldName, feature.GetField(i))
@@ -301,9 +301,9 @@ def createFileGDB(output_path, layer_name, url_json, service_name, layer_order):
             return None, None, ""
 
         if layer_name is None:
-            layer_name = check_name(geoObjs['name'])
+            layer_name = check_layer_name(geoObjs['name'])
         else:
-            layer_name = check_name(layer_name)
+            layer_name = check_layer_name(layer_name)
         layer_alias_name = f'{service_name}#{layer_order}#{layer_name}'
 
         srs = osr.SpatialReference()
@@ -320,14 +320,14 @@ def createFileGDB(output_path, layer_name, url_json, service_name, layer_order):
         for field in fields:
             # fieldDefn = out_layerDefn.GetFieldDefn(i)
             if field['type'] == "esriFieldTypeOID":
-                # OID_NAME = check_name(field['name'])
+                # OID_NAME = check_layer_name(field['name'])
                 OID = field['name']
                 continue
             if field['type'] == "esriFieldTypeGeometry":
                 continue
 
             OFTtype = parseTypeField(field['type'])
-            new_field = ogr.FieldDefn(check_name(field['name']), OFTtype)
+            new_field = ogr.FieldDefn(check_layer_name(field['name']), OFTtype)
 
             if OFTtype == ogr.OFTString:
                 new_field.SetWidth(field['length'])
@@ -356,13 +356,6 @@ def createFileGDB(output_path, layer_name, url_json, service_name, layer_order):
     except:
         log.error("创建数据库失败.\n" + traceback.format_exc())
         return None, None, ""
-
-
-def check_name(name):
-    p1 = r'[-!&<>"\'?@=$~^`#%*()/\\:;{}\[\]|+.]'
-    res = re.sub(p1, '_', name)
-    p2 = r'( +)'
-    return re.sub(p2, '', res)
 
 
 def get_json(url):

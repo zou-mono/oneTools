@@ -100,6 +100,11 @@ def get_col_row(x0, y0, x, y, size, resolution):
     return col, row
 
 
+def check_layer_name(name):
+    p1 = r'[-!&<>"\'?@=$~^`#%*()/\\:;{}\[\]|+.]'
+    res = re.sub(p1, '_', name)
+    p2 = r'( +)'
+    return re.sub(p2, '', res)
 # def get_srs_desc_by_epsg(name: str):
 #     if name == "2435":
 #         return srs_dict[SpatialReference.sz_Local]

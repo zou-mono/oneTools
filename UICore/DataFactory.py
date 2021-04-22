@@ -46,7 +46,7 @@ class workspaceFactory(object):
             try:
                 layer = self.datasource.GetLayer(name)
                 if layer is None:
-                    log.error("图层{}不存在!".format(name))
+                    log.warning("图层{}不存在!".format(name))
                     return None
                 else:
                     return layer
@@ -86,7 +86,7 @@ class workspaceFactory(object):
             if os.path.exists(output_path):
                 log.info("datasource已存在，在已有datasource基础上创建图层.")
 
-                if out_format == DataType.shapefile:
+                if out_format == DataType.shapefile or out_format == DataType.geojson:
                     self.driver.DeleteDataSource(output_path)
 
                     # 如果无法删除则再修改图层名新建一个
@@ -96,6 +96,10 @@ class workspaceFactory(object):
                     out_DS = self.driver.CreateDataSource(output_path)
                 elif out_format == DataType.fileGDB:
                     out_DS = self.openFromFile(output_path)
+                    # out_layer = out_DS.GetLayer(out_layer_name)
+                    # print(out_DS.TestCapability(ogr.ODsCDeleteLayer))
+                    # if out_layer is not None:
+                    #     out_DS.DeleteLayer(out_layer_name)
             else:
                 out_DS = self.driver.CreateDataSource(output_path)
 
@@ -105,9 +109,8 @@ class workspaceFactory(object):
             if out_format == DataType.shapefile:
                 out_layer = out_DS.CreateLayer(out_layer_name, srs=srs, geom_type=in_layer.GetGeomType(),
                                               options=['ENCODING=GBK'])
-            elif out_format == DataType.fileGDB:
-                out_layer = out_DS.CreateLayer(out_layer_name, srs=srs, geom_type=in_layer.GetGeomType(),
-                                              options=['OVERWRITE=YES'])
+            elif out_format == DataType.fileGDB or out_format == DataType.geojson:
+                out_layer = out_DS.CreateLayer(out_layer_name, srs=srs, geom_type=in_layer.GetGeomType())
 
             if out_layer is None:
                 raise Exception("创建图层失败.")
@@ -121,7 +124,7 @@ class workspaceFactory(object):
             return output_path, out_layer.GetName()
         except Exception as e:
             log.error("{}\n{}".format(e, traceback.format_exc()))
-            return None
+            return None, None
         finally:
             out_DS = None
             out_layer = None

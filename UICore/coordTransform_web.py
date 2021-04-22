@@ -103,7 +103,6 @@ def gcj02_to_wgs84_rough(lng, lat):
     gcj = _coord_diff([lng, lat], _coord_diff(gcj, [lng, lat]))
     return gcj
 
-
 def gcj02_to_wgs84_acc(lng, lat):
     curr = gcj02_to_wgs84_rough(lng, lat)
     diff = [float("inf"),  float("inf")]
@@ -168,9 +167,14 @@ def bd09_to_wgs84(bd_lon, bd_lat):
     return gcj02_to_wgs84(lon, lat)
 
 
+def bd09_to_wgs84_acc(bd_lon, bd_lat):
+    curr = bd09_to_gcj02(bd_lon, bd_lat)
+    return gcj02_to_wgs84_acc(curr[0], curr[1])
+
+
 def wgs84_to_bd09(lon, lat):
-    lon, lat = wgs84_to_gcj02(lon, lat)
-    return gcj02_to_bd09(lon, lat)
+    curr = wgs84_to_gcj02(lon, lat)
+    return gcj02_to_bd09(curr[0], curr[1])
 
 
 def _transformlat(lng, lat):
