@@ -38,12 +38,21 @@ class workspaceFactory(object):
                 self.datasource = self.driver.Open(file, 1)
                 return self.datasource
             except:
-                log.error("打开文件发生错误. \n{}".format(traceback.format_exc()))
+                log.error("打开文件{}发生错误!\n{}".format(file, traceback.format_exc()))
                 return None
 
     def openLayer(self, name):
         if self.datasource is not None:
-            return self.datasource.GetLayer(name)
+            try:
+                layer = self.datasource.GetLayer(name)
+                if layer is None:
+                    log.error("图层{}不存在!".format(name))
+                    return None
+                else:
+                    return layer
+            except:
+                log.error("读取图层{}发生错误!\n{}".format(name, traceback.format_exc()))
+                return None
 
     def getLayers(self):
         layers = []
@@ -69,6 +78,8 @@ class workspaceFactory(object):
         if self.driver is None:
             return None
 
+        out_DS = None
+        out_layer = None
         try:
             in_defn = in_layer.GetLayerDefn()
 
@@ -76,18 +87,27 @@ class workspaceFactory(object):
                 log.info("datasource已存在，在已有datasource基础上创建图层.")
 
                 if out_format == DataType.shapefile:
-                    output_path = launderName(output_path)
-                    out_layer_name, suffix = os.path.splitext(os.path.basename(output_path))
-                    outDS = self.driver.CreateDataSource(output_path)
+                    self.driver.DeleteDataSource(output_path)
+
+                    # 如果无法删除则再修改图层名新建一个
+                    if os.path.exists(output_path):
+                        output_path = launderName(output_path)
+                        out_layer_name, suffix = os.path.splitext(os.path.basename(output_path))
+                    out_DS = self.driver.CreateDataSource(output_path)
                 elif out_format == DataType.fileGDB:
-                    outDS = self.openFromFile(output_path)
+                    out_DS = self.openFromFile(output_path)
             else:
-                outDS = self.driver.CreateDataSource(output_path)
+                out_DS = self.driver.CreateDataSource(output_path)
 
             srs = osr.SpatialReference()
             srs.ImportFromEPSG(out_srs)
 
-            out_layer = outDS.CreateLayer(out_layer_name, srs=srs, geom_type=in_layer.GetGeomType())
+            if out_format == DataType.shapefile:
+                out_layer = out_DS.CreateLayer(out_layer_name, srs=srs, geom_type=in_layer.GetGeomType(),
+                                              options=['ENCODING=GBK'])
+            elif out_format == DataType.fileGDB:
+                out_layer = out_DS.CreateLayer(out_layer_name, srs=srs, geom_type=in_layer.GetGeomType(),
+                                              options=['OVERWRITE=YES'])
 
             if out_layer is None:
                 raise Exception("创建图层失败.")
@@ -102,6 +122,9 @@ class workspaceFactory(object):
         except Exception as e:
             log.error("{}\n{}".format(e, traceback.format_exc()))
             return None
+        finally:
+            out_DS = None
+            out_layer = None
 
 
 class shapefileWorkspaceFactory(workspaceFactory):
