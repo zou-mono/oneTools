@@ -140,7 +140,7 @@ def overwrite_cpg_file(outpath, outfile, encoding):
             f.close()
 
 
-def helmert_para(insrs, outsrs, first_order="NORTH"):
+def helmert_para_dict(insrs, outsrs, first_order="NORTH"):
     if insrs == SpatialReference.sz_Local and outsrs == SpatialReference.pcs_2000:
         if first_order == "NORTH":
             return "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
@@ -162,4 +162,6 @@ def helmert_para(insrs, outsrs, first_order="NORTH"):
         else:
             return "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
                 -433097.707045, -2465659.407210, 1.000009894628, 3518.45262840)
+    else:
+        return None
 

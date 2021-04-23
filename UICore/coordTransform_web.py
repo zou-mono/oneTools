@@ -108,8 +108,8 @@ def gcj02_to_wgs84_acc(lng, lat):
     diff = [float("inf"),  float("inf")]
 
     i = 0
-    # while max(abs(diff[0]), abs(diff[1])) > 1e-5 and i < 10:
-    while i < 5:
+    while max(abs(diff[0]), abs(diff[1])) > 1e-5:
+    # while i < 5:
         diff = _coord_diff(wgs84_to_gcj02(curr[0], curr[1]), [lng, lat])
         curr = _coord_diff(curr, diff)
         i += 1
