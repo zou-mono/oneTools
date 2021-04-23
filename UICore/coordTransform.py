@@ -159,6 +159,8 @@ class Transformer(object):
         self.in_wks = workspaceFactory().get_factory(self.in_format)
 
     def transform(self, srcSRS, dstSRS):
+        log.info("启动从{}到{}的转换...".format(self.in_path, self.out_path))
+
         start = time.time()
 
         res = None
