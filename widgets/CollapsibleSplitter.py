@@ -218,7 +218,7 @@ class CollapsibleSplitter(QSplitter):
                              (self.widgetToHide.height() - self.button.height()) / 2)
 
     # def resizeEvent(self, a0: QResizeEvent):
-    #     print("resize")
+    #     self.resize(a0.size())
 
     def createHandle(self):
         handle = SplitterHandle(self.orientation(), self)

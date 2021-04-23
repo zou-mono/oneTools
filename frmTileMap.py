@@ -50,6 +50,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.splitter.setSizes([600, self.splitter.width() - 590])
         self.resize(self.splitter.width(), self.splitter.height())
 
+        self.splitter.splitterMoved.connect(self.splitterMoved)
+        self.splitter.handle(1).handleClicked.connect(self.handleClicked)
+
         self.btn_addRow.clicked.connect(self.btn_addRow_Clicked)
         self.btn_removeRow.clicked.connect(self.btn_removeBtn_clicked)
 
@@ -63,6 +66,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         self.btn_tileInfoDialog.clicked.connect(self.open_tileInfoFile)
         self.btn_addressFile.clicked.connect(self.open_addressFile)
+
 
         self.txt_originX.editingFinished.connect(self.txt_originX_edited)
         self.txt_originY.editingFinished.connect(self.txt_originY_edited)
@@ -380,6 +384,15 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.rbtn_spiderAndHandle.click()
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
+        self.table_layout()
+
+    def splitterMoved(self):
+        self.table_layout()
+
+    def handleClicked(self):
+        self.table_layout()
+
+    def table_layout(self):
         if self.rbtn_onlyHandle.isChecked():
             self.tbl_address.setColumnWidth(0, self.tbl_address.width() / 2)
             self.tbl_address.setColumnWidth(1, self.tbl_address.width() / 2)

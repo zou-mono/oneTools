@@ -60,7 +60,8 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.btn_removeRow.clicked.connect(self.btn_removeBtn_clicked)
         self.btn_obtainMeta.clicked.connect(self.btn_obtainMeta_clicked)
         self.btn_saveMetaFile.clicked.connect(self.btn_saveMetaFile_clicked)
-
+        self.splitter.splitterMoved.connect(self.splitterMoved)
+        self.splitter.handle(1).handleClicked.connect(self.handleClicked)
         self.tbl_address.clicked.connect(self.table_index_clicked)
         self.tbl_address.verticalHeader().sectionClicked.connect(self.table_section_clicked)
 
@@ -73,12 +74,18 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.crawlVectorThread.finished.connect(self.threadStop)
 
     def showEvent(self, a0: QShowEvent) -> None:
-        self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.4)
-        self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
-        self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)
-        self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.2)
+        self.table_layout()
 
     def resizeEvent(self, a0: QResizeEvent) -> None:
+        self.table_layout()
+
+    def splitterMoved(self):
+        self.table_layout()
+
+    def handleClicked(self):
+        self.table_layout()
+
+    def table_layout(self):
         self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.4)
         self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
         self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)

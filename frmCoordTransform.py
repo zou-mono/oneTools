@@ -67,6 +67,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.btn_removeRow.clicked.connect(self.btn_removeBtn_clicked)
         self.btn_saveMetaFile.clicked.connect(self.btn_saveMetaFile_clicked)
         self.buttonBox.clicked.connect(self.buttonBox_clicked)
+        self.splitter.splitterMoved.connect(self.splitterMoved)
         self.splitter.handle(1).handleClicked.connect(self.handleClicked)
 
         self.tbl_width = 0
@@ -79,11 +80,6 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
         self.rbtn_file.click()
-        self.tbl_width = self.tbl_address.width()
-        # if self.splitter.splitterState == SplitterState.collapsed:
-        #     self.tbl_width = self.tbl_address.width()
-        # else:
-        #     self.tbl_width = self.tbl_address.width() - self.txt_log.width()
         self.table_layout()
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
@@ -92,33 +88,19 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
     def threadStop(self):
         self.thread.quit()
 
+    def splitterMoved(self):
+        self.table_layout()
+
     def handleClicked(self):
-        if self.splitter.splitterState == SplitterState.collapsed:
-            self.tbl_width = self.tbl_address.width()
-        else:
-            self.tbl_width = self.tbl_address.width() - self.txt_log.width()
+        self.table_layout()
 
     def table_layout(self):
-        # self.tbl_address.setColumnWidth(0, self.tbl_width * 0.16)
-        # self.tbl_address.setColumnWidth(1, self.tbl_width * 0.16)
-        # self.tbl_address.setColumnWidth(2, self.tbl_width * 0.18)
-        # self.tbl_address.setColumnWidth(3, self.tbl_width * 0.18)
-        # self.tbl_address.setColumnWidth(4, self.tbl_width * 0.16)
-        # self.tbl_address.setColumnWidth(5, self.tbl_width * 0.15)
-        if self.splitter.splitterState == SplitterState.collapsed:
-            self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.16)
-            self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.16)
-            self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.18)
-            self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.18)
-            self.tbl_address.setColumnWidth(4, self.tbl_address.width() * 0.16)
-            self.tbl_address.setColumnWidth(5, self.tbl_address.width() * 0.15)
-        else:
-            self.tbl_address.setColumnWidth(0, self.tbl_width * 0.16)
-            self.tbl_address.setColumnWidth(1, self.tbl_width * 0.16)
-            self.tbl_address.setColumnWidth(2, self.tbl_width * 0.18)
-            self.tbl_address.setColumnWidth(3, self.tbl_width * 0.18)
-            self.tbl_address.setColumnWidth(4, self.tbl_width * 0.16)
-            self.tbl_address.setColumnWidth(5, self.tbl_width * 0.15)
+        self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.16)
+        self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.16)
+        self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.18)
+        self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.18)
+        self.tbl_address.setColumnWidth(4, self.tbl_address.width() * 0.16)
+        self.tbl_address.setColumnWidth(5, self.tbl_address.width() * 0.15)
 
     @Slot()
     def btn_addRow_clicked(self):
