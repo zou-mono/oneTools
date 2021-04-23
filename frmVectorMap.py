@@ -140,10 +140,10 @@ class Ui_Window(QDialog, Ui_Dialog):
             output = str(self.tbl_address.model().data(output_index, Qt.DisplayRole)).strip()
 
             if url == "":
-                log.error('第{}行参数缺失必要参数"地址"，请补全！'.format(row), dialog=True)
+                log.error('第{}行缺失必要参数"地址"，请补全！'.format(row), dialog=True)
                 return False
             if service == "":
-                log.error('第{}行参数缺失必要参数"服务号"，请补全！'.format(row), dialog=True)
+                log.error('第{}行缺失必要参数"服务号"，请补全！'.format(row), dialog=True)
                 return False
 
             if service != "*":
@@ -154,7 +154,7 @@ class Ui_Window(QDialog, Ui_Dialog):
 
                 if layername == "":
                     layername = self.paras[key]['old_layername']
-                    log.warning('第{}行参数缺失非必要参数"输出图层名"，将使用默认值"{}".'.format(row + 1, layername))
+                    log.warning('第{}行缺失非必要参数"输出图层名"，将使用默认值"{}".'.format(row + 1, layername))
 
                 if os.path.splitext(filename)[1] != '.gdb':
                     gdb_name = service_name + ".gdb"
@@ -175,7 +175,7 @@ class Ui_Window(QDialog, Ui_Dialog):
                     gdb_name = urlEncodeToFileName(url) + ".gdb"
                     output = os.path.join(output, gdb_name)
                     self.paras[key_all]['output'] = output
-                    log.warning('第{}行参数缺失非必要参数"输出路径"，将使用默认值"{}".'.format(row + 1, output))
+                    log.warning('第{}行缺失非必要参数"输出路径"，将使用默认值"{}".'.format(row + 1, output))
         return True
 
     @Slot(int)

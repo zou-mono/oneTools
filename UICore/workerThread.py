@@ -4,6 +4,7 @@ from UICore.suplicmap_tilemap import crawl_tilemap
 from UICore.merge_tiles import merge_tiles
 from UICore.log4p import Log
 from UICore.suplicmap_vector2 import crawl_vector, crawl_vector_batch
+from UICore.coordTransform import coordTransform
 
 log = Log()
 
@@ -37,6 +38,7 @@ class crawlTilesWorker(QtCore.QObject):
 
         self.finished.emit()
 
+
 class crawlVectorWorker(QtCore.QObject):
     crawl = pyqtSignal(str, str, str, str, str, int)
     crawlBatch = pyqtSignal(str, str, str, object)
@@ -56,5 +58,17 @@ class crawlVectorWorker(QtCore.QObject):
         self.finished.emit()
 
 
+class coordTransformWorker(QtCore.QObject):
+    transform = pyqtSignal(str, str, int, str, str, int)
+    finished = pyqtSignal()
+
+    def __init__(self):
+        super(coordTransformWorker, self).__init__()
+
+    def coordTransform(self, inpath, inlayer, insrs, outpath, outlayer, outsrs):
+        flag, message = coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs)
+        if not flag:
+            log.error(message)
+        self.finished.emit()
 
 

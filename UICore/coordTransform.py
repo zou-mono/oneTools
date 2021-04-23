@@ -9,7 +9,7 @@ from osgeo import ogr, osr, gdal
 from UICore.DataFactory import workspaceFactory
 from UICore.Gv import DataType, DataType_dict, srs_dict
 from UICore.common import launderName, overwrite_cpg_file, is_already_opened_in_write_mode, \
-    helmert_para_dict
+    helmert_para_dict, get_suffix
 from UICore.coordTransform_web import gcj02_to_wgs84_acc, wgs84_to_gcj02, bd09_to_wgs84_acc, wgs84_to_bd09
 from UICore.log4p import Log
 from UICore.Gv import SpatialReference
@@ -53,10 +53,10 @@ log = Log(__file__)
     required=True)
 def main(inpath, inlayer, insrs, outpath, outlayer, outsrs):
     """spatial coordinate transformation program"""
-    transform(inpath, inlayer, insrs, outpath, outlayer, outsrs)
+    coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs)
 
 
-def transform(inpath, inlayer, insrs, outpath, outlayer, outsrs):
+def coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs):
     if inpath[-1] == os.sep:
         inpath = inpath[:-1]
     if outpath[-1] == os.sep:
@@ -68,7 +68,7 @@ def transform(inpath, inlayer, insrs, outpath, outlayer, outsrs):
     if in_wks is None:
         return False
 
-    in_DS = in_wks.openFromFile(inpath)
+    in_wks.openFromFile(inpath)
     in_layer = in_wks.openLayer(inlayer)
 
     if in_layer is None:
@@ -97,8 +97,12 @@ def transform(inpath, inlayer, insrs, outpath, outlayer, outsrs):
 
     out_format = get_suffix(outpath)
 
-    tfer = Transformer(in_format, out_format, inpath, inlayer, outpath, outlayer)
-    tfer.transform(checked_insrs, checked_outsrs)
+    try:
+        tfer = Transformer(in_format, out_format, inpath, inlayer, outpath, outlayer)
+        tfer.transform(checked_insrs, checked_outsrs)
+        return True, ''
+    except:
+        return False, traceback.format_exc()
 
 
 def check_srs(srs, srs_ref):
@@ -131,24 +135,6 @@ def get_srs(srs_ref):
         else:
             return None
     except:
-        return None
-
-
-def get_suffix(path):
-    suffix = None
-    basename = os.path.basename(path)
-    if basename.find('.') > 0:
-        suffix = basename.split('.')[1]
-
-    if suffix.lower() == 'shp':
-        return DataType.shapefile
-    elif suffix.lower() == 'geojson':
-        return DataType.geojson
-    elif suffix.lower() == 'gdb':
-        return DataType.fileGDB
-    elif suffix.lower() == 'dwg':
-        return DataType.cad_dwg
-    else:
         return None
 
 

@@ -12,8 +12,10 @@ import json
 import os
 
 from UICore.DataFactory import workspaceFactory
-from UICore.Gv import SplitterState, Dock, DataType, srs_dict, srs_list
-from UICore.common import defaultImageFile, defaultTileFolder, urlEncodeToFileName, get_paraInfo, get_srs_desc_by_epsg
+from UICore.Gv import SplitterState, Dock, DataType, srs_dict
+from UICore.common import defaultImageFile, defaultTileFolder, urlEncodeToFileName, get_paraInfo, get_suffix, \
+    encodeCurrentTime
+from UICore.workerThread import coordTransformWorker
 from widgets.mTable import TableModel, mTableStyle, layernameDelegate, srsDelegate, outputPathDelegate
 from UICore.log4p import Log
 
@@ -65,21 +67,58 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.btn_removeRow.clicked.connect(self.btn_removeBtn_clicked)
         self.btn_saveMetaFile.clicked.connect(self.btn_saveMetaFile_clicked)
         self.buttonBox.clicked.connect(self.buttonBox_clicked)
+        self.splitter.handle(1).handleClicked.connect(self.handleClicked)
+
+        self.tbl_width = 0
+
+        self.thread = QThread()
+        self.coordTransformThread = coordTransformWorker()
+        self.coordTransformThread.moveToThread(self.thread)
+        self.coordTransformThread.transform.connect(self.coordTransformThread.coordTransform)
+        self.coordTransformThread.finished.connect(self.threadStop)
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
         self.rbtn_file.click()
+        self.tbl_width = self.tbl_address.width()
+        # if self.splitter.splitterState == SplitterState.collapsed:
+        #     self.tbl_width = self.tbl_address.width()
+        # else:
+        #     self.tbl_width = self.tbl_address.width() - self.txt_log.width()
         self.table_layout()
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
         self.table_layout()
 
+    def threadStop(self):
+        self.thread.quit()
+
+    def handleClicked(self):
+        if self.splitter.splitterState == SplitterState.collapsed:
+            self.tbl_width = self.tbl_address.width()
+        else:
+            self.tbl_width = self.tbl_address.width() - self.txt_log.width()
+
     def table_layout(self):
-        self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.16)
-        self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.16)
-        self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.18)
-        self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.18)
-        self.tbl_address.setColumnWidth(4, self.tbl_address.width() * 0.16)
-        self.tbl_address.setColumnWidth(5, self.tbl_address.width() * 0.15)
+        # self.tbl_address.setColumnWidth(0, self.tbl_width * 0.16)
+        # self.tbl_address.setColumnWidth(1, self.tbl_width * 0.16)
+        # self.tbl_address.setColumnWidth(2, self.tbl_width * 0.18)
+        # self.tbl_address.setColumnWidth(3, self.tbl_width * 0.18)
+        # self.tbl_address.setColumnWidth(4, self.tbl_width * 0.16)
+        # self.tbl_address.setColumnWidth(5, self.tbl_width * 0.15)
+        if self.splitter.splitterState == SplitterState.collapsed:
+            self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.16)
+            self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.16)
+            self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.18)
+            self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.18)
+            self.tbl_address.setColumnWidth(4, self.tbl_address.width() * 0.16)
+            self.tbl_address.setColumnWidth(5, self.tbl_address.width() * 0.15)
+        else:
+            self.tbl_address.setColumnWidth(0, self.tbl_width * 0.16)
+            self.tbl_address.setColumnWidth(1, self.tbl_width * 0.16)
+            self.tbl_address.setColumnWidth(2, self.tbl_width * 0.18)
+            self.tbl_address.setColumnWidth(3, self.tbl_width * 0.18)
+            self.tbl_address.setColumnWidth(4, self.tbl_width * 0.16)
+            self.tbl_address.setColumnWidth(5, self.tbl_width * 0.15)
 
     @Slot()
     def btn_addRow_clicked(self):
@@ -92,7 +131,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
             wks = None
             for fileName in fileNames:
-                save_srs_list = srs_list
+                save_srs_list = srs_dict.values()
                 if fileType == 'ESRI Shapefile(*.shp)':
                     wks = workspaceFactory().get_factory(DataType.shapefile)
                 elif fileType == 'GeoJson(*.geojson)':
@@ -130,7 +169,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                         rows.append(row)
 
                     for row in rows:
-                        self.add_delegate_to_row(row, fileName, lst_names, srs_list)
+                        self.add_delegate_to_row(row, fileName, lst_names, srs_dict.values())
 
     def add_layer_to_row(self, in_layer, fileName, layer_name):
         in_srs = in_layer.GetSpatialRef()
@@ -221,6 +260,95 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
             self.close()
 
+    def check_paras(self):
+        rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
+        for row in rows:
+            in_path_index = self.tbl_address.model().index(row, 0, QModelIndex())
+            in_layername_index = self.tbl_address.model().index(row, 1, QModelIndex())
+            in_srs_index = self.tbl_address.model().index(row, 2, QModelIndex())
+            out_srs_index = self.tbl_address.model().index(row, 3, QModelIndex())
+            out_path_index = self.tbl_address.model().index(row, 4, QModelIndex())
+            out_layername_index = self.tbl_address.model().index(row, 5, QModelIndex())
+
+            in_path = str(self.tbl_address.model().data(in_path_index, Qt.DisplayRole)).strip()
+            in_layername = str(self.tbl_address.model().data(in_layername_index, Qt.DisplayRole)).strip()
+            in_srs = str(self.tbl_address.model().data(in_srs_index, Qt.DisplayRole)).strip()
+            out_srs = str(self.tbl_address.model().data(out_srs_index, Qt.DisplayRole)).strip()
+            out_path = str(self.tbl_address.model().data(out_path_index, Qt.DisplayRole)).strip()
+            out_layername = str(self.tbl_address.model().data(out_layername_index, Qt.DisplayRole)).strip()
+
+            if in_path == "":
+                log.error('第{}行缺失必要参数"输入路径"，请补全！'.format(row), dialog=True)
+                return False
+
+            in_format = get_suffix(in_path)
+            if in_format is None:
+                log.error('第{}行的输入数据格式不支持！目前只支持shapefile, fileGDB, geojson和cad dwg'.format(row), dialog=True)
+                return False
+
+            if in_layername == "":
+                if in_format == DataType.fileGDB:
+                    log.error('第{}行参数缺失必要参数"输入图层"！')
+                    return False
+                else:
+                    in_layername, suffix = os.path.splitext(os.path.basename(in_path))
+                    self.tbl_address.model().setData(in_layername_index, in_layername)
+                    log.warning('第{}行参数缺失参数"输入图层"，已自动补全为{}'.format(row, in_layername))
+
+            if in_srs == "":
+                log.error('第{}行缺失必要参数"输入坐标系"，请补全！'.format(row), dialog=True)
+                return False
+
+            if out_srs == "":
+                log.error('第{}行缺失必要参数"输出坐标系"，请补全！'.format(row), dialog=True)
+                return False
+
+            if out_path == "":
+                out_file = encodeCurrentTime() + ".gdb"
+                if not os.path.exists("res"):
+                    os.makedirs("res")
+
+                out_path = os.path.join(os.path.abspath("res"), out_file)
+                self.tbl_address.model().setData(out_path_index, out_path)
+                log.warning('第{}行参数缺失参数"输出路径"，自动补全为默认值{}'.format(row, out_path))
+            else:
+                out_format = get_suffix(out_path)
+                if out_format is None:
+                    out_file = encodeCurrentTime() + ".gdb"
+                    out_path = os.path.join(out_path, out_file)
+                    self.tbl_address.model().setData(out_path_index, out_path)
+                    log.warning('第{}行参数"输出路径"缺失数据源，自动补全为默认值{}'.format(row, out_path))
+
+            if out_layername == "":
+                out_layername = in_layername + "_" + str(out_srs)
+                self.tbl_address.model().setData(out_layername_index, out_layername)
+                log.warning('第{}行参数缺失参数"输出图层"，自动补全为默认值{}'.format(row, out_layername))
+
+        return True
+
+
+    def run_process(self):
+        rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
+        for row in rows:
+            in_path_index = self.tbl_address.model().index(row, 0, QModelIndex())
+            in_layername_index = self.tbl_address.model().index(row, 1, QModelIndex())
+            in_srs_index = self.tbl_address.model().index(row, 2, QModelIndex())
+            out_srs_index = self.tbl_address.model().index(row, 3, QModelIndex())
+            out_path_index = self.tbl_address.model().index(row, 4, QModelIndex())
+            out_layername_index = self.tbl_address.model().index(row, 5, QModelIndex())
+
+            in_path = str(self.tbl_address.model().data(in_path_index, Qt.DisplayRole)).strip()
+            in_layername = str(self.tbl_address.model().data(in_layername_index, Qt.DisplayRole)).strip()
+            in_srs = str(self.tbl_address.model().data(in_srs_index, Qt.DisplayRole)).strip()
+            out_srs = str(self.tbl_address.model().data(out_srs_index, Qt.DisplayRole)).strip()
+            out_path = str(self.tbl_address.model().data(out_path_index, Qt.DisplayRole)).strip()
+            out_layername = str(self.tbl_address.model().data(out_layername_index, Qt.DisplayRole)).strip()
+
+            in_srs = list(srs_dict.keys())[list(srs_dict.values()).index(in_srs)]
+            out_srs = list(srs_dict.keys())[list(srs_dict.values()).index(out_srs)]
+
+            self.coordTransformThread.transform.emit(in_path, in_layername, in_srs, out_path, out_layername, out_srs)
+
     @Slot()
     def btn_saveMetaFile_clicked(self):
         fileName, fileType = QFileDialog.getSaveFileName(self, "请选择保存的参数文件", os.getcwd(),
@@ -306,7 +434,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
         layername_delegate = layernameDelegate(self, {'type': 'c'})
         self.tbl_address.setItemDelegateForColumn(1, layername_delegate)
-        srs_delegate = srsDelegate(self, srs_list)
+        srs_delegate = srsDelegate(self, srs_dict.values())
         self.tbl_address.setItemDelegateForColumn(2, srs_delegate)
         self.tbl_address.setItemDelegateForColumn(3, srs_delegate)
         outputpath_delegate = outputPathDelegate(self, {'type': 'd'})

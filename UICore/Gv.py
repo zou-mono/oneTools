@@ -69,25 +69,27 @@ srs_dict = {
     SpatialReference.pcs_2000_zone: "CGCS2000投影(包含带号)",
     SpatialReference.wgs84: "WGS84",
     SpatialReference.bd09: "百度地理",
-    SpatialReference.gcj02: "火星",
+    SpatialReference.gcj02: "高德地理",
     SpatialReference.gcs_xian80: "西安80地理",
     SpatialReference.pcs_xian80: "西安80投影",
     SpatialReference.pcs_xian80_zone: "西安80投影(包含带号)"
 }
 
-# epsg_dict = {
-#     SpatialReference.sz_Local: 2435,
-#     SpatialReference.gcs_2000: 4490,
-#     SpatialReference.pcs_2000: 4547,
-#     SpatialReference.pcs_2000_zone: 4526,
-#     SpatialReference.wgs84: 4326,
-#     SpatialReference.gcs_xian80: 4610,
-#     SpatialReference.pcs_xian80: 2383,
-#     SpatialReference.pcs_xian80_zone: 2363
+# srs_desc_dict = {
+#     "深圳独立": SpatialReference.sz_Local,
+#     "CGCS2000地理": SpatialReference.gcs_2000,
+#     "CGCS2000投影": SpatialReference.pcs_2000,
+#     "CGCS2000投影(包含带号)": SpatialReference.pcs_2000_zone,
+#     "WGS84": SpatialReference.wgs84,
+#     "百度地理": SpatialReference.bd09,
+#     "高德地理": SpatialReference.gcj02,
+#     "西安80地理": SpatialReference.gcs_xian80,
+#     "西安80投影": SpatialReference.pcs_xian80,
+#     "西安80投影(包含带号)": SpatialReference.pcs_xian80_zone
 # }
 
-srs_list = ["深圳独立", "CGCS2000投影", "WGS84", "百度地理", "火星", "CGCS2000地理",
-            "CGCS2000投影(包含带号)", "西安80地理", "西安80投影", "西安80投影(包含带号)"]
+# srs_list = ["深圳独立", "CGCS2000投影", "WGS84", "百度地理", "高德地理", "CGCS2000地理",
+#             "CGCS2000投影(包含带号)", "西安80地理", "西安80投影", "西安80投影(包含带号)"]
 
 
 

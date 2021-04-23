@@ -329,15 +329,15 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
             if self.rbtn_spiderAndHandle.isChecked() or self.rbtn_onlySpider.isChecked():
                 if url == "":
-                    log.error('第{}行参数缺失必要参数"地址"，请补全！'.format(row), dialog=True)
+                    log.error('第{}行缺失必要参数"地址"，请补全！'.format(row), dialog=True)
                     return False
                 if level == "":
-                    log.error('第{}行参数缺失必要参数"等级"，请补全！'.format(row), dialog=True)
+                    log.error('第{}行缺失必要参数"等级"，请补全！'.format(row), dialog=True)
                     return False
 
             elif self.rbtn_onlyHandle.isChecked():
                 if url == "":
-                    log.error('第{}行参数缺失必要参数"瓦片文件夹"，请补全！'.format(row), dialog=True)
+                    log.error('第{}行缺失必要参数"瓦片文件夹"，请补全！'.format(row), dialog=True)
                     return False
         return True
 

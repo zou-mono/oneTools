@@ -103,6 +103,7 @@ def gcj02_to_wgs84_rough(lng, lat):
     gcj = _coord_diff([lng, lat], _coord_diff(gcj, [lng, lat]))
     return gcj
 
+
 def gcj02_to_wgs84_acc(lng, lat):
     curr = gcj02_to_wgs84_rough(lng, lat)
     diff = [float("inf"),  float("inf")]

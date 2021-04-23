@@ -5,7 +5,7 @@ import os
 import re
 import time
 
-from UICore.Gv import srs_dict, SpatialReference
+from UICore.Gv import srs_dict, SpatialReference, DataType
 from UICore.log4p import Log
 import urllib.request, urllib.parse
 
@@ -164,4 +164,33 @@ def helmert_para_dict(insrs, outsrs, first_order="NORTH"):
                 -433097.707045, -2465659.407210, 1.000009894628, 3518.45262840)
     else:
         return None
+
+
+def get_suffix(path):
+    suffix = None
+    basename = os.path.basename(path)
+    if basename.find('.') > 0:
+        suffix = basename.split('.')[1]
+
+    if suffix is None:
+        return None
+
+    if suffix.lower() == 'shp':
+        return DataType.shapefile
+    elif suffix.lower() == 'geojson':
+        return DataType.geojson
+    elif suffix.lower() == 'gdb':
+        return DataType.fileGDB
+    elif suffix.lower() == 'dwg':
+        return DataType.cad_dwg
+    else:
+        return None
+
+def encodeCurrentTime():
+    localtime = time.localtime(time.time())
+    str_time = time.asctime(localtime)
+    encode_time = str(base64.b64encode(str_time.encode("utf-8")), "utf-8")
+
+    return encode_time
+
 
