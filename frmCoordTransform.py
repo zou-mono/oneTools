@@ -104,6 +104,8 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
     @Slot()
     def btn_addRow_clicked(self):
+        save_srs_list = list(srs_dict.values())
+
         if self.rbtn_file.isChecked():
             fileNames, fileType = QFileDialog.getOpenFileNames(
                 self, "选择需要转换的图形文件", os.getcwd(),
@@ -113,18 +115,17 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
             wks = None
             for fileName in fileNames:
-                save_srs_list = srs_dict.values()
                 if fileType == 'ESRI Shapefile(*.shp)':
                     wks = workspaceFactory().get_factory(DataType.shapefile)
                 elif fileType == 'GeoJson(*.geojson)':
                     wks = workspaceFactory().get_factory(DataType.geojson)
                 elif fileType == 'CAD drawing(*.dwg)':
-                    print('dwg')
+                    wks = workspaceFactory().get_factory(DataType.cad_dwg)
 
                 datasource = wks.openFromFile(fileName)
-                layer_name = wks.getLayerNames()[0]
 
                 if datasource is not None:
+                    layer_name = wks.getLayerNames()[0]
                     in_layer = datasource.GetLayer()
                     row = self.add_layer_to_row(in_layer, fileName, layer_name)
                     self.add_delegate_to_row(row, fileName, [layer_name], save_srs_list)
@@ -132,6 +133,10 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                     datasource.Release()
                     datasource = None
                     in_layer = None
+                else:
+                    layer_name, suffix = os.path.splitext(os.path.basename(fileName))
+                    row = self.add_layer_to_row(None, fileName, layer_name)
+                    self.add_delegate_to_row(row, fileName, [layer_name], save_srs_list)
 
         elif self.rbtn_filedb.isChecked():
             fileName = QtWidgets.QFileDialog.getExistingDirectory(self, "选择需要转换的GDB数据库",
@@ -151,24 +156,27 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                         rows.append(row)
 
                     for row in rows:
-                        self.add_delegate_to_row(row, fileName, lst_names, srs_dict.values())
+                        self.add_delegate_to_row(row, fileName, lst_names, save_srs_list)
 
     def add_layer_to_row(self, in_layer, fileName, layer_name):
-        in_srs = in_layer.GetSpatialRef()
-        if in_srs is not None:
-            in_srs = osr.SpatialReference(in_srs.ExportToWkt())
-            srs_epsg = in_srs.GetAttrValue("AUTHORITY", 1)
-            srs_desc = srs_dict[srs_epsg]
+        if in_layer is not None:
+            in_srs = in_layer.GetSpatialRef()
+            if in_srs is not None:
+                in_srs = osr.SpatialReference(in_srs.ExportToWkt())
+                srs_epsg = in_srs.GetAttrValue("AUTHORITY", 1)
+                srs_desc = srs_dict[int(srs_epsg)]
+            else:
+                srs_desc = None
         else:
             srs_desc = None
 
         row = self.model.rowCount(QModelIndex())
         self.model.addEmptyRow(row, 1, 0)
-        url_index = self.tbl_address.model().index(row, self.url_no)
+        in_path_index = self.tbl_address.model().index(row, self.in_path_no)
         in_layername_index = self.tbl_address.model().index(row, self.in_layername_no)
         in_srs_index = self.tbl_address.model().index(row, self.in_srs_no)
 
-        self.tbl_address.model().setData(url_index, fileName)
+        self.tbl_address.model().setData(in_path_index, fileName)
         self.tbl_address.model().setData(in_layername_index, layer_name)
         self.tbl_address.model().setData(in_srs_index, srs_desc)
 
@@ -201,7 +209,8 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
             self.add_address_rows_from_paras()
         except:
-            self.model.removeRows(self.model.rowCount(QModelIndex()) - 1, 1, QModelIndex())
+            if self.model.rowCount(QModelIndex()) > 0:
+                self.model.removeRows(self.model.rowCount(QModelIndex()) - 1, 1, QModelIndex())
             log.error("读取参数文件失败！", dialog=True)
 
     def add_address_rows_from_paras(self):
@@ -285,29 +294,45 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 log.error('第{}行缺失必要参数"输出坐标系"，请补全！'.format(row), dialog=True)
                 return False
 
-            if out_path == "":
-                out_file = encodeCurrentTime() + ".gdb"
-                if not os.path.exists("res"):
-                    os.makedirs("res")
-
-                out_path = os.path.join(os.path.abspath("res"), out_file)
-                self.tbl_address.model().setData(out_path_index, out_path)
-                log.warning('第{}行参数缺失参数"输出路径"，自动补全为默认值{}'.format(row, out_path))
-            else:
-                out_format = get_suffix(out_path)
-                if out_format is None:
-                    out_file = encodeCurrentTime() + ".gdb"
-                    out_path = os.path.join(out_path, out_file)
-                    self.tbl_address.model().setData(out_path_index, out_path)
-                    log.warning('第{}行参数"输出路径"缺失数据源，自动补全为默认值{}'.format(row, out_path))
-
             if out_layername == "":
                 out_layername = in_layername + "_" + str(out_srs)
                 self.tbl_address.model().setData(out_layername_index, out_layername)
                 log.warning('第{}行参数缺失参数"输出图层"，自动补全为默认值{}'.format(row, out_layername))
 
+            self.autofill_outpath(row, out_path, in_layername, out_srs, in_format, out_path_index)
+
         return True
 
+    def default_outfile(self, in_format, in_layername, out_srs):
+        out_file = ""
+        if in_format == DataType.fileGDB:
+            out_file = encodeCurrentTime() + ".gdb"
+        elif in_format == DataType.geojson:
+            out_file = in_layername + "_" + str(out_srs) + ".geojson"
+        elif in_format == DataType.shapefile:
+            out_file = in_layername + "_" + str(out_srs) + ".shp"
+        elif in_format == DataType.cad_dwg:
+            out_file = in_layername + "_" + str(out_srs) + ".dwg"
+        return out_file
+
+    def autofill_outpath(self, row, out_path, in_layername, out_srs, in_format, out_path_index):
+        if out_path == "":
+            out_file = self.default_outfile(in_format, in_layername, out_srs)
+
+            if not os.path.exists("res"):
+                os.makedirs("res")
+
+            out_path = os.path.join(os.path.abspath("res"), out_file)
+            self.tbl_address.model().setData(out_path_index, out_path)
+            log.warning('第{}行参数缺失参数"输出路径"，自动补全为默认值{}'.format(row, out_path))
+        else:
+            out_format = get_suffix(out_path)
+            if out_format is None:
+                out_file = self.default_outfile(in_format, in_layername, out_srs)
+
+                out_path = os.path.join(out_path, out_file)
+                self.tbl_address.model().setData(out_path_index, out_path)
+                log.warning('第{}行参数"输出路径"缺失数据源，自动补全为默认值{}'.format(row, out_path))
 
     def run_process(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
@@ -398,7 +423,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.tbl_address.setDragEnabled(True)
         self.tbl_address.setAcceptDrops(True)
 
-        self.url_no = 0  # 输入路径字段的序号
+        self.in_path_no = 0  # 输入路径字段的序号
         self.in_layername_no = 1  # 输入图层的序号
         self.out_layername_no = 5 # 输出图层的序号
         self.in_srs_no = 2
@@ -440,11 +465,11 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.tbl_address.setFocus()
 
     def return_url_and_layername(self, logicRow):
-        url_index = self.tbl_address.model().index(logicRow, self.url_no)
+        in_path_index = self.tbl_address.model().index(logicRow, self.in_path_no)
         layername_index = self.tbl_address.model().index(logicRow, self.in_layername_no)
-        url = self.tbl_address.model().data(url_index, Qt.DisplayRole)
+        url = self.tbl_address.model().data(in_path_index, Qt.DisplayRole)
         layername = self.tbl_address.model().data(layername_index, Qt.DisplayRole)
-        return url_index, layername_index, url, layername
+        return in_path_index, layername_index, url, layername
 
     def update_outlayername(self, index: QModelIndex, text):
         if index.column() == self.out_srs_no:

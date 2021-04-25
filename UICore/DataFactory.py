@@ -23,6 +23,8 @@ class workspaceFactory(object):
             wks = geojsonWorkspaceFactory()
         elif factory == DataType.fileGDB:
             wks = filegdbWorkspaceFactory()
+        elif factory == DataType.cad_dwg:
+            wks = dwgWorkspaceFactory()
 
         if wks is None:
             log.error("不支持的空间数据格式!")
@@ -148,4 +150,11 @@ class filegdbWorkspaceFactory(workspaceFactory):
     def __init__(self):
         super().__init__()
         driverName = "FileGDB"
+        self.driver = ogr.GetDriverByName(driverName)
+
+
+class dwgWorkspaceFactory(workspaceFactory):
+    def __init__(self):
+        super().__init__()
+        driverName = "CAD"
         self.driver = ogr.GetDriverByName(driverName)
