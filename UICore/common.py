@@ -3,7 +3,7 @@ import json
 import math
 import os
 import re
-import time
+import datetime
 
 from UICore.Gv import srs_dict, SpatialReference, DataType
 from UICore.log4p import Log
@@ -186,10 +186,12 @@ def get_suffix(path):
     else:
         return None
 
+
 def encodeCurrentTime():
-    localtime = time.localtime(time.time())
-    str_time = time.asctime(localtime)
-    encode_time = str(base64.b64encode(str_time.encode("utf-8")), "utf-8")
+    # localtime = time.localtime(time.time())
+    # str_time = time.asctime(localtime)
+    # encode_time = str(base64.b64encode(str_time.encode("utf-8")), "utf-8")
+    encode_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     return encode_time
 
