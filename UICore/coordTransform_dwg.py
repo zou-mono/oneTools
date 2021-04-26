@@ -39,7 +39,7 @@ def transform_dwg(input, type, output):
 
     if not os.path.exists(input):
         log.error("输入的dwg文件不存在!")
-        return False
+        return None
 
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
@@ -57,7 +57,7 @@ def transform_dwg(input, type, output):
             continue
     else:
         log.error("未正确读取autocad的com接口，请检查是否正确安装！")
-        return False
+        return None
 
     # ACADPref = acad.Preferences.OpenSave
     # print(ACADPref.SaveAsType)
@@ -74,7 +74,7 @@ def transform_dwg(input, type, output):
 
     if mat is None:
         log.error("不存在对应的转换矩阵！")
-        return
+        return None
 
     mat = ArrayTransform(mat)
 
@@ -92,7 +92,7 @@ def transform_dwg(input, type, output):
                 layers = doc.Layers
                 break
             except:
-                print("try{}".format(trytime))
+                # print("try{}".format(trytime))
                 time.sleep(1)
                 trytime += 1
                 continue
@@ -153,10 +153,10 @@ def transform_dwg(input, type, output):
         doc.SaveAs(output_dir + os.sep + output_file_name)
         acad.Quit()
         log.info("dwg文件转换完成! Success: {}, Failure: {}".format(isuccess_num, ierror_num))
-        return True
+        return output, output_file_name
     except:
         log.error("转换失败.\n{}".format(traceback.format_exc()))
-        return False
+        return None
     finally:
         if acad is not None:
             acad.Close(False)

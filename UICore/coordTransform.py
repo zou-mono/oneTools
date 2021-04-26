@@ -10,6 +10,7 @@ from UICore.DataFactory import workspaceFactory
 from UICore.Gv import DataType, DataType_dict, srs_dict
 from UICore.common import launderName, overwrite_cpg_file, is_already_opened_in_write_mode, \
     helmert_para_dict, get_suffix
+from UICore.coordTransform_dwg import transform_dwg
 from UICore.coordTransform_web import gcj02_to_wgs84_acc, wgs84_to_gcj02, bd09_to_wgs84_acc, wgs84_to_bd09
 from UICore.log4p import Log
 from UICore.Gv import SpatialReference
@@ -63,37 +64,42 @@ def coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs):
         outpath = outpath[:-1]
 
     in_format = get_suffix(inpath)
-    in_wks = workspaceFactory().get_factory(in_format)
 
-    if in_wks is None:
-        return False
+    if in_format == DataType.cad_dwg:
+        checked_insrs = insrs
+        checked_outsrs = outsrs
+    else:
+        in_wks = workspaceFactory().get_factory(in_format)
 
-    in_wks.openFromFile(inpath)
-    in_layer = in_wks.openLayer(inlayer)
+        if in_wks is None:
+            return False
 
-    if in_layer is None:
-        log.error("输入图层不存在！")
-        return False
+        in_wks.openFromFile(inpath)
+        in_layer = in_wks.openLayer(inlayer)
 
-    srs_ref = in_layer.GetSpatialRef()
-    # in_DS.Release()
-    in_layer = None
+        if in_layer is None:
+            log.error("输入图层不存在！")
+            return False
 
-    checked_insrs = check_srs(insrs, srs_ref)
-    if checked_insrs == -2435:
-        log.error("输入的空间参考在ESPG中不存在!")
-        return False
-    elif checked_insrs == -4547:
-        log.error("不支持输入空间数据的坐标转换!")
-        return False
+        srs_ref = in_layer.GetSpatialRef()
+        # in_DS.Release()
+        in_layer = None
 
-    checked_outsrs = check_srs(outsrs, outlayer)
-    if checked_outsrs == -2435:
-        log.error("输出的空间参考在ESPG中不存在!")
-        return False
-    elif checked_outsrs == -4547:
-        log.error("不支持输出空间数据的坐标转换!")
-        return False
+        checked_insrs = check_srs(insrs, srs_ref)
+        if checked_insrs == -2435:
+            log.error("输入的空间参考在ESPG中不存在!")
+            return False
+        elif checked_insrs == -4547:
+            log.error("不支持输入空间数据的坐标转换!")
+            return False
+
+        checked_outsrs = check_srs(outsrs, outlayer)
+        if checked_outsrs == -2435:
+            log.error("输出的空间参考在ESPG中不存在!")
+            return False
+        elif checked_outsrs == -4547:
+            log.error("不支持输出空间数据的坐标转换!")
+            return False
 
     out_format = get_suffix(outpath)
 
@@ -163,74 +169,84 @@ class Transformer(object):
 
         start = time.time()
 
-        res = None
-        if srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.pcs_2000:
-            res = self.sz_local_to_pcs_2000()
-        elif srcSRS == SpatialReference.pcs_2000 and dstSRS == SpatialReference.sz_Local:
-            res = self.pcs_2000_to_sz_local()
-        elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.gcs_2000:
-            res = self.sz_local_to_gcs_2000()
-        elif srcSRS == SpatialReference.gcs_2000 and dstSRS == SpatialReference.sz_Local:
-            res = self.gcs_2000_to_sz_local()
-        elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.wgs84:
-            res = self.sz_local_to_wgs84()
-        elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.sz_Local:
-            res = self.wgs84_to_sz_local()
-        elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.pcs_2000_zone:
-            res = self.sz_local_to_pcs_2000_zone(self.in_path, self.out_path, self.out_layername, self.out_format)
-        elif srcSRS == SpatialReference.pcs_2000_zone and dstSRS == SpatialReference.sz_Local:
-            res = self.pcs_2000_zone_to_sz_local()
-        elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.pcs_2000:
-            res = self.wgs84_to_pcs_2000()
-        elif srcSRS == SpatialReference.pcs_2000_zone and dstSRS == SpatialReference.wgs84:
-            res = self.pcs_2000_zone_to_wgs84()
-        elif srcSRS == SpatialReference.pcs_2000 and dstSRS == SpatialReference.wgs84:
-            res = self.pcs_2000_to_wgs84()
-        elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.pcs_2000_zone:
-            res = self.wgs84_to_pcs_2000_zone()
-        elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.sz_Local:
-            res = self.pcs_xian80_to_sz_local()
-        elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.pcs_2000:
-            res = self.pcs_xian80_to_pcs_2000()
-        elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.gcs_2000:
-            res = self.pcs_xian80_to_gcs_2000()
-        elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.pcs_2000_zone:
-            res = self.pcs_xian80_to_pcs_2000_zone()
-        elif srcSRS == SpatialReference.gcs_xian80 and dstSRS == SpatialReference.sz_Local:
-            res = self.gcs_xian80_to_sz_local()
-        elif srcSRS == SpatialReference.gcs_xian80 and dstSRS == SpatialReference.pcs_2000:
-            res = self.gcs_xian80_to_pcs_2000(self.in_path, self.out_path, self.out_layername, self.out_format)
-        elif srcSRS == SpatialReference.gcs_xian80 and dstSRS == SpatialReference.gcs_2000:
-            res = self.gcs_xian80_to_gcs_2000()
-        elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.sz_Local:
-            res = self.pcs_xian80_zone_to_sz_local()
-        elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.pcs_2000:
-            res = self.pcs_xian80_zone_to_pcs_2000()
-        elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.wgs84:
-            res = self.pcs_xian80_to_wgs84()
-        elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.gcs_2000:
-            res = self.pcs_xian80_zone_to_gcs_2000()
-        elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.wgs84:
-            res = self.pcs_xian80_zone_to_wgs84()
-        elif srcSRS == SpatialReference.gcj02 and dstSRS == SpatialReference.wgs84:
-            res = self.gcj02_to_wgs84()
-        elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.gcj02:
-            res = self.wgs84_gcj02()
-        elif srcSRS == SpatialReference.bd09 and dstSRS == SpatialReference.wgs84:
-            res = self.bd09_to_wgs84()
-        elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.bd09:
-            res = self.wgs84_to_bd09()
-        elif srcSRS == SpatialReference.gcj02 and dstSRS == SpatialReference.sz_Local:
-            res = self.gcj02_to_sz_local()
-        elif srcSRS == SpatialReference.bd09 and dstSRS == SpatialReference.sz_Local:
-            res = self.bd09_to_sz_local()
-        elif srcSRS == SpatialReference.gcj02 and dstSRS == SpatialReference.pcs_2000:
-            res = self.gcj02_to_pcs_2000()
-        elif srcSRS == SpatialReference.bd09 and dstSRS == SpatialReference.pcs_2000:
-            res = self.bd09_to_pcs_2000()
+        if self.in_format == DataType.cad_dwg:
+            res = None
+            if srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.pcs_2000:
+                res = transform_dwg(self.in_path, 1, self.out_path)
+            elif srcSRS == SpatialReference.pcs_2000 and dstSRS == SpatialReference.sz_Local:
+                res = transform_dwg(self.in_path, 2, self.out_path)
+            else:
+                log.error("不支持从{}到{}的转换!".format(srs_dict[srcSRS], srs_dict[dstSRS]))
+                return False
         else:
-            log.error("不支持从{}到{}的转换!".format(srs_dict[srcSRS], srs_dict[dstSRS]))
-            return False
+            res = None
+            if srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.pcs_2000:
+                res = self.sz_local_to_pcs_2000()
+            elif srcSRS == SpatialReference.pcs_2000 and dstSRS == SpatialReference.sz_Local:
+                res = self.pcs_2000_to_sz_local()
+            elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.gcs_2000:
+                res = self.sz_local_to_gcs_2000()
+            elif srcSRS == SpatialReference.gcs_2000 and dstSRS == SpatialReference.sz_Local:
+                res = self.gcs_2000_to_sz_local()
+            elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.wgs84:
+                res = self.sz_local_to_wgs84()
+            elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.sz_Local:
+                res = self.wgs84_to_sz_local()
+            elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.pcs_2000_zone:
+                res = self.sz_local_to_pcs_2000_zone(self.in_path, self.out_path, self.out_layername, self.out_format)
+            elif srcSRS == SpatialReference.pcs_2000_zone and dstSRS == SpatialReference.sz_Local:
+                res = self.pcs_2000_zone_to_sz_local()
+            elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.pcs_2000:
+                res = self.wgs84_to_pcs_2000()
+            elif srcSRS == SpatialReference.pcs_2000_zone and dstSRS == SpatialReference.wgs84:
+                res = self.pcs_2000_zone_to_wgs84()
+            elif srcSRS == SpatialReference.pcs_2000 and dstSRS == SpatialReference.wgs84:
+                res = self.pcs_2000_to_wgs84()
+            elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.pcs_2000_zone:
+                res = self.wgs84_to_pcs_2000_zone()
+            elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.sz_Local:
+                res = self.pcs_xian80_to_sz_local()
+            elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.pcs_2000:
+                res = self.pcs_xian80_to_pcs_2000()
+            elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.gcs_2000:
+                res = self.pcs_xian80_to_gcs_2000()
+            elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.pcs_2000_zone:
+                res = self.pcs_xian80_to_pcs_2000_zone()
+            elif srcSRS == SpatialReference.gcs_xian80 and dstSRS == SpatialReference.sz_Local:
+                res = self.gcs_xian80_to_sz_local()
+            elif srcSRS == SpatialReference.gcs_xian80 and dstSRS == SpatialReference.pcs_2000:
+                res = self.gcs_xian80_to_pcs_2000(self.in_path, self.out_path, self.out_layername, self.out_format)
+            elif srcSRS == SpatialReference.gcs_xian80 and dstSRS == SpatialReference.gcs_2000:
+                res = self.gcs_xian80_to_gcs_2000()
+            elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.sz_Local:
+                res = self.pcs_xian80_zone_to_sz_local()
+            elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.pcs_2000:
+                res = self.pcs_xian80_zone_to_pcs_2000()
+            elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.wgs84:
+                res = self.pcs_xian80_to_wgs84()
+            elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.gcs_2000:
+                res = self.pcs_xian80_zone_to_gcs_2000()
+            elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.wgs84:
+                res = self.pcs_xian80_zone_to_wgs84()
+            elif srcSRS == SpatialReference.gcj02 and dstSRS == SpatialReference.wgs84:
+                res = self.gcj02_to_wgs84()
+            elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.gcj02:
+                res = self.wgs84_gcj02()
+            elif srcSRS == SpatialReference.bd09 and dstSRS == SpatialReference.wgs84:
+                res = self.bd09_to_wgs84()
+            elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.bd09:
+                res = self.wgs84_to_bd09()
+            elif srcSRS == SpatialReference.gcj02 and dstSRS == SpatialReference.sz_Local:
+                res = self.gcj02_to_sz_local()
+            elif srcSRS == SpatialReference.bd09 and dstSRS == SpatialReference.sz_Local:
+                res = self.bd09_to_sz_local()
+            elif srcSRS == SpatialReference.gcj02 and dstSRS == SpatialReference.pcs_2000:
+                res = self.gcj02_to_pcs_2000()
+            elif srcSRS == SpatialReference.bd09 and dstSRS == SpatialReference.pcs_2000:
+                res = self.bd09_to_pcs_2000()
+            else:
+                log.error("不支持从{}到{}的转换!".format(srs_dict[srcSRS], srs_dict[dstSRS]))
+                return False
 
         end = time.time()
 

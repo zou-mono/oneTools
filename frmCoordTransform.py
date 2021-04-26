@@ -95,11 +95,11 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.table_layout()
 
     def table_layout(self):
-        self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.16)
-        self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.16)
-        self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.18)
-        self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.18)
-        self.tbl_address.setColumnWidth(4, self.tbl_address.width() * 0.16)
+        self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.2)
+        self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.15)
+        self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.15)
+        self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.15)
+        self.tbl_address.setColumnWidth(4, self.tbl_address.width() * 0.2)
         self.tbl_address.setColumnWidth(5, self.tbl_address.width() * 0.15)
 
     @Slot()
@@ -299,25 +299,26 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 self.tbl_address.model().setData(out_layername_index, out_layername)
                 log.warning('第{}行参数缺失参数"输出图层"，自动补全为默认值{}'.format(row, out_layername))
 
-            self.autofill_outpath(row, out_path, in_layername, out_srs, in_format, out_path_index)
+            self.autofill_outpath(row, in_path, out_path, in_layername, out_srs, in_format, out_path_index)
 
         return True
 
-    def default_outfile(self, in_format, in_layername, out_srs):
+    def default_outfile(self, in_path, in_format, in_layername, out_srs):
         out_file = ""
         if in_format == DataType.fileGDB:
-            out_file = encodeCurrentTime() + ".gdb"
+            in_filename, in_suffix = os.path.splitext(os.path.basename(in_path))
+            out_file = "{}_converted.gdb".format(in_filename)
         elif in_format == DataType.geojson:
-            out_file = in_layername + "_" + str(out_srs) + ".geojson"
+            out_file = "{}_{}_{}.geojson".format(in_layername, out_srs, encodeCurrentTime())
         elif in_format == DataType.shapefile:
-            out_file = in_layername + "_" + str(out_srs) + ".shp"
+            out_file = "{}_{}_{}.shp".format(in_layername, out_srs, encodeCurrentTime())
         elif in_format == DataType.cad_dwg:
-            out_file = in_layername + "_" + str(out_srs) + ".dwg"
+            out_file = "{}_{}_{}.dwg".format(in_layername, out_srs, encodeCurrentTime())
         return out_file
 
-    def autofill_outpath(self, row, out_path, in_layername, out_srs, in_format, out_path_index):
+    def autofill_outpath(self, row, in_path, out_path, in_layername, out_srs, in_format, out_path_index):
         if out_path == "":
-            out_file = self.default_outfile(in_format, in_layername, out_srs)
+            out_file = self.default_outfile(in_path, in_format, in_layername, out_srs)
 
             if not os.path.exists("res"):
                 os.makedirs("res")
@@ -328,7 +329,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         else:
             out_format = get_suffix(out_path)
             if out_format is None:
-                out_file = self.default_outfile(in_format, in_layername, out_srs)
+                out_file = self.default_outfile(in_path, in_format, in_layername, out_srs)
 
                 out_path = os.path.join(out_path, out_file)
                 self.tbl_address.model().setData(out_path_index, out_path)

@@ -373,7 +373,7 @@ class SplitterHandle(QSplitterHandle):
                 else:
                     pos_move = pos.y()
                     l = self.splitter.height()
-                print(pos_move)
+                # print(pos_move)
                 if self.splitter.minDistanceToEdge <= pos_move <= l - self.splitter.minDistanceToEdge:
                     self.moveSplitter(pos_move)
                 elif pos_move < self.splitter.minDistanceToEdge:

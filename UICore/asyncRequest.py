@@ -117,7 +117,7 @@ async def send_http(session, method, url, *,
                             raised=exc.__class__.__name__, url=url)
                     else:
                         log.warning('received {} for {}'.format(data, url))
-                        print(data['errors'][0]['detail'])
+                        # print(data['errors'][0]['detail'])
                         raised_exc = None
         except aiohttp.ClientError as exc:
             try:
