@@ -1,3 +1,5 @@
+import csv
+
 from PyQt5.QtCore import QRect, Qt, QPersistentModelIndex, QItemSelectionModel, QModelIndex, QThread, QObject
 from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
 from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, QDialogButtonBox, QStyleFactory, \
@@ -14,7 +16,7 @@ import os
 from UICore.DataFactory import workspaceFactory
 from UICore.Gv import SplitterState, Dock, DataType, srs_dict
 from UICore.common import defaultImageFile, defaultTileFolder, urlEncodeToFileName, get_paraInfo, get_suffix, \
-    encodeCurrentTime
+    encodeCurrentTime, is_header, read_table_header
 from UICore.workerThread import coordTransformWorker
 from widgets.mTable import TableModel, mTableStyle, layernameDelegate, srsDelegate, outputPathDelegate, xyfieldDelegate
 from UICore.log4p import Log
@@ -167,7 +169,12 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                         rows.append(row)
 
                     for row in rows:
-                        self.add_delegate_to_row(row, fileName, lst_names, save_srs_list)
+                        levelData = {
+                            'layer_names': lst_names,
+                            'srs_list': save_srs_list
+                        }
+                        self.model.setLevelData(fileName, levelData)
+                        # self.add_delegate_to_row(row, fileName, lst_names, save_srs_list)
 
         elif self.rbtn_table.isChecked():
             fileNames, types = QFileDialog.getOpenFileNames(
@@ -179,31 +186,25 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 fileType = get_suffix(fileName)
                 row = self.add_table_to_row(fileName)
 
-                xfield_delegate = xyfieldDelegate(self,
+                header = read_table_header(fileName, fileType)
+                field_delegate = xyfieldDelegate(self,
                                                   [None, {'type': 'xy'}, {'type': 'xy'}, {'type': 'srs'},
-                                                   {'type': 'srs'}, {'type': 'f'}], [])
-                self.tbl_address.setItemDelegateForRow(row, xfield_delegate)
-                # in_layername_index = self.tbl_address.model().index(row, self.in_layername_no)
-                #
-                # levelData = {
-                #     'layer_names': lst_layer_name,
-                #     'srs_list': lst_srs
-                # }
-                # self.model.setLevelData(fileName, levelData)
+                                                   {'type': 'srs'}, {'type': 'f', 'text': '请选择需要保存的文件'}])
+                self.tbl_address.setItemDelegateForRow(row, field_delegate)
+
+                levelData = {
+                    'field_list': header,
+                    'srs_list': save_srs_list
+                }
+                self.model.setLevelData(fileName, levelData)
 
     def add_table_to_row(self, fileName):
         row = self.model.rowCount(QModelIndex())
         self.model.addEmptyRow(row, 1, 0)
         in_path_index = self.tbl_address.model().index(row, self.in_path_no)
-        # in_x_index = self.tbl_address.model().index(row, 1)
-        # in_y_index = self.tbl_address.model().index(row, 2)
-
         self.tbl_address.model().setData(in_path_index, fileName)
 
         return row
-        # self.tbl_address.model().setData(in_x_index, in_x_index)
-        # self.tbl_address.model().setData(in_y_index, in_y_index)
-
 
     def add_layer_to_row(self, in_layer, fileName, layer_name):
         if in_layer is not None:
@@ -229,66 +230,93 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
         return row
 
-    def add_delegate_to_row(self, row, fileName, lst_layer_name, lst_srs):
-        in_layername_index = self.tbl_address.model().index(row, self.in_layername_no)
-        in_srs_index = self.tbl_address.model().index(row, self.in_srs_no)
-        out_srs_index = self.tbl_address.model().index(row, self.out_srs_no)
-        editor_delegate = self.tbl_address.itemDelegate(in_layername_index)
-
-        levelData = {
-            'layer_names': lst_layer_name,
-            'srs_list': lst_srs
-        }
-        self.model.setLevelData(fileName, levelData)
-
     @Slot()
     def open_addressFile(self):
-        if self.rbtn_table.isChecked():
-            pass
-        else:
-            fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择坐标转换参数文件", os.getcwd(),
-                                                                       "All Files(*)")
-            self.txt_addressFile.setText(fileName)
+        fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择坐标转换参数文件", os.getcwd(),
+                                                                   "All Files(*)")
+        self.txt_addressFile.setText(fileName)
 
-            if fileName == "":
-                return
+        if fileName == "":
+            return
 
-            try:
-                with open(fileName, 'r', encoding='utf-8') as f:
-                    self.paras = json.load(f)
+        try:
+            with open(fileName, 'r', encoding='utf-8') as f:
+                self.paras = json.load(f)
 
-                self.add_address_rows_from_paras()
-            except:
-                if self.model.rowCount(QModelIndex()) > 0:
-                    self.model.removeRows(self.model.rowCount(QModelIndex()) - 1, 1, QModelIndex())
-                log.error("读取参数文件失败！", dialog=True)
+            self.add_address_rows_from_paras()
+        except:
+            if self.model.rowCount(QModelIndex()) > 0:
+                self.model.removeRows(self.model.rowCount(QModelIndex()) - 1, 1, QModelIndex())
+            log.error("读取参数文件失败！", dialog=True)
 
     def add_address_rows_from_paras(self):
         imps = self.paras['exports']
         for imp in imps:
             row = self.model.rowCount(QModelIndex())
-            self.model.addEmptyRow(self.model.rowCount(QModelIndex()), 1, 0)
+            self.model.addEmptyRow(row, 1, 0)
 
-            self.model.setLevelData(imp['in_path'], {
-                'layer_names': imp['layer_names'],
-                'srs_list': imp['srs_list']
-            })
+            if self.rbtn_table.isChecked():
+                self.model.setLevelData(imp['in_path'], {
+                    'field_list': imp['field_list'],
+                    'srs_list': imp['srs_list']
+                })
 
-            in_srs_index = self.tbl_address.model().index(row, self.in_srs_no)
-            out_srs_index = self.tbl_address.model().index(row, self.out_srs_no)
-            in_srs_delegate = self.tbl_address.itemDelegate(in_srs_index)
-            out_srs_delegate = self.tbl_address.itemDelegate(out_srs_index)
-            if isinstance(in_srs_delegate, srsDelegate):
-                in_srs_delegate.set_srs_list(imp['srs_list'])
-            if isinstance(out_srs_delegate, srsDelegate):
-                out_srs_delegate.set_srs_list(imp['srs_list'])
+                x_field_index = self.tbl_address.model().index(row, 1)
+                y_field_index = self.tbl_address.model().index(row, 2)
+                in_srs_index = self.tbl_address.model().index(row, 3)
+                out_srs_index = self.tbl_address.model().index(row, 4)
+                x_field_delegate = self.tbl_address.itemDelegate(x_field_index)
+                y_field_delegate = self.tbl_address.itemDelegate(y_field_index)
+                in_srs_delegate = self.tbl_address.itemDelegate(in_srs_index)
+                out_srs_delegate = self.tbl_address.itemDelegate(out_srs_index)
 
-            self.tbl_address.model().setData(self.tbl_address.model().index(row, 0), imp['in_path'])
-            self.tbl_address.model().setData(self.tbl_address.model().index(row, 1), imp['in_layer'])
-            self.tbl_address.model().setData(self.tbl_address.model().index(row, 2), imp['in_srs'])
-            self.tbl_address.model().setData(self.tbl_address.model().index(row, 3), imp['out_srs'])
-            self.tbl_address.model().setData(self.tbl_address.model().index(row, 4), imp['out_path'])
-            self.tbl_address.model().setData(self.tbl_address.model().index(row, 5), imp['out_layer'])
+                field_delegate = xyfieldDelegate(self,
+                                                 [None, {'type': 'xy'}, {'type': 'xy'}, {'type': 'srs'},
+                                                  {'type': 'srs'}, {'type': 'f', 'text': '请选择需要保存的文件'}])
+                self.tbl_address.setItemDelegateForRow(row, field_delegate)
+
+                if isinstance(x_field_delegate, xyfieldDelegate):
+                    x_field_delegate.set_field_list(imp['field_list'])
+                if isinstance(y_field_delegate, xyfieldDelegate):
+                    y_field_delegate.set_field_list(imp['field_list'])
+                if isinstance(in_srs_delegate, srsDelegate):
+                    in_srs_delegate.set_srs_list(imp['srs_list'])
+                if isinstance(out_srs_delegate, srsDelegate):
+                    out_srs_delegate.set_srs_list(imp['srs_list'])
+
+                self.model.setLevelData(imp['in_path'], {
+                    'field_list': imp['field_list'],
+                    'srs_list': imp['srs_list']
+                })
+
+                self.tbl_address.model().setData(self.tbl_address.model().index(row, 0), imp['in_path'])
+                self.tbl_address.model().setData(self.tbl_address.model().index(row, 1), imp['x_field'])
+                self.tbl_address.model().setData(self.tbl_address.model().index(row, 2), imp['y_field'])
+                self.tbl_address.model().setData(self.tbl_address.model().index(row, 3), imp['in_srs'])
+                self.tbl_address.model().setData(self.tbl_address.model().index(row, 4), imp['out_srs'])
+                self.tbl_address.model().setData(self.tbl_address.model().index(row, 5), imp['out_path'])
+            else:
+                in_srs_index = self.tbl_address.model().index(row, self.in_srs_no)
+                out_srs_index = self.tbl_address.model().index(row, self.out_srs_no)
+                in_srs_delegate = self.tbl_address.itemDelegate(in_srs_index)
+                out_srs_delegate = self.tbl_address.itemDelegate(out_srs_index)
+
+                if isinstance(in_srs_delegate, srsDelegate):
+                    in_srs_delegate.set_srs_list(imp['srs_list'])
+                if isinstance(out_srs_delegate, srsDelegate):
+                    out_srs_delegate.set_srs_list(imp['srs_list'])
+
+                self.model.setLevelData(imp['in_path'], {
+                    'layer_names': imp['layer_names'],
+                    'srs_list': imp['srs_list']
+                })
+
+                self.tbl_address.model().setData(self.tbl_address.model().index(row, 0), imp['in_path'])
+                self.tbl_address.model().setData(self.tbl_address.model().index(row, 1), imp['in_layer'])
+                self.tbl_address.model().setData(self.tbl_address.model().index(row, 2), imp['in_srs'])
+                self.tbl_address.model().setData(self.tbl_address.model().index(row, 3), imp['out_srs'])
+                self.tbl_address.model().setData(self.tbl_address.model().index(row, 4), imp['out_path'])
+                self.tbl_address.model().setData(self.tbl_address.model().index(row, 5), imp['out_layer'])
 
     @Slot(QAbstractButton)
     def buttonBox_clicked(self, button: QAbstractButton):
@@ -421,20 +449,35 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
         results = []
 
-        for logicRow in logicRows:
-            key = datas[logicRow][0]
-            row_data = {
-                'in_path': datas[logicRow][0],
-                'in_layer': datas[logicRow][1],
-                'in_srs': datas[logicRow][2],
-                'out_srs': datas[logicRow][3],
-                'out_path': datas[logicRow][4],
-                'out_layer': datas[logicRow][5],
-                'layer_names': levels[key]['layer_names'],
-                'srs_list': levels[key]['srs_list']
-                # 'out_srs_list':
-            }
-            results.append(row_data)
+        if self.rbtn_table.isChecked():
+            for logicRow in logicRows:
+                key = datas[logicRow][0]
+                row_data = {
+                    'in_path': datas[logicRow][0],
+                    'x_field': datas[logicRow][1],
+                    'y_field': datas[logicRow][2],
+                    'in_srs': datas[logicRow][3],
+                    'out_srs': datas[logicRow][4],
+                    'out_path': datas[logicRow][5],
+                    'field_list': levels[key]['field_list'],
+                    'srs_list': levels[key]['srs_list']
+                }
+                results.append(row_data)
+        else:
+            for logicRow in logicRows:
+                key = datas[logicRow][0]
+                row_data = {
+                    'in_path': datas[logicRow][0],
+                    'in_layer': datas[logicRow][1],
+                    'in_srs': datas[logicRow][2],
+                    'out_srs': datas[logicRow][3],
+                    'out_path': datas[logicRow][4],
+                    'out_layer': datas[logicRow][5],
+                    'layer_names': levels[key]['layer_names'],
+                    'srs_list': levels[key]['srs_list']
+                    # 'out_srs_list':
+                }
+                results.append(row_data)
 
         res = {
             'exports': results

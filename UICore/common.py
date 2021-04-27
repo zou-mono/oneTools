@@ -1,4 +1,5 @@
 import base64
+import csv
 import json
 import math
 import os
@@ -183,6 +184,8 @@ def get_suffix(path):
         return DataType.fileGDB
     elif suffix.lower() == 'dwg':
         return DataType.cad_dwg
+    elif suffix.lower() == "csv":
+        return DataType.csv
     else:
         return None
 
@@ -195,4 +198,21 @@ def encodeCurrentTime():
 
     return encode_time
 
+# 判断第一行是否是表头
+def is_header(line):
+    return not any(cell.replace(".", "").isdigit() for cell in line)
+
+
+def read_table_header(file, format):
+    if format == DataType.csv:
+        with open(file, newline='') as f:
+            reader = csv.reader(f)
+            header = next(reader)  # gets the first line
+            if not is_header(header):
+                header_list = []
+                for i in range(len(header)):
+                    header_list.append("F{}".format(i))
+                return header_list
+            else:
+                return header
 

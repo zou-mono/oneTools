@@ -269,6 +269,7 @@ class layernameDelegate(addressTableDelegate):
     def cmb_selectionchange(self, i):
         pass
 
+
 class srsDelegate(addressTableDelegate):
     def __init__(self, parent, srs_list, orientation=Qt.Horizontal):
         # srs_list用来存储可转换的坐标
@@ -343,17 +344,16 @@ class outputPathDelegate(addressTableDelegate):
 
 
 class xyfieldDelegate(QStyledItemDelegate):
-    def __init__(self, parent, buttonSection, field_list, orientation=Qt.Horizontal):
+    def __init__(self, parent, buttonSection, orientation=Qt.Horizontal):
         # field_list用来存储表格的列
         # orientation用来表示需要设置按钮的表头方向，horizontal表示所有列都设置按钮, vertical表示所有行都设置按钮
         super(xyfieldDelegate, self).__init__(parent)
         self.buttonSection = buttonSection
-        self.field_list = field_list
         self.orientation = orientation
         self.mainWindow = parent
 
-    # def set_field_list(self, field_list):
-    #     self.field_list = field_list
+    def set_field_list(self, field_list):
+        self.field_list = field_list
 
     def createEditor(self, parent: QWidget, option: 'QStyleOptionViewItem', index: QModelIndex) -> QWidget:
         section = index.column() if self.orientation == Qt.Horizontal else index.row()
@@ -365,8 +365,11 @@ class xyfieldDelegate(QStyledItemDelegate):
 
             currentData = self.index.data(Qt.DisplayRole)
             if type == 'xy':
+                url_index, layername_index, url, layername = self.mainWindow.return_url_and_layername(self.index.row())
+                datas = index.model().levelData()[url]['field_list']
+
                 self.cmb_field = QComboBox(parent)
-                for data in self.field_list:
+                for data in datas:
                     self.cmb_field.addItem(str(data))
 
                 if currentData is not None:
@@ -395,13 +398,33 @@ class xyfieldDelegate(QStyledItemDelegate):
             return super().createEditor(parent, option, index)
 
     def mBtn_address_clicked(self, parent, title, type):
-        fileName = QFileDialog.getSaveFileName(parent, title, os.getcwd())
+        fileName, fileType = QFileDialog.getSaveFileName(parent, title, os.getcwd())
 
         if not sip.isdeleted(self.mAddressDialog):
             self.mAddressDialog.setText(fileName)
             self.commitAndCloseEditor()
         else:
             print("deleted, {}".format(fileName))
+
+    def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex) -> None:
+        if isinstance(editor, FileAddressEditor):
+            model.setData(index, editor.text())
+        elif isinstance(editor, QComboBox):
+            model.setData(index, editor.currentText())
+            # print(editor.currentText())
+        else:
+            super(xyfieldDelegate, self).setModelData(editor, model, index)
+
+    def setEditorData(self, editor: QWidget, index: QModelIndex) -> None:
+        if isinstance(editor, FileAddressEditor):
+            editor.setText(index.model().data(index, Qt.EditRole))
+        elif isinstance(editor, QComboBox):
+            data = index.model().data(index, Qt.EditRole)
+            idx = editor.findData(data)
+            if idx > -1:
+                editor.setCurrentIndex(idx)
+        else:
+            super(xyfieldDelegate, self).setEditorData(editor, index)
 
     def commitAndCloseEditor(self):
         editor = self.sender()
