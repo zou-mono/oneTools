@@ -16,7 +16,7 @@ from UICore.Gv import SplitterState, Dock, DataType, srs_dict
 from UICore.common import defaultImageFile, defaultTileFolder, urlEncodeToFileName, get_paraInfo, get_suffix, \
     encodeCurrentTime
 from UICore.workerThread import coordTransformWorker
-from widgets.mTable import TableModel, mTableStyle, layernameDelegate, srsDelegate, outputPathDelegate
+from widgets.mTable import TableModel, mTableStyle, layernameDelegate, srsDelegate, outputPathDelegate, xyfieldDelegate
 from UICore.log4p import Log
 
 Slot = QtCore.pyqtSlot
@@ -70,7 +70,9 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.splitter.splitterMoved.connect(self.splitterMoved)
         self.splitter.handle(1).handleClicked.connect(self.handleClicked)
 
-        self.tbl_width = 0
+        self.rbtn_file.clicked.connect(self.rbtn_toggled)
+        self.rbtn_filedb.clicked.connect(self.rbtn_toggled)
+        self.rbtn_table.clicked.connect(self.rbtn_toggled)
 
         self.thread = QThread()
         self.coordTransformThread = coordTransformWorker()
@@ -80,7 +82,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
         self.rbtn_file.click()
-        self.table_layout()
+        # self.table_layout()
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
         self.table_layout()
@@ -95,31 +97,40 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.table_layout()
 
     def table_layout(self):
-        self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.2)
-        self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.15)
-        self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.15)
-        self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.15)
-        self.tbl_address.setColumnWidth(4, self.tbl_address.width() * 0.2)
-        self.tbl_address.setColumnWidth(5, self.tbl_address.width() * 0.15)
+        if self.rbtn_table.isChecked():
+            self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.2)
+            self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.1)
+            self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.1)
+            self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.2)
+            self.tbl_address.setColumnWidth(4, self.tbl_address.width() * 0.2)
+            self.tbl_address.setColumnWidth(5, self.tbl_address.width() * 0.2)
+        else:
+            self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.2)
+            self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.15)
+            self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.15)
+            self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.15)
+            self.tbl_address.setColumnWidth(4, self.tbl_address.width() * 0.2)
+            self.tbl_address.setColumnWidth(5, self.tbl_address.width() * 0.15)
 
     @Slot()
     def btn_addRow_clicked(self):
         save_srs_list = list(srs_dict.values())
 
         if self.rbtn_file.isChecked():
-            fileNames, fileType = QFileDialog.getOpenFileNames(
+            fileNames, types = QFileDialog.getOpenFileNames(
                 self, "选择需要转换的图形文件", os.getcwd(),
-                "ESRI Shapefile(*.shp);;GeoJson(*.geojson);;CAD drawing(*.dwg)")
+                "图形文件(*.shp *.geojson *.dwg);;ESRI Shapefile(*.shp);;GeoJson(*.geojson);;CAD drawing(*.dwg)")
             if len(fileNames) == 0:
                 return
 
             wks = None
             for fileName in fileNames:
-                if fileType == 'ESRI Shapefile(*.shp)':
+                fileType = get_suffix(fileName)
+                if fileType == DataType.shapefile:
                     wks = workspaceFactory().get_factory(DataType.shapefile)
-                elif fileType == 'GeoJson(*.geojson)':
+                elif fileType == DataType.geojson:
                     wks = workspaceFactory().get_factory(DataType.geojson)
-                elif fileType == 'CAD drawing(*.dwg)':
+                elif fileType == DataType.cad_dwg:
                     wks = workspaceFactory().get_factory(DataType.cad_dwg)
 
                 datasource = wks.openFromFile(fileName)
@@ -157,6 +168,42 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
                     for row in rows:
                         self.add_delegate_to_row(row, fileName, lst_names, save_srs_list)
+
+        elif self.rbtn_table.isChecked():
+            fileNames, types = QFileDialog.getOpenFileNames(
+                self, "选择需要转换的表格文件", os.getcwd(),
+                "表格文件(*.csv *.xlsx *.dbf);;csv文件(*.csv);;excel文件(*.xlsx);;dbf文件(*.dbf)")
+            if len(fileNames) == 0:
+                return
+            for fileName in fileNames:
+                fileType = get_suffix(fileName)
+                row = self.add_table_to_row(fileName)
+
+                xfield_delegate = xyfieldDelegate(self,
+                                                  [None, {'type': 'xy'}, {'type': 'xy'}, {'type': 'srs'},
+                                                   {'type': 'srs'}, {'type': 'f'}], [])
+                self.tbl_address.setItemDelegateForRow(row, xfield_delegate)
+                # in_layername_index = self.tbl_address.model().index(row, self.in_layername_no)
+                #
+                # levelData = {
+                #     'layer_names': lst_layer_name,
+                #     'srs_list': lst_srs
+                # }
+                # self.model.setLevelData(fileName, levelData)
+
+    def add_table_to_row(self, fileName):
+        row = self.model.rowCount(QModelIndex())
+        self.model.addEmptyRow(row, 1, 0)
+        in_path_index = self.tbl_address.model().index(row, self.in_path_no)
+        # in_x_index = self.tbl_address.model().index(row, 1)
+        # in_y_index = self.tbl_address.model().index(row, 2)
+
+        self.tbl_address.model().setData(in_path_index, fileName)
+
+        return row
+        # self.tbl_address.model().setData(in_x_index, in_x_index)
+        # self.tbl_address.model().setData(in_y_index, in_y_index)
+
 
     def add_layer_to_row(self, in_layer, fileName, layer_name):
         if in_layer is not None:
@@ -196,22 +243,25 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
     @Slot()
     def open_addressFile(self):
-        fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择坐标转换参数文件", os.getcwd(),
-                                                                   "All Files(*)")
-        self.txt_addressFile.setText(fileName)
+        if self.rbtn_table.isChecked():
+            pass
+        else:
+            fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选择坐标转换参数文件", os.getcwd(),
+                                                                       "All Files(*)")
+            self.txt_addressFile.setText(fileName)
 
-        if fileName == "":
-            return
+            if fileName == "":
+                return
 
-        try:
-            with open(fileName, 'r', encoding='utf-8') as f:
-                self.paras = json.load(f)
+            try:
+                with open(fileName, 'r', encoding='utf-8') as f:
+                    self.paras = json.load(f)
 
-            self.add_address_rows_from_paras()
-        except:
-            if self.model.rowCount(QModelIndex()) > 0:
-                self.model.removeRows(self.model.rowCount(QModelIndex()) - 1, 1, QModelIndex())
-            log.error("读取参数文件失败！", dialog=True)
+                self.add_address_rows_from_paras()
+            except:
+                if self.model.rowCount(QModelIndex()) > 0:
+                    self.model.removeRows(self.model.rowCount(QModelIndex()) - 1, 1, QModelIndex())
+                log.error("读取参数文件失败！", dialog=True)
 
     def add_address_rows_from_paras(self):
         imps = self.paras['exports']
@@ -397,6 +447,13 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         except:
             log.error("文件存储路径错误，无法保存！", parent=self, dialog=True)
 
+    @Slot()
+    def rbtn_toggled(self):
+        if self.rbtn_table.isChecked():
+            self.table_init_table_data()
+        else:
+            self.table_init_spatial_data()
+
     def table_init(self):
         self.tbl_address.setStyle(mTableStyle())
 
@@ -430,6 +487,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.in_srs_no = 2
         self.out_srs_no = 3 # 输出坐标系的序号
 
+    def table_init_spatial_data(self):
         self.model = TableModel()
 
         self.model.setHeaderData(0, Qt.Horizontal, "输入路径", Qt.DisplayRole)
@@ -439,6 +497,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.model.setHeaderData(4, Qt.Horizontal, "输出路径", Qt.DisplayRole)
         self.model.setHeaderData(5, Qt.Horizontal, "输出图层", Qt.DisplayRole)
         self.tbl_address.setModel(self.model)
+        self.table_layout()
 
         layername_delegate = layernameDelegate(self, {'type': 'c'})
         self.tbl_address.setItemDelegateForColumn(1, layername_delegate)
@@ -447,6 +506,26 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.tbl_address.setItemDelegateForColumn(3, srs_delegate)
         outputpath_delegate = outputPathDelegate(self, {'type': 'd'})
         self.tbl_address.setItemDelegateForColumn(4, outputpath_delegate)
+
+    def table_init_table_data(self):
+        self.model = TableModel()
+
+        self.model.setHeaderData(0, Qt.Horizontal, "输入文件", Qt.DisplayRole)
+        self.model.setHeaderData(1, Qt.Horizontal, "x坐标", Qt.DisplayRole)
+        self.model.setHeaderData(2, Qt.Horizontal, "y坐标", Qt.DisplayRole)
+        self.model.setHeaderData(3, Qt.Horizontal, "输入坐标系", Qt.DisplayRole)
+        self.model.setHeaderData(4, Qt.Horizontal, "输出坐标系", Qt.DisplayRole)
+        self.model.setHeaderData(5, Qt.Horizontal, "输出文件", Qt.DisplayRole)
+        self.tbl_address.setModel(self.model)
+        self.table_layout()
+
+        # layername_delegate = layernameDelegate(self, {'type': 'c'})
+        # self.tbl_address.setItemDelegateForColumn(1, layername_delegate)
+        # srs_delegate = srsDelegate(self, srs_dict.values())
+        # self.tbl_address.setItemDelegateForColumn(2, srs_delegate)
+        # self.tbl_address.setItemDelegateForColumn(3, srs_delegate)
+        # outputpath_delegate = outputPathDelegate(self, {'type': 'd'})
+        # self.tbl_address.setItemDelegateForColumn(4, outputpath_delegate)
 
     @Slot()
     def btn_removeBtn_clicked(self):

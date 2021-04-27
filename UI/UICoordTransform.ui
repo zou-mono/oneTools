@@ -105,7 +105,19 @@
                 </font>
                </property>
                <property name="text">
-                <string>ESRI文件数据库(FileGDB)</string>
+                <string>FileGDB</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="rbtn_table">
+               <property name="font">
+                <font>
+                 <family>微软雅黑</family>
+                </font>
+               </property>
+               <property name="text">
+                <string>表格</string>
                </property>
               </widget>
              </item>

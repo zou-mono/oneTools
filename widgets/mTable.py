@@ -10,6 +10,8 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QAbstractItemVie
     QProxyStyle, QStyleOption, QTableView, QStyledItemDelegate, QWidget, QLineEdit, QPushButton, QFileDialog, QStyle, \
     QStyleOptionButton, QHBoxLayout, QComboBox
 
+from UICore.Gv import srs_dict
+
 
 class FileAddressEditor(QWidget):
     editingFinished = pyqtSignal()
@@ -109,6 +111,9 @@ class addressTableDelegate(QStyledItemDelegate):
     def createEditor(self, parent: QWidget, option: 'QStyleOptionViewItem', index: QModelIndex) -> QWidget:
         section = index.column() if self.orientation == Qt.Horizontal else index.row()
         self.index = index
+
+        if self.buttonSection is None:
+            return super().createEditor(parent, option, index)
 
         if self.buttonSection[section] is not None:
             title = self.buttonSection[section]['text'] if 'text' in self.buttonSection[section] else "请选择..."
@@ -336,6 +341,76 @@ class outputPathDelegate(addressTableDelegate):
         self.commitData.emit(editor)
         self.closeEditor.emit(editor)
 
+
+class xyfieldDelegate(QStyledItemDelegate):
+    def __init__(self, parent, buttonSection, field_list, orientation=Qt.Horizontal):
+        # field_list用来存储表格的列
+        # orientation用来表示需要设置按钮的表头方向，horizontal表示所有列都设置按钮, vertical表示所有行都设置按钮
+        super(xyfieldDelegate, self).__init__(parent)
+        self.buttonSection = buttonSection
+        self.field_list = field_list
+        self.orientation = orientation
+        self.mainWindow = parent
+
+    # def set_field_list(self, field_list):
+    #     self.field_list = field_list
+
+    def createEditor(self, parent: QWidget, option: 'QStyleOptionViewItem', index: QModelIndex) -> QWidget:
+        section = index.column() if self.orientation == Qt.Horizontal else index.row()
+        self.index = index
+
+        if self.buttonSection[section] is not None:
+            title = self.buttonSection[section]['text'] if 'text' in self.buttonSection[section] else "请选择..."
+            type = self.buttonSection[section]['type'] if 'type' in self.buttonSection[section] else None
+
+            currentData = self.index.data(Qt.DisplayRole)
+            if type == 'xy':
+                self.cmb_field = QComboBox(parent)
+                for data in self.field_list:
+                    self.cmb_field.addItem(str(data))
+
+                if currentData is not None:
+                    self.cmb_field.setCurrentText(str(currentData))
+
+                self.cmb_field.currentIndexChanged.connect(self.cmb_selectionchange)
+                return self.cmb_field
+            elif type == 'f':
+                self.mAddressDialog = FileAddressEditor(parent, option, type)
+                self.mAddressDialog.clickButton.connect(lambda: self.mBtn_address_clicked(parent, title, type))
+                self.mAddressDialog.editingFinished.connect(self.commitAndCloseEditor)
+                return self.mAddressDialog
+            elif type == 'srs':
+                self.cmb_srs = QComboBox(parent)
+                for data in srs_dict.values():
+                    self.cmb_srs.addItem(str(data))
+
+                if currentData is not None:
+                    self.cmb_srs.setCurrentText(str(currentData))
+
+                self.cmb_srs.currentIndexChanged.connect(self.cmb_selectionchange)
+                return self.cmb_srs
+            else:
+                return super().createEditor(parent, option, index)
+        else:
+            return super().createEditor(parent, option, index)
+
+    def mBtn_address_clicked(self, parent, title, type):
+        fileName = QFileDialog.getSaveFileName(parent, title, os.getcwd())
+
+        if not sip.isdeleted(self.mAddressDialog):
+            self.mAddressDialog.setText(fileName)
+            self.commitAndCloseEditor()
+        else:
+            print("deleted, {}".format(fileName))
+
+    def commitAndCloseEditor(self):
+        editor = self.sender()
+        self.commitData.emit(editor)
+        self.closeEditor.emit(editor)
+
+    def cmb_selectionchange(self, i):
+        print(i)
+        pass
 
 class TableModel(QAbstractTableModel):
     def __init__(self, parent=None):

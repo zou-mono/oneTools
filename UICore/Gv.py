@@ -43,6 +43,8 @@ class DataType(Enum):
     cad_dwg = 2
     fileGDB = 3
     csv = 4
+    xlsx = 5
+    dbf = 6
 
 
 DataType_dict = {
