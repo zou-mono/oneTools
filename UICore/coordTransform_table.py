@@ -1,3 +1,4 @@
+import csv
 import time
 import traceback
 
@@ -24,14 +25,14 @@ log = Log(__file__)
     type=str,
     required=True)
 @click.option(
-    '-x',
+    '--xfield', '-x',
     help='The order of x field.',
-    type=str,
+    type=int,
     required=True)
 @click.option(
-    '-y',
+    '--yfield', '-y',
     help='The order of y field.',
-    type=str,
+    type=int,
     required=True)
 @click.option(
     '--insrs',
@@ -51,12 +52,12 @@ log = Log(__file__)
     help='Output table file. For example, d:/res/data/xxx.csv',
     type=str,
     required=True)
-def main(inpath, x, y, insrs, outsrs, outpath):
+def main(inpath, xfield, yfield, insrs, outsrs, outpath):
     """spatial coordinate transformation program"""
-    coordTransform(inpath, x, y, insrs, outsrs, outpath)
+    coordTransform(inpath, xfield, yfield, insrs, outsrs, outpath)
 
 
-def coordTransform(inpath, x, y, insrs, outsrs, outpath):
+def coordTransform(inpath, xfield, yfield, insrs, outsrs, outpath):
     if inpath[-1] == os.sep:
         inpath = inpath[:-1]
     if outpath[-1] == os.sep:
@@ -66,7 +67,7 @@ def coordTransform(inpath, x, y, insrs, outsrs, outpath):
     out_format = get_suffix(outpath)
 
     try:
-        tfer = Transformer(in_format, out_format, inpath, x, y, outpath)
+        tfer = Transformer(in_format, out_format, inpath, xfield, yfield, outpath)
         tfer.transform(insrs, outsrs)
         return True, ''
     except:
@@ -79,6 +80,8 @@ class Transformer(object):
         self.in_format = in_format
         self.in_path = inpath
         self.out_path = outpath
+        self.x = x
+        self.y = y
 
     def transform(self, srcSRS, dstSRS):
         log.info("启动从{}到{}的转换...".format(self.in_path, self.out_path))
@@ -164,11 +167,24 @@ class Transformer(object):
 
     # 关键转换，需要参数
     def sz_local_to_pcs_2000(self, inpath=None, outpath=None, outlayername=None, outformat=None):
-        para_sz_to_pcs_2000 = helmert_para_dict(SpatialReference.sz_Local, SpatialReference.pcs_2000)
-        [out_path, out_layername] = self.transform_direct(2435, 4547, inpath, outpath,
-                                                      outlayername, outformat, helmert_para=para_sz_to_pcs_2000)
+        sourceSRS = osr.SpatialReference()
+        sourceSRS.ImportFromEPSG(2435)
+        with open(self.in_path, "r", encoding="ascii") as f:
+            reader = csv.reader(f)
+            for row in reader:
+                # in_pt = [96070.547, 53474.857]
+                point = ogr.CreateGeometryFromWkt("POINT({} {})".format(row[0], row[1]))
+                para = "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
+                    391090.578943, 2472660.600279, 0.999997415382, -3518.95267316)
+                opt = osr.CoordinateTransformationOptions()
+                opt.SetOperation(para)
+                tr = osr.CreateCoordinateTransformation(sourceSRS, None, opt)
+                point.Transform(tr)
 
-        return [out_path, out_layername] if out_path is not None and out_layername is not None else None
+                with open(self.out_path, 'a+', encoding='gbk', newline='') as o:
+                    writer = csv.writer(o)
+                    writer.writerow([point.GetX(), point.GetY()])
+        return self.out_path
 
     # 关键转换，需要参数
     def pcs_2000_to_sz_local(self, inpath=None, outpath=None, outlayername=None, outformat=None):
@@ -225,11 +241,8 @@ class Transformer(object):
 
         return [out_path, out_layername] if out_path is not None and out_layername is not None else None
 
-    def wgs84_to_pcs_2000(self, inpath=None, outpath=None, outlayername=None, outformat=None):
-        [out_path, out_layername] = self.transform_direct(4490, 4547, inpath, outpath,
-                                                        outlayername, outformat)
-
-        return [out_path, out_layername] if out_path is not None and out_layername is not None else None
+    def wgs84_to_pcs_2000(self, inpath=None, outpath=None, outformat=None):
+        pass
 
     def pcs_2000_to_wgs84(self, inpath=None, outpath=None, outlayername=None, outformat=None):
         [out_path, out_layername] = self.transform_direct(4547, 4326, inpath, outpath,

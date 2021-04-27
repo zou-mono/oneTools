@@ -3,6 +3,21 @@ import osgeo.osr as osr
 from osgeo import gdal
 import os
 
+from osgeo.ogr import Geometry
+
+sourceSRS = osr.SpatialReference()
+sourceSRS.ImportFromEPSG(2435)
+in_pt = [96070.547, 53474.857]
+point = ogr.CreateGeometryFromWkt("POINT({} {})".format(in_pt[0], in_pt[1]))
+para = "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
+    391090.578943, 2472660.600279, 0.999997415382, -3518.95267316)
+opt = osr.CoordinateTransformationOptions()
+opt.SetOperation(para)
+tr = osr.CreateCoordinateTransformation(sourceSRS, None, opt)
+point.Transform(tr)
+print(point)
+
+
 a = r"D:\Data\深圳坐标\配准中心线（深圳坐标）.shp"
 b = r"D:\Data\深圳坐标\配准中心线（深圳坐标）.gdb"
 c = r"D:\Data\深圳坐标\配准中心线（深圳坐标）"
