@@ -5,6 +5,7 @@ import math
 import os
 import re
 import datetime
+import chardet
 
 from UICore.Gv import srs_dict, SpatialReference, DataType
 from UICore.log4p import Log
@@ -198,6 +199,7 @@ def encodeCurrentTime():
 
     return encode_time
 
+
 # 判断第一行是否是表头
 def is_header(line):
     return not any(cell.replace(".", "").isdigit() for cell in line)
@@ -205,7 +207,13 @@ def is_header(line):
 
 def read_table_header(file, format):
     if format == DataType.csv:
-        with open(file, newline='') as f:
+        with open(file, 'rb') as f:
+            data = f.read(10000)  # or a chunk, f.read(1000000)
+            encoding = chardet.detect(data).get("encoding")
+
+        print(encoding)
+
+        with open(file, 'r', newline='', encoding=encoding) as f:
             reader = csv.reader(f)
             header = next(reader)  # gets the first line
             if not is_header(header):

@@ -256,8 +256,11 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
             self.model.addEmptyRow(row, 1, 0)
 
             if self.rbtn_table.isChecked():
+                fileType = get_suffix(imp['in_path'])
+                header = read_table_header(imp['in_path'], fileType)
+
                 self.model.setLevelData(imp['in_path'], {
-                    'field_list': imp['field_list'],
+                    'field_list': header,
                     'srs_list': imp['srs_list']
                 })
 
@@ -270,28 +273,25 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 in_srs_delegate = self.tbl_address.itemDelegate(in_srs_index)
                 out_srs_delegate = self.tbl_address.itemDelegate(out_srs_index)
 
-                field_delegate = xyfieldDelegate(self,
-                                                 [None, {'type': 'xy'}, {'type': 'xy'}, {'type': 'srs'},
-                                                  {'type': 'srs'}, {'type': 'f', 'text': '请选择需要保存的文件'}])
-                self.tbl_address.setItemDelegateForRow(row, field_delegate)
-
                 if isinstance(x_field_delegate, xyfieldDelegate):
-                    x_field_delegate.set_field_list(imp['field_list'])
+                    x_field_delegate.set_field_list(header)
                 if isinstance(y_field_delegate, xyfieldDelegate):
-                    y_field_delegate.set_field_list(imp['field_list'])
+                    y_field_delegate.set_field_list(header)
                 if isinstance(in_srs_delegate, srsDelegate):
                     in_srs_delegate.set_srs_list(imp['srs_list'])
                 if isinstance(out_srs_delegate, srsDelegate):
                     out_srs_delegate.set_srs_list(imp['srs_list'])
 
-                self.model.setLevelData(imp['in_path'], {
-                    'field_list': imp['field_list'],
-                    'srs_list': imp['srs_list']
-                })
+                field_delegate = xyfieldDelegate(self,
+                                                 [None, {'type': 'xy'}, {'type': 'xy'}, {'type': 'srs'},
+                                                  {'type': 'srs'}, {'type': 'f', 'text': '请选择需要保存的文件'}])
+                self.tbl_address.setItemDelegateForRow(row, field_delegate)
 
                 self.tbl_address.model().setData(self.tbl_address.model().index(row, 0), imp['in_path'])
-                self.tbl_address.model().setData(self.tbl_address.model().index(row, 1), imp['x_field'])
-                self.tbl_address.model().setData(self.tbl_address.model().index(row, 2), imp['y_field'])
+                if imp['x_field'] in header:
+                    self.tbl_address.model().setData(self.tbl_address.model().index(row, 1), imp['x_field'])
+                if imp['y_field'] in header:
+                    self.tbl_address.model().setData(self.tbl_address.model().index(row, 2), imp['y_field'])
                 self.tbl_address.model().setData(self.tbl_address.model().index(row, 3), imp['in_srs'])
                 self.tbl_address.model().setData(self.tbl_address.model().index(row, 4), imp['out_srs'])
                 self.tbl_address.model().setData(self.tbl_address.model().index(row, 5), imp['out_path'])
@@ -475,7 +475,6 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                     'out_layer': datas[logicRow][5],
                     'layer_names': levels[key]['layer_names'],
                     'srs_list': levels[key]['srs_list']
-                    # 'out_srs_list':
                 }
                 results.append(row_data)
 

@@ -20,12 +20,17 @@ log = Log(__file__)
 @click.command()
 @click.option(
     '--inpath', '-i',
-    help='Input path, also means the workspace of spatial data. For example, d:/res/data/data.shp or d:/res/data.gdb',
+    help='Input table file. For example, d:/res/data/xxx.csv',
     type=str,
     required=True)
 @click.option(
-    '--inlayer',
-    help='input layer name.',
+    '-x',
+    help='The order of x field.',
+    type=str,
+    required=True)
+@click.option(
+    '-y',
+    help='The order of y field.',
     type=str,
     required=True)
 @click.option(
@@ -36,293 +41,126 @@ log = Log(__file__)
     default='-99',
     required=False)
 @click.option(
-    '--outpath', '-o',
-    help='Output path, also means the workspace of spatial data. For example, d:/res/data/ or d:/res/data.gdb',
-    type=str,
-    default=-1,
-    required=False)
-@click.option(
-    '--outlayer',
-    help='Output layer name, which is shown in the result workspace.',
-    type=str,
-    required=True)
-@click.option(
     '--outsrs',
     help='Output srs. sz_Local = 0, gcs_2000 = 1, pcs_2000 = 2, pcs_2000_zone = 3, wgs84 = 4, bd09 = 5, '
          'gcj02 = 6, gcs_xian80 = 7, pcs_xian80 = 8, pcs_xian80_zone = 9.',
     type=int,
     required=True)
-def main(inpath, inlayer, insrs, outpath, outlayer, outsrs):
+@click.option(
+    '--outpath', '-o',
+    help='Output table file. For example, d:/res/data/xxx.csv',
+    type=str,
+    required=True)
+def main(inpath, x, y, insrs, outsrs, outpath):
     """spatial coordinate transformation program"""
-    coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs)
+    coordTransform(inpath, x, y, insrs, outsrs, outpath)
 
 
-def coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs):
+def coordTransform(inpath, x, y, insrs, outsrs, outpath):
     if inpath[-1] == os.sep:
         inpath = inpath[:-1]
     if outpath[-1] == os.sep:
         outpath = outpath[:-1]
 
     in_format = get_suffix(inpath)
-
-    if in_format == DataType.cad_dwg:
-        checked_insrs = insrs
-        checked_outsrs = outsrs
-    else:
-        in_wks = workspaceFactory().get_factory(in_format)
-
-        if in_wks is None:
-            return False
-
-        in_wks.openFromFile(inpath)
-        in_layer = in_wks.openLayer(inlayer)
-
-        if in_layer is None:
-            log.error("输入图层不存在！")
-            return False
-
-        srs_ref = in_layer.GetSpatialRef()
-        # in_DS.Release()
-        in_layer = None
-
-        checked_insrs = check_srs(insrs, srs_ref)
-        if checked_insrs == -2435:
-            log.error("输入的空间参考在ESPG中不存在!")
-            return False
-        elif checked_insrs == -4547:
-            log.error("不支持输入空间数据的坐标转换!")
-            return False
-
-        checked_outsrs = check_srs(outsrs, outlayer)
-        if checked_outsrs == -2435:
-            log.error("输出的空间参考在ESPG中不存在!")
-            return False
-        elif checked_outsrs == -4547:
-            log.error("不支持输出空间数据的坐标转换!")
-            return False
-
     out_format = get_suffix(outpath)
 
     try:
-        tfer = Transformer(in_format, out_format, inpath, inlayer, outpath, outlayer)
-        tfer.transform(checked_insrs, checked_outsrs)
+        tfer = Transformer(in_format, out_format, inpath, x, y, outpath)
+        tfer.transform(insrs, outsrs)
         return True, ''
     except:
         return False, traceback.format_exc()
 
 
-def check_srs(srs, srs_ref):
-    if srs not in SpatialReference.lst():
-        return -4547
-
-    if srs > 0 or srs == -99:
-        srs_epsg = get_srs(srs_ref)
-        in_srs = osr.SpatialReference()
-        if srs_epsg is None:
-            try:
-                in_srs.ImportFromEPSG(srs)
-                return srs
-            except:
-                return -2435
-        else:
-            return srs_epsg
-    elif srs == -1 or srs == -2:
-        return srs
-    else:
-        return -4547
-
-
-def get_srs(srs_ref):
-    try:
-        if srs_ref is not None:
-            srs_wkt = osr.SpatialReference(srs_ref.ExportToWkt())
-            srs_epsg = srs_wkt.GetAttrValue("AUTHORITY", 1)
-            return int(srs_epsg)
-        else:
-            return None
-    except:
-        return None
-
-
 class Transformer(object):
-    def __init__(self, in_format, out_format, inpath, inlayername, outpath, outlayername):
+    def __init__(self, in_format, out_format, inpath, x, y, outpath):
         self.out_format = out_format
         self.in_format = in_format
-        self.in_layername = inlayername
-        self.out_layername = outlayername
         self.in_path = inpath
         self.out_path = outpath
-
-        self.lco = []
-
-        if out_format == DataType.shapefile:
-            self.lco = ["ENCODING=GBK"]
-            self.out = outpath
-        elif out_format == DataType.fileGDB:
-            self.lco = ["FID=FID"]
-            self.out = os.path.join(outpath, outlayername)
-
-        self.in_wks = workspaceFactory().get_factory(self.in_format)
 
     def transform(self, srcSRS, dstSRS):
         log.info("启动从{}到{}的转换...".format(self.in_path, self.out_path))
 
         start = time.time()
 
-        if self.in_format == DataType.cad_dwg:
-            res = None
-            if srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.pcs_2000:
-                res = transform_dwg(self.in_path, 1, self.out_path)
-            elif srcSRS == SpatialReference.pcs_2000 and dstSRS == SpatialReference.sz_Local:
-                res = transform_dwg(self.in_path, 2, self.out_path)
-            else:
-                log.error("不支持从{}到{}的转换!".format(srs_dict[srcSRS], srs_dict[dstSRS]))
-                return False
+        res = None
+        if srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.pcs_2000:
+            res = self.sz_local_to_pcs_2000()
+        elif srcSRS == SpatialReference.pcs_2000 and dstSRS == SpatialReference.sz_Local:
+            res = self.pcs_2000_to_sz_local()
+        elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.gcs_2000:
+            res = self.sz_local_to_gcs_2000()
+        elif srcSRS == SpatialReference.gcs_2000 and dstSRS == SpatialReference.sz_Local:
+            res = self.gcs_2000_to_sz_local()
+        elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.wgs84:
+            res = self.sz_local_to_wgs84()
+        elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.sz_Local:
+            res = self.wgs84_to_sz_local()
+        elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.pcs_2000_zone:
+            res = self.sz_local_to_pcs_2000_zone()
+        elif srcSRS == SpatialReference.pcs_2000_zone and dstSRS == SpatialReference.sz_Local:
+            res = self.pcs_2000_zone_to_sz_local()
+        elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.pcs_2000:
+            res = self.wgs84_to_pcs_2000()
+        elif srcSRS == SpatialReference.pcs_2000_zone and dstSRS == SpatialReference.wgs84:
+            res = self.pcs_2000_zone_to_wgs84()
+        elif srcSRS == SpatialReference.pcs_2000 and dstSRS == SpatialReference.wgs84:
+            res = self.pcs_2000_to_wgs84()
+        elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.pcs_2000_zone:
+            res = self.wgs84_to_pcs_2000_zone()
+        elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.sz_Local:
+            res = self.pcs_xian80_to_sz_local()
+        elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.pcs_2000:
+            res = self.pcs_xian80_to_pcs_2000()
+        elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.gcs_2000:
+            res = self.pcs_xian80_to_gcs_2000()
+        elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.pcs_2000_zone:
+            res = self.pcs_xian80_to_pcs_2000_zone()
+        elif srcSRS == SpatialReference.gcs_xian80 and dstSRS == SpatialReference.sz_Local:
+            res = self.gcs_xian80_to_sz_local()
+        elif srcSRS == SpatialReference.gcs_xian80 and dstSRS == SpatialReference.pcs_2000:
+            res = self.gcs_xian80_to_pcs_2000(self.in_path, self.out_path, self.out_layername, self.out_format)
+        elif srcSRS == SpatialReference.gcs_xian80 and dstSRS == SpatialReference.gcs_2000:
+            res = self.gcs_xian80_to_gcs_2000()
+        elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.sz_Local:
+            res = self.pcs_xian80_zone_to_sz_local()
+        elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.pcs_2000:
+            res = self.pcs_xian80_zone_to_pcs_2000()
+        elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.wgs84:
+            res = self.pcs_xian80_to_wgs84()
+        elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.gcs_2000:
+            res = self.pcs_xian80_zone_to_gcs_2000()
+        elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.wgs84:
+            res = self.pcs_xian80_zone_to_wgs84()
+        elif srcSRS == SpatialReference.gcj02 and dstSRS == SpatialReference.wgs84:
+            res = self.gcj02_to_wgs84()
+        elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.gcj02:
+            res = self.wgs84_gcj02()
+        elif srcSRS == SpatialReference.bd09 and dstSRS == SpatialReference.wgs84:
+            res = self.bd09_to_wgs84()
+        elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.bd09:
+            res = self.wgs84_to_bd09()
+        elif srcSRS == SpatialReference.gcj02 and dstSRS == SpatialReference.sz_Local:
+            res = self.gcj02_to_sz_local()
+        elif srcSRS == SpatialReference.bd09 and dstSRS == SpatialReference.sz_Local:
+            res = self.bd09_to_sz_local()
+        elif srcSRS == SpatialReference.gcj02 and dstSRS == SpatialReference.pcs_2000:
+            res = self.gcj02_to_pcs_2000()
+        elif srcSRS == SpatialReference.bd09 and dstSRS == SpatialReference.pcs_2000:
+            res = self.bd09_to_pcs_2000()
         else:
-            res = None
-            if srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.pcs_2000:
-                res = self.sz_local_to_pcs_2000()
-            elif srcSRS == SpatialReference.pcs_2000 and dstSRS == SpatialReference.sz_Local:
-                res = self.pcs_2000_to_sz_local()
-            elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.gcs_2000:
-                res = self.sz_local_to_gcs_2000()
-            elif srcSRS == SpatialReference.gcs_2000 and dstSRS == SpatialReference.sz_Local:
-                res = self.gcs_2000_to_sz_local()
-            elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.wgs84:
-                res = self.sz_local_to_wgs84()
-            elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.sz_Local:
-                res = self.wgs84_to_sz_local()
-            elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.pcs_2000_zone:
-                res = self.sz_local_to_pcs_2000_zone()
-            elif srcSRS == SpatialReference.pcs_2000_zone and dstSRS == SpatialReference.sz_Local:
-                res = self.pcs_2000_zone_to_sz_local()
-            elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.pcs_2000:
-                res = self.wgs84_to_pcs_2000()
-            elif srcSRS == SpatialReference.pcs_2000_zone and dstSRS == SpatialReference.wgs84:
-                res = self.pcs_2000_zone_to_wgs84()
-            elif srcSRS == SpatialReference.pcs_2000 and dstSRS == SpatialReference.wgs84:
-                res = self.pcs_2000_to_wgs84()
-            elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.pcs_2000_zone:
-                res = self.wgs84_to_pcs_2000_zone()
-            elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.sz_Local:
-                res = self.pcs_xian80_to_sz_local()
-            elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.pcs_2000:
-                res = self.pcs_xian80_to_pcs_2000()
-            elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.gcs_2000:
-                res = self.pcs_xian80_to_gcs_2000()
-            elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.pcs_2000_zone:
-                res = self.pcs_xian80_to_pcs_2000_zone()
-            elif srcSRS == SpatialReference.gcs_xian80 and dstSRS == SpatialReference.sz_Local:
-                res = self.gcs_xian80_to_sz_local()
-            elif srcSRS == SpatialReference.gcs_xian80 and dstSRS == SpatialReference.pcs_2000:
-                res = self.gcs_xian80_to_pcs_2000(self.in_path, self.out_path, self.out_layername, self.out_format)
-            elif srcSRS == SpatialReference.gcs_xian80 and dstSRS == SpatialReference.gcs_2000:
-                res = self.gcs_xian80_to_gcs_2000()
-            elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.sz_Local:
-                res = self.pcs_xian80_zone_to_sz_local()
-            elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.pcs_2000:
-                res = self.pcs_xian80_zone_to_pcs_2000()
-            elif srcSRS == SpatialReference.pcs_xian80 and dstSRS == SpatialReference.wgs84:
-                res = self.pcs_xian80_to_wgs84()
-            elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.gcs_2000:
-                res = self.pcs_xian80_zone_to_gcs_2000()
-            elif srcSRS == SpatialReference.pcs_xian80_zone and dstSRS == SpatialReference.wgs84:
-                res = self.pcs_xian80_zone_to_wgs84()
-            elif srcSRS == SpatialReference.gcj02 and dstSRS == SpatialReference.wgs84:
-                res = self.gcj02_to_wgs84()
-            elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.gcj02:
-                res = self.wgs84_gcj02()
-            elif srcSRS == SpatialReference.bd09 and dstSRS == SpatialReference.wgs84:
-                res = self.bd09_to_wgs84()
-            elif srcSRS == SpatialReference.wgs84 and dstSRS == SpatialReference.bd09:
-                res = self.wgs84_to_bd09()
-            elif srcSRS == SpatialReference.gcj02 and dstSRS == SpatialReference.sz_Local:
-                res = self.gcj02_to_sz_local()
-            elif srcSRS == SpatialReference.bd09 and dstSRS == SpatialReference.sz_Local:
-                res = self.bd09_to_sz_local()
-            elif srcSRS == SpatialReference.gcj02 and dstSRS == SpatialReference.pcs_2000:
-                res = self.gcj02_to_pcs_2000()
-            elif srcSRS == SpatialReference.bd09 and dstSRS == SpatialReference.pcs_2000:
-                res = self.bd09_to_pcs_2000()
-            else:
-                log.error("不支持从{}到{}的转换!".format(srs_dict[srcSRS], srs_dict[dstSRS]))
-                return False
+            log.error("不支持从{}到{}的转换!".format(srs_dict[srcSRS], srs_dict[dstSRS]))
+            return False
 
         end = time.time()
 
         if res is not None:
-            if self.out_format == DataType.shapefile:
-                out_path = os.path.dirname(self.out_path)
-                out_file, suffix = os.path.splitext(os.path.basename(self.out_path))
-
-                overwrite_cpg_file(out_path, out_file, 'GB2312')
-
-            log.info("坐标转换完成! 共耗时{}秒. 输出数据源:{},输出图层名:{}."
-                     .format("{:.2f}".format(end-start), res[0], res[1]))
+            log.info("坐标转换完成! 共耗时{}秒. 输出路径:{}"
+                     .format("{:.2f}".format(end-start), res))
         else:
-            log.error("坐标转换失败!可能原因：1.输出图层数据正在被占用导致无法覆盖 2.输入图层字符编码问题")
-
-    # 一次转换
-    def transform_direct(self, srcSRS, dstSRS, inpath=None, outpath=None, outlayername=None,
-                         outformat=None, layerCreationOptions=None, helmert_para=None):
-        in_srs = osr.SpatialReference()
-        in_srs.ImportFromEPSG(srcSRS)
-        out_srs = osr.SpatialReference()
-        out_srs.ImportFromEPSG(dstSRS)
-
-        if inpath is None: inpath = self.in_path
-        if outpath is None: outpath = self.out_path
-        if outlayername is None: outlayername = self.out_layername
-        if outformat is None: outformat = self.out_format
-        if layerCreationOptions is None: layerCreationOptions = self.lco
-
-        out_format = DataType_dict[outformat]
-
-        if outformat == DataType.geojson:
-            translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=in_srs, dstSRS=out_srs,
-                                                           coordinateOperation=helmert_para,
-                                                           layerName=outlayername)
-        else:
-            translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=in_srs, dstSRS=out_srs,
-                                                           coordinateOperation=helmert_para,
-                                                           accessMode="overwrite", layerName=outlayername,
-                                                           layerCreationOptions=layerCreationOptions)
-
-        if gdal.VectorTranslate(outpath, inpath, options=translateOptions):
-            return [outpath, outlayername]
-        else:
-            return None
-
-    # 二次转换
-    def transform_bridge(self, srcSRS, midSRS, dstSRS, inpath=None, midpath=None, midlayername=None,
-                         outpath=None, outlayername=None, outformat=None,
-                         layerCreationOptions=None):
-        if inpath is None: inpath = self.in_path
-        if outpath is None: outpath = self.out_path
-        if outlayername is None: outlayername = self.out_layername
-        if outformat is None: outformat = self.out_format
-        if layerCreationOptions is None: layerCreationOptions = self.lco
-
-        if midpath is None:
-            midpath = os.path.join(os.path.dirname(self.out_path), midlayername)
-        midpath = launderLayerName(midpath)
-
-        helmert_para = helmert_para_dict(srcSRS, midSRS)
-
-        [out_path, out_layername] = self.transform_direct(srcSRS, midSRS, inpath=inpath, outpath=midpath,
-                                                        outlayername=midlayername, outformat=DataType.geojson,
-                                                        helmert_para=helmert_para,
-                                                        layerCreationOptions=layerCreationOptions)
-
-        if out_path is None or out_layername is None:
-            return None
-
-        helmert_para = helmert_para_dict(midSRS, dstSRS)
-
-        [out_path, out_layername] = self.transform_direct(midSRS, dstSRS, midpath, outpath, outlayername, outformat,
-                                                        helmert_para=helmert_para)
-
-        return [out_path, out_layername] if out_path is not None and out_layername is not None else None
+            log.error("坐标转换失败!可能原因：1.输出文件数据正在被占用导致无法覆盖 2.输入文件字符编码问题")
 
     # 关键转换，需要参数
     def sz_local_to_pcs_2000(self, inpath=None, outpath=None, outlayername=None, outformat=None):
@@ -560,137 +398,6 @@ class Transformer(object):
                                      outformat=self.out_format)
 
         return [self.out_path, self.out_layername] if res else None
-
-    def run_transform_pointwise(self, outSRS, transform_func, inpath=None, inlayername=None,
-                                outpath=None, outlayername=None, outformat=None):
-        if inpath is None: inpath = self.in_path
-        if inlayername is None: inlayername = self.in_layername
-        if outpath is None: outpath = self.out_path
-        if outlayername is None: outlayername = self.out_layername
-        if outSRS is None: return None
-        if outformat is None: outformat = self.out_format
-        if transform_func is None: return None
-
-        res = False
-        self.in_wks.openFromFile(inpath)
-        in_layer = self.in_wks.openLayer(inlayername)
-
-        # out_DS = out_wks.openFromFile(self.out_path)
-        out_wks = workspaceFactory().get_factory(outformat)
-        out_path, out_layername = out_wks.cloneLayer(in_layer, outpath,
-                                                          outlayername, outSRS, outformat)
-
-        if out_path is not None:
-            outDS = out_wks.openFromFile(out_path)
-            out_layer = outDS.GetLayer(out_layername)
-            res = self.transform_pointwise(in_layer, out_layer, transform_func)
-
-        if res:
-            return out_path, out_layername
-        else:
-            return None
-
-    def transform_pointwise(self, in_Layer, out_layer, transform_func):
-        icount = 0
-        iprop = 1
-        res = False
-
-        total_count = in_Layer.GetFeatureCount()
-
-        for feature in in_Layer:
-            geom = feature.GetGeometryRef()
-
-            if geom is None:
-                continue
-
-            if geom.GetGeometryName() == "POINT":
-                lng, lat = transform_func(geom.GetPoint(0)[0], geom.GetPoint(0)[1])
-                point = ogr.Geometry(ogr.wkbPoint)
-                point.AddPoint(lng, lat)
-                res = self.addFeature(feature, point, in_Layer, out_layer, icount)
-
-            elif geom.GetGeometryName() == "MULTIPOINT":
-                new_multipoint = ogr.Geometry(ogr.wkbMultiPoint)
-                for part in geom:
-                    lng, lat = transform_func(part.GetX(), part.GetY())
-                    new_point = ogr.Geometry(ogr.wkbPoint)
-                    new_point.AddPoint(lng, lat)
-                    new_multipoint.AddGeometry(new_point)
-                res = self.addFeature(feature, new_multipoint, in_Layer, out_layer, icount)
-
-            elif geom.GetGeometryName() == "POLYGON":
-                new_polygon = ogr.Geometry(ogr.wkbPolygon)
-                for ring in geom:
-                    new_ring = ogr.Geometry(ogr.wkbLinearRing)
-                    for i in range(0, ring.GetPointCount()):
-                        lng, lat = transform_func(ring.GetPoint(i)[0], ring.GetPoint(i)[1])
-                        new_ring.AddPoint(lng, lat)
-                    new_polygon.AddGeometry(new_ring)
-                res = self.addFeature(feature, new_polygon, in_Layer, out_layer, icount)
-
-            elif geom.GetGeometryName() == "MULTIPOLYGON":
-                new_multiPolygon = ogr.Geometry(ogr.wkbMultiPolygon)
-                for part in geom:
-                    new_polygon = ogr.Geometry(ogr.wkbPolygon)
-                    for ring in part:
-                        new_ring = ogr.Geometry(ogr.wkbLinearRing)
-                        for i in range(0, ring.GetPointCount()):
-                            lng, lat = transform_func(ring.GetPoint(i)[0], ring.GetPoint(i)[1])
-                            new_ring.AddPoint(lng, lat)
-                        new_polygon.AddGeometry(new_ring)
-                    new_multiPolygon.AddGeometry(new_polygon)
-                res = self.addFeature(feature, new_multiPolygon, in_Layer, out_layer, icount)
-
-            elif geom.GetGeometryName() == "LINESTRING":
-                new_polyline = ogr.Geometry(ogr.wkbLineString)
-                for i in range(0, geom.GetPointCount()):
-                    lng, lat = transform_func(geom.GetPoint(i)[0], geom.GetPoint(i)[1])
-                    new_polyline.AddPoint(lng, lat)
-                res = self.addFeature(feature, new_polyline, in_Layer, out_layer, icount)
-
-            elif geom.GetGeometryName() == "MULTILINESTRING":
-                new_multiPolyline = ogr.Geometry(ogr.wkbMultiLineString)
-                for part in geom:
-                    new_polyline = ogr.Geometry(ogr.wkbLineString)
-                    for i in range(0, part.GetPointCount()):
-                        lng, lat = transform_func(part.GetPoint(i)[0], part.GetPoint(i)[1])
-                        new_polyline.AddPoint(lng, lat)
-                    new_multiPolyline.AddGeometry(new_polyline)
-                res = self.addFeature(feature, new_multiPolyline, in_Layer, out_layer, icount)
-
-            if res < 0:
-                return False
-
-            icount = icount + 1
-            if int(icount * 100 / total_count) == iprop * 20:
-                log.debug("{:.0%}".format(icount / total_count))
-                iprop += 1
-
-        return True
-
-    def addFeature(self, in_feature, geometry, in_layer, out_layer, icount):
-        try:
-            defn = in_layer.GetLayerDefn()
-            ofeature = ogr.Feature(in_layer.GetLayerDefn())
-            ofeature.SetGeometry(geometry)
-
-            for i in range(defn.GetFieldCount()):
-                fieldName = defn.GetFieldDefn(i).GetName()
-                # print(in_feature.GetField(i))
-                ofeature.SetField(fieldName, in_feature.GetField(i))
-
-            out_layer.CreateFeature(ofeature)
-            ofeature.Destroy()
-            return 1
-        except UnicodeEncodeError:
-            log.error("错误发生在第{}个要素.\n{}".format(icount, "字符编码无法转换，请检查输入文件的字段！"))
-            return -1
-        except RuntimeError:
-            log.error("错误发生在第{}个要素.\n{}".format(icount, "无法拷贝属性值"))
-            return -2
-        except:
-            log.error("错误发生在第{}个要素.\n{}".format(icount, traceback.format_exc()))
-            return -10000
 
 
 def launderLayerName(path):
