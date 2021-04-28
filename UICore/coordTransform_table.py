@@ -6,11 +6,12 @@ import click
 import os
 
 from osgeo import ogr, osr, gdal
+import pyproj
 
 from UICore.DataFactory import workspaceFactory
 from UICore.Gv import DataType, DataType_dict, srs_dict
 from UICore.common import launderName, overwrite_cpg_file, is_already_opened_in_write_mode, \
-    helmert_para_dict, get_suffix
+    helmert_para_dict, get_suffix, is_number, text_line_count
 from UICore.coordTransform_dwg import transform_dwg
 from UICore.coordTransform_web import gcj02_to_wgs84_acc, wgs84_to_gcj02, bd09_to_wgs84_acc, wgs84_to_bd09
 from UICore.log4p import Log
@@ -24,6 +25,12 @@ log = Log(__file__)
     help='Input table file. For example, d:/res/data/xxx.csv',
     type=str,
     required=True)
+@click.option(
+    '--inencode',
+    help='Input encoding. The default is utf-8',
+    type=str,
+    default='utf-8',
+    required=False)
 @click.option(
     '--xfield', '-x',
     help='The order of x field.',
@@ -52,12 +59,18 @@ log = Log(__file__)
     help='Output table file. For example, d:/res/data/xxx.csv',
     type=str,
     required=True)
-def main(inpath, xfield, yfield, insrs, outsrs, outpath):
+@click.option(
+    '--outencode',
+    help='Output encoding. For example, d:/res/data/xxx.csv',
+    type=str,
+    default='utf-8',
+    required=False)
+def main(inpath, inencode, xfield, yfield, insrs, outsrs, outpath, outencode):
     """spatial coordinate transformation program"""
-    coordTransform(inpath, xfield, yfield, insrs, outsrs, outpath)
+    coordTransform(inpath, inencode, xfield, yfield, insrs, outsrs, outpath, outencode)
 
 
-def coordTransform(inpath, xfield, yfield, insrs, outsrs, outpath):
+def coordTransform(inpath, inencode, xfield, yfield, insrs, outsrs, outpath, outencode):
     if inpath[-1] == os.sep:
         inpath = inpath[:-1]
     if outpath[-1] == os.sep:
@@ -67,7 +80,7 @@ def coordTransform(inpath, xfield, yfield, insrs, outsrs, outpath):
     out_format = get_suffix(outpath)
 
     try:
-        tfer = Transformer(in_format, out_format, inpath, xfield, yfield, outpath)
+        tfer = Transformer(in_format, out_format, inpath, inencode, xfield, yfield, outpath, outencode)
         tfer.transform(insrs, outsrs)
         return True, ''
     except:
@@ -75,10 +88,12 @@ def coordTransform(inpath, xfield, yfield, insrs, outsrs, outpath):
 
 
 class Transformer(object):
-    def __init__(self, in_format, out_format, inpath, x, y, outpath):
-        self.out_format = out_format
-        self.in_format = in_format
+    def __init__(self, informat, outformat, inpath, inencode, x, y, outpath, outencode):
+        self.out_format = outformat
+        self.in_format = informat
         self.in_path = inpath
+        self.in_encode = inencode
+        self.out_encode = outencode
         self.out_path = outpath
         self.x = x
         self.y = y
@@ -90,11 +105,11 @@ class Transformer(object):
 
         res = None
         if srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.pcs_2000:
-            res = self.sz_local_to_pcs_2000()
+            res = self.export_to_file(self.sz_local_to_pcs_2000)
         elif srcSRS == SpatialReference.pcs_2000 and dstSRS == SpatialReference.sz_Local:
-            res = self.pcs_2000_to_sz_local()
+            res = self.export_to_file(self.pcs_2000_to_sz_local)
         elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.gcs_2000:
-            res = self.sz_local_to_gcs_2000()
+            res = self.export_to_file(self.sz_local_to_gcs_2000)
         elif srcSRS == SpatialReference.gcs_2000 and dstSRS == SpatialReference.sz_Local:
             res = self.gcs_2000_to_sz_local()
         elif srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.wgs84:
@@ -159,52 +174,100 @@ class Transformer(object):
 
         end = time.time()
 
-        if res is not None:
+        if res is None:
             log.info("坐标转换完成! 共耗时{}秒. 输出路径:{}"
-                     .format("{:.2f}".format(end-start), res))
+                     .format("{:.2f}".format(end-start), self.out_path))
         else:
-            log.error("坐标转换失败!可能原因：1.输出文件数据正在被占用导致无法覆盖 2.输入文件字符编码问题")
+            log.error("坐标转换失败!{}".format(res))
+
+    def export_to_file(self, transform_method):
+        try:
+            # with open(self.in_path, "r", encoding=self.in_encode) as f:
+            #     total_count = sum(1 for row in f)
+            total_count = text_line_count(self.in_path, self.in_encode)
+
+            with open(self.in_path, "r", encoding=self.in_encode) as f:
+                reader = csv.reader(f)
+
+                iprop = 1
+                with open(self.out_path, 'w+', encoding=self.out_encode, newline='') as o:
+                    writer = csv.writer(o)
+                    icount = 1
+                    points = []
+                    for row in reader:
+                        if not is_number(row[self.x]) or not is_number(row[self.y]):
+                            log.warning("第{}行的坐标包含非数字字段，无法转换!".format(icount))
+                            writer.writerow([])
+                            continue
+
+                        if icount % 1000 == 0 or icount > total_count - 1000:
+                            points = transform_method(points)
+                            writer.writerows(points)
+
+                        points.append([float(row[0]), float(row[1])])
+
+                        # writer.writerow([point.GetX(), point.GetY()])
+                        # writer.writerow([point[0], point[1]])
+                        icount += 1
+
+                        # print(icount)
+                        if int(icount * 100 / total_count) == iprop * 20:
+                            log.debug("{:.0%}".format(icount / total_count))
+                            iprop += 1
+
+            return None
+        except:
+            return traceback.format_exc()
 
     # 关键转换，需要参数
-    def sz_local_to_pcs_2000(self, inpath=None, outpath=None, outlayername=None, outformat=None):
+    def sz_local_to_pcs_2000(self, points):
+        helmert_para = helmert_para_dict(2435, 4547, "EAST")
+        opt = osr.CoordinateTransformationOptions()
+        opt.SetOperation(helmert_para)
         sourceSRS = osr.SpatialReference()
         sourceSRS.ImportFromEPSG(2435)
-        with open(self.in_path, "r", encoding="ascii") as f:
-            reader = csv.reader(f)
-            for row in reader:
-                # in_pt = [96070.547, 53474.857]
-                point = ogr.CreateGeometryFromWkt("POINT({} {})".format(row[0], row[1]))
-                para = "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
-                    391090.578943, 2472660.600279, 0.999997415382, -3518.95267316)
-                opt = osr.CoordinateTransformationOptions()
-                opt.SetOperation(para)
-                tr = osr.CreateCoordinateTransformation(sourceSRS, None, opt)
-                point.Transform(tr)
-
-                with open(self.out_path, 'a+', encoding='gbk', newline='') as o:
-                    writer = csv.writer(o)
-                    writer.writerow([point.GetX(), point.GetY()])
-        return self.out_path
+        tr = osr.CreateCoordinateTransformation(sourceSRS, None, opt)
+        points = osr.CoordinateTransformation.TransformPoints(tr, points)
+        # point.Transform(tr)
+        return points
 
     # 关键转换，需要参数
-    def pcs_2000_to_sz_local(self, inpath=None, outpath=None, outlayername=None, outformat=None):
-        para_pcs_2000_to_sz = helmert_para_dict(SpatialReference.pcs_2000, SpatialReference.sz_Local)
+    def pcs_2000_to_sz_local(self, points):
+        helmert_para = helmert_para_dict(4547, 2435, "EAST")
+        opt = osr.CoordinateTransformationOptions()
+        opt.SetOperation(helmert_para)
+        sourceSRS = osr.SpatialReference()
+        sourceSRS.ImportFromEPSG(4547)
+        tr = osr.CreateCoordinateTransformation(sourceSRS, None, opt)
+        osr.CoordinateTransformation.TransformPoints(tr, points)
+        # point.Transform(tr)
+        return points
 
-        [out_path, out_layername] = self.transform_direct(4547, 2435, inpath, outpath,
-                                                        outlayername, outformat, helmert_para=para_pcs_2000_to_sz)
+    def sz_local_to_gcs_2000(self, points):
+        start = time.time()
+        points = self.sz_local_to_pcs_2000(points)
+        end = time.time()
+        print(end - start)
 
-        return [out_path, out_layername] if out_path is not None and out_layername is not None else None
+        start = time.time()
+        sourceSRS = osr.SpatialReference()
+        sourceSRS.ImportFromEPSG(4547)
+        destinationSRS = osr.SpatialReference()
+        destinationSRS.ImportFromEPSG(4490)
+        tr = osr.CreateCoordinateTransformation(sourceSRS, destinationSRS)
+        # pt = osr.CoordinateTransformation.TransformPoints(tr, [[434431.2239, 431392.0434], [431392.0434, 2607747.97677669]])
+        # [434431.2239, 431392.0434, 431408.4703, 412476.2589, 412535.6403],
+        #                              [2612265.488, 2607747.97677669, 2607774.43119491, 2592367.01357008, 2592864.81664873]
+        # point.Transform(tr)
+        points = osr.CoordinateTransformation.TransformPoints(tr, points)
 
-    def sz_local_to_gcs_2000(self, inpath=None, outpath=None, outlayername=None, outformat=None):
-        # para_sz_to_pcs_2000 = helmert_para(SpatialReference.sz_Local, SpatialReference.pcs_2000)
-        # [out_path, out_layername] = self.sz_local_to_pcs_2000(inpath, outpath=outpath,
-        #                                                       outlayername="temp_layer_4547.geojson", outformat=DataType.geojson)
-        #
-        [out_path, out_layername] = self.transform_bridge(2435, 4547, 4490, midlayername="temp_layer_4547.geojson",
-                                                        inpath=inpath, outpath=outpath, outlayername=outlayername,
-                                                        outformat=outformat)
 
-        return [out_path, out_layername] if out_path is not None and out_layername is not None else None
+        # transformer = pyproj.Transformer.from_crs("epsg:4547", "epsg:4490", always_xy=True)
+        # point = transformer.transform(point.GetX(), point.GetY())
+
+        end = time.time()
+        print(end - start)
+        return points
 
     def gcs_2000_to_sz_local(self, inpath=None, outpath=None, outlayername=None, outformat=None):
         [out_path, out_layername] = self.transform_bridge(4490, 4547, 2435, midlayername="temp_layer_4547.geojson",
@@ -428,4 +491,6 @@ def get_axis_order(srs):
 
 
 if __name__ == '__main__':
+    ogr.UseExceptions()
+    gdal.SetConfigOption("OGR_CT_FORCE_TRADITIONAL_GIS_ORDER", "YES")
     main()

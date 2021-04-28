@@ -31,7 +31,6 @@ def main(input, type, output):
 def transform_dwg(input, type, output):
     # cur_path = os.path.abspath('.')
     # log.info("checking parameters...")
-
     input_dir = os.path.abspath(os.path.dirname(input))
     input_file_name = os.path.basename(input)
     output_dir = os.path.abspath(os.path.dirname(output))
@@ -46,41 +45,42 @@ def transform_dwg(input, type, output):
 
     log.info("启动AutoCAD进程...")
 
-    trytime = 0
-    while trytime < 5:
-        try:
-            acad = Autocad()
-            break
-        except:
-            time.sleep(1)
-            trytime = trytime + 1
-            continue
-    else:
-        log.error("未正确读取autocad的com接口，请检查是否正确安装！")
-        return None
-
-    # ACADPref = acad.Preferences.OpenSave
-    # print(ACADPref.SaveAsType)
-
-    # log.info("读取转换矩阵...")
-    mat = None
-    if type == transform_type.szlocal_to_cgcs2000_pcs.value:
-        # tmatrix = szlocal_to_cgcs2000_mat()
-        mat = sz_local_to_pcs_2000_mat
-    elif type == transform_type.cgcs2000_pcs_to_szlocal.value:
-        # tmatrix = cgcs2000_to_szlocal_mat()
-    # mat = Matrix44_to_pmat(tmatrix)
-        mat = pcs_2000_to_sz_local_mat
-
-    if mat is None:
-        log.error("不存在对应的转换矩阵！")
-        return None
-
-    mat = ArrayTransform(mat)
-
-    log.info("打开dwg文件...")
-    trytime = 0
     try:
+        trytime = 0
+        while trytime < 5:
+            try:
+                acad = Autocad()
+                break
+            except:
+                time.sleep(1)
+                trytime = trytime + 1
+                continue
+        else:
+            log.error("未正确读取autocad的com接口，请检查是否正确安装！")
+            return None
+
+        # ACADPref = acad.Preferences.OpenSave
+        # print(ACADPref.SaveAsType)
+
+        # log.info("读取转换矩阵...")
+        mat = None
+        if type == transform_type.szlocal_to_cgcs2000_pcs.value:
+            # tmatrix = szlocal_to_cgcs2000_mat()
+            mat = sz_local_to_pcs_2000_mat
+        elif type == transform_type.cgcs2000_pcs_to_szlocal.value:
+            # tmatrix = cgcs2000_to_szlocal_mat()
+        # mat = Matrix44_to_pmat(tmatrix)
+            mat = pcs_2000_to_sz_local_mat
+
+        if mat is None:
+            log.error("不存在对应的转换矩阵！")
+            return None
+
+        mat = ArrayTransform(mat)
+
+        log.info("打开dwg文件...")
+        trytime = 0
+
         while trytime < 10:
             try:
                 # doc = acad.Documents
@@ -160,7 +160,6 @@ def transform_dwg(input, type, output):
     finally:
         if acad is not None:
             acad.Close(False)
-
 
 
 class transform_type(Enum):

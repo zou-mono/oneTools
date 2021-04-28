@@ -205,6 +205,16 @@ def is_header(line):
     return not any(cell.replace(".", "").isdigit() for cell in line)
 
 
+def is_number(str):
+    return str.replace(".", "").isdigit()
+
+
+def text_line_count(in_path, in_encode):
+    with open(in_path, "r", encoding=in_encode) as f:
+        total_count = sum(1 for row in f)
+    return total_count
+
+
 def read_table_header(file, format):
     if format == DataType.csv:
         with open(file, 'rb') as f:

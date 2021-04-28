@@ -141,7 +141,12 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                     layer_name = wks.getLayerNames()[0]
                     in_layer = datasource.GetLayer()
                     row = self.add_layer_to_row(in_layer, fileName, layer_name)
-                    self.add_delegate_to_row(row, fileName, [layer_name], save_srs_list)
+                    # self.add_delegate_to_row(row, fileName, [layer_name], save_srs_list)
+                    levelData = {
+                        'layer_names': [layer_name],
+                        'srs_list': save_srs_list
+                    }
+                    self.model.setLevelData(fileName, levelData)
 
                     datasource.Release()
                     datasource = None
@@ -197,6 +202,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                     'srs_list': save_srs_list
                 }
                 self.model.setLevelData(fileName, levelData)
+
 
     def add_table_to_row(self, fileName):
         row = self.model.rowCount(QModelIndex())
