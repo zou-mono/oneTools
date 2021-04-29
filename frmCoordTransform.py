@@ -5,6 +5,7 @@ from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
 from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, QDialogButtonBox, QStyleFactory, \
     QAbstractItemView, QHeaderView, QComboBox, QAbstractButton, QFileDialog
 from PyQt5 import QtWidgets, QtGui, QtCore
+from openpyxl import load_workbook
 from osgeo import osr
 
 import UI.UICoordTransform
@@ -167,7 +168,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 lst_names = wks.getLayerNames()
                 selected_names = None
                 if len(lst_names) > 1:
-                    selected_names = nameListDialog().openListDialog(lst_names)
+                    selected_names = nameListDialog().openListDialog("请选择要转换的图层", lst_names)
                 elif len(lst_names) == 1:
                     selected_names = [lst_names[0]]
 
@@ -196,7 +197,20 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 fileType = get_suffix(fileName)
                 row = self.add_table_to_row(fileName)
 
-                header = read_table_header(fileName, fileType)
+                if fileType == DataType.xlsx:
+                    wb = load_workbook(fileName, read_only=True)
+                    wb.close()
+                    lst_names = wb.sheetnames
+                    selected_name = []
+                    if len(lst_names) > 1:
+                        selected_name = nameListDialog().openListDialog(
+                            "请选择工作表(sheet)", lst_names, QAbstractItemView.SingleSelection)
+                    elif len(lst_names) == 1:
+                        selected_name = lst_names[0]
+                    header = read_table_header(fileName, fileType, sheet=selected_name[0])
+                else:
+                    header = read_table_header(fileName, fileType)
+
                 field_delegate = xyfieldDelegate(self,
                                                  [None, {'type': 'xy'}, {'type': 'xy'}, {'type': 'srs'},
                                                   {'type': 'srs'}, {'type': 'f', 'text': '请选择需要保存的文件'}])
@@ -674,7 +688,10 @@ class nameListDialog(QtWidgets.QDialog, UI.listview_dialog.Ui_Dialog):
         self.pushButton.clicked.connect(self.pushButton_clicked)
         self.select_names = []
 
-    def openListDialog(self, lst_names):
+    def openListDialog(self, title, lst_names, selectMode=QAbstractItemView.ExtendedSelection):
+        self.lv_name.setSelectionMode(selectMode)
+        self.setWindowTitle(title)
+
         for name in lst_names:
             self.lv_name.addItem(name)
 

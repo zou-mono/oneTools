@@ -302,8 +302,6 @@ class srsDelegate(addressTableDelegate):
 
     def cmb_selectionchange(self, i):
         pass
-        # if i > -1:
-        #     self.mainWindow.update_outlayername(self.index, self.cmb_srs.itemText(i))
 
 
 class outputPathDelegate(addressTableDelegate):

@@ -2,6 +2,7 @@ import csv
 import os
 import traceback
 
+from openpyxl import load_workbook
 from osgeo import ogr, osr
 
 from UICore.common import launderName, is_header
@@ -162,7 +163,7 @@ class dwgWorkspaceFactory(workspaceFactory):
         self.driver = ogr.GetDriverByName(driverName)
 
 
-def read_table_header(file, format):
+def read_table_header(file, format, sheet=None):
     if format == DataType.csv:
         with open(file, 'rb') as f:
             data = f.read(10000)  # or a chunk, f.read(1000000)
@@ -196,5 +197,22 @@ def read_table_header(file, format):
                 # GetPrecision = defn.GetFieldDefn(i).GetPrecision()
                 header_list.append(fieldName)
         return header_list
-    # elif format == DataType.xlsx:
+    elif format == DataType.xlsx:
+        wb = load_workbook(file, read_only=True)
+        ws = wb.get_sheet_by_name(sheet)
+        columns = ws.max_column
+        header = []
+        for i in range(1, columns + 1):
+            cell_value = ws.cell(row=1, column=i).value
+            header.append(str(cell_value))
+        wb.close()
+
+        if not is_header(header):
+            header_list = []
+            for i in range(len(header)):
+                header_list.append("F{}".format(i))
+            return header_list
+        else:
+            return header
+
 

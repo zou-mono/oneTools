@@ -108,13 +108,15 @@ class Transformer(object):
         self.srcSRS = srcSRS
         self.dstSRS = dstSRS
 
-        log.info("启动从{}到{}的转换...".format(self.in_path, self.out_path))
-
         start = time.time()
 
         res = None
         if self.in_format == DataType.csv:
             export_func = self.export_csv_to_file
+        else:
+            return False
+
+        log.info("启动从{}到{}的转换...".format(self.in_path, self.out_path))
 
         if srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.pcs_2000:
             res = export_func(self.sz_local_to_pcs_2000)
@@ -222,7 +224,6 @@ class Transformer(object):
                         if int(icount * 100 / total_count) == iprop * 20:
                             log.debug("{:.0%}".format(icount / total_count))
                             iprop += 1
-
             return None
         except:
             return traceback.format_exc()
