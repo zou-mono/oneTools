@@ -55,6 +55,10 @@ def gcj02_to_bd09(lng, lat):
     return [bd_lng, bd_lat]
 
 
+def gcj02_to_bd09_list(coords):
+    return gcj02_to_bd09(coords[0], coords[1])
+
+
 def bd09_to_gcj02(bd_lon, bd_lat):
     """
     百度坐标系(BD-09)转火星坐标系(GCJ-02)
@@ -70,6 +74,10 @@ def bd09_to_gcj02(bd_lon, bd_lat):
     gg_lng = z * math.cos(theta)
     gg_lat = z * math.sin(theta)
     return [gg_lng, gg_lat]
+
+
+def bd09_to_gcj02_list(coords):
+    return bd09_to_gcj02(coords[0], coords[1])
 
 
 def wgs84_to_gcj02(lng, lat):
@@ -92,6 +100,10 @@ def wgs84_to_gcj02(lng, lat):
     mglat = lat + dlat
     mglng = lng + dlng
     return [mglng, mglat]
+
+
+def wgs84_to_gcj02_list(coords):
+    return wgs84_to_gcj02(coords[0], coords[1])
 
 
 def _coord_diff(a, b):
@@ -117,6 +129,11 @@ def gcj02_to_wgs84_acc(lng, lat):
 
     return curr
 
+
+def gcj02_to_wgs84_acc_list(coords):
+    return gcj02_to_wgs84_acc(coords[0], coords[1])
+
+
 def gcj02_to_wgs84(lng, lat):
     """
     GCJ02(火星坐标系)转GPS84
@@ -139,6 +156,10 @@ def gcj02_to_wgs84(lng, lat):
     return [lng * 2 - mglng, lat * 2 - mglat]
 
 
+def gcj02_to_wgs84_list(coords):
+    return gcj02_to_wgs84(coords[0], coords[1])
+
+
 def wgs84_to_webMercator(lng,lat):
     """
     wgs84投影到墨卡托
@@ -149,6 +170,10 @@ def wgs84_to_webMercator(lng,lat):
     x = lng * 20037508.34 / 180
     y = math.log(math.tan((90 + lat) * math.pi / 360)) / (math.pi / 180) * 20037508.34 / 180
     return [x, y]
+
+
+def wgs84_to_webMercator_list(coords):
+    return wgs84_to_webMercator(coords[0], coords[1])
 
 
 def webMercator_to_wgs84(x,y):
@@ -163,9 +188,17 @@ def webMercator_to_wgs84(x,y):
     return [lng, lat]
 
 
+def webMercator_to_wgs84_list(coords):
+    return webMercator_to_wgs84(coords[0], coords[1])
+
+
 def bd09_to_wgs84(bd_lon, bd_lat):
     lon, lat = bd09_to_gcj02(bd_lon, bd_lat)
     return gcj02_to_wgs84(lon, lat)
+
+
+def bd09_to_wgs84_list(coords):
+    return bd09_to_wgs84(coords[0], coords[1])
 
 
 def bd09_to_wgs84_acc(bd_lon, bd_lat):
@@ -173,8 +206,17 @@ def bd09_to_wgs84_acc(bd_lon, bd_lat):
     return gcj02_to_wgs84_acc(curr[0], curr[1])
 
 
+def bd09_to_wgs84_acc_list(coords):
+    return bd09_to_wgs84_acc(coords[0], coords[1])
+
+
 def wgs84_to_bd09(lon, lat):
     curr = wgs84_to_gcj02(lon, lat)
+    return gcj02_to_bd09(curr[0], curr[1])
+
+
+def wgs84_to_bd09_list(coords):
+    curr = wgs84_to_gcj02_list(coords)
     return gcj02_to_bd09(curr[0], curr[1])
 
 
@@ -268,6 +310,10 @@ def BDmc_to_BD09(lng, lat):
     return convertor(x, y, c)
 
 
+def BDmc_to_BD09_list(coords):
+    return BDmc_to_BD09(coords[0], coords[1])
+
+
 def BD09_to_BDmc(lng, lat):
     cD = None
     lng = getLoop(lng, -180, 180)
@@ -284,6 +330,9 @@ def BD09_to_BDmc(lng, lat):
     cE = convertor(lng, lat, cD)
     return cE
 
+
+def BD09_to_BDmc_list(coords):
+    return BD09_to_BDmc(coords[0], coords[1])
 
 if __name__ == '__main__':
     lng = 128.543
