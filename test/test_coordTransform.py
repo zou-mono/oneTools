@@ -2,8 +2,14 @@ from osgeo import ogr
 import osgeo.osr as osr
 from osgeo import gdal
 import os
+import csv
 
 from osgeo.ogr import Geometry
+
+with open("www.csv", "w", newline="") as f:
+    writer = csv.writer(f)
+    for i in range(10):
+        writer.writerow([i, "xr,22", "www.yyy"])
 
 sourceSRS = osr.SpatialReference()
 sourceSRS.ImportFromEPSG(2435)

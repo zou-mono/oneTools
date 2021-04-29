@@ -398,7 +398,7 @@ class xyfieldDelegate(QStyledItemDelegate):
             return super().createEditor(parent, option, index)
 
     def mBtn_address_clicked(self, parent, title, type):
-        fileName, fileType = QFileDialog.getSaveFileName(parent, title, os.getcwd())
+        fileName, fileType = QFileDialog.getSaveFileName(parent, title, os.getcwd(), "csv File(*.csv)")
 
         if not sip.isdeleted(self.mAddressDialog):
             self.mAddressDialog.setText(fileName)

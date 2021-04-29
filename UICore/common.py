@@ -1,11 +1,10 @@
 import base64
-import csv
 import json
 import math
 import os
 import re
 import datetime
-import chardet
+import time
 
 from UICore.Gv import srs_dict, SpatialReference, DataType
 from UICore.log4p import Log
@@ -187,6 +186,10 @@ def get_suffix(path):
         return DataType.cad_dwg
     elif suffix.lower() == "csv":
         return DataType.csv
+    elif suffix.lower() == "dbf":
+        return DataType.dbf
+    elif suffix.lower() == "xlsx":
+        return DataType.xlsx
     else:
         return None
 
@@ -213,24 +216,3 @@ def text_line_count(in_path, in_encode):
     with open(in_path, "r", encoding=in_encode) as f:
         total_count = sum(1 for row in f)
     return total_count
-
-
-def read_table_header(file, format):
-    if format == DataType.csv:
-        with open(file, 'rb') as f:
-            data = f.read(10000)  # or a chunk, f.read(1000000)
-            encoding = chardet.detect(data).get("encoding")
-
-        print(encoding)
-
-        with open(file, 'r', newline='', encoding=encoding) as f:
-            reader = csv.reader(f)
-            header = next(reader)  # gets the first line
-            if not is_header(header):
-                header_list = []
-                for i in range(len(header)):
-                    header_list.append("F{}".format(i))
-                return header_list
-            else:
-                return header
-

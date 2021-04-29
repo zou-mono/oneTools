@@ -78,7 +78,7 @@ def coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs):
         in_layer = in_wks.openLayer(inlayer)
 
         if in_layer is None:
-            log.error("输入图层不存在！")
+            log.error("输入图层不存在!")
             return False
 
         srs_ref = in_layer.GetSpatialRef()
@@ -683,7 +683,7 @@ class Transformer(object):
             ofeature.Destroy()
             return 1
         except UnicodeEncodeError:
-            log.error("错误发生在第{}个要素.\n{}".format(icount, "字符编码无法转换，请检查输入文件的字段！"))
+            log.error("错误发生在第{}个要素.\n{}".format(icount, "字符编码无法转换，请检查输入文件的字段!"))
             return -1
         except RuntimeError:
             log.error("错误发生在第{}个要素.\n{}".format(icount, "无法拷贝属性值"))

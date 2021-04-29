@@ -1,11 +1,13 @@
+import csv
 import os
 import traceback
 
 from osgeo import ogr, osr
 
-from UICore.common import launderName
+from UICore.common import launderName, is_header
 from UICore.log4p import Log
 from UICore.Gv import DataType
+import chardet
 
 log = Log()
 
@@ -17,7 +19,7 @@ class workspaceFactory(object):
 
     def get_factory(self, factory):
         wks = None
-        if factory == DataType.shapefile:
+        if factory == DataType.shapefile or factory == DataType.dbf:
             wks = shapefileWorkspaceFactory()
         elif factory == DataType.geojson:
             wks = geojsonWorkspaceFactory()
@@ -33,7 +35,7 @@ class workspaceFactory(object):
 
     def openFromFile(self, file):
         if self.driver is None:
-            log.error("缺失相应的图形文件读取引擎！", dialog=True)
+            log.error("缺失相应的图形文件读取引擎!", dialog=True)
             return None
         else:
             try:
@@ -158,3 +160,41 @@ class dwgWorkspaceFactory(workspaceFactory):
         super().__init__()
         driverName = "CAD"
         self.driver = ogr.GetDriverByName(driverName)
+
+
+def read_table_header(file, format):
+    if format == DataType.csv:
+        with open(file, 'rb') as f:
+            data = f.read(10000)  # or a chunk, f.read(1000000)
+            encoding = chardet.detect(data).get("encoding")
+
+        print(encoding)
+
+        with open(file, 'r', newline='', encoding=encoding) as f:
+            reader = csv.reader(f)
+            header = next(reader)  # gets the first line
+            if not is_header(header):
+                header_list = []
+                for i in range(len(header)):
+                    header_list.append("F{}".format(i))
+                return header_list
+            else:
+                return header
+    elif format == DataType.dbf:
+        wks = workspaceFactory().get_factory(DataType.dbf)
+        datasource = wks.openFromFile(file)
+
+        header_list = []
+        if datasource is not None:
+            in_layer = datasource.GetLayer()
+            defn = in_layer.GetLayerDefn()
+            for i in range(defn.GetFieldCount()):
+                fieldName = defn.GetFieldDefn(i).GetName()
+                # fieldTypeCode = defn.GetFieldDefn(i).GetType()
+                # fieldType = defn.GetFieldDefn(i).GetFieldTypeName(fieldTypeCode)
+                # fieldWidth = defn.GetFieldDefn(i).GetWidth()
+                # GetPrecision = defn.GetFieldDefn(i).GetPrecision()
+                header_list.append(fieldName)
+        return header_list
+    # elif format == DataType.xlsx:
+

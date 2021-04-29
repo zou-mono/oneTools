@@ -56,7 +56,7 @@ def transform_dwg(input, type, output):
                 trytime = trytime + 1
                 continue
         else:
-            log.error("未正确读取autocad的com接口，请检查是否正确安装！")
+            log.error("未正确读取autocad的com接口,请检查是否正确安装!")
             return None
 
         # ACADPref = acad.Preferences.OpenSave
@@ -73,7 +73,7 @@ def transform_dwg(input, type, output):
             mat = pcs_2000_to_sz_local_mat
 
         if mat is None:
-            log.error("不存在对应的转换矩阵！")
+            log.error("不存在对应的转换矩阵!")
             return None
 
         mat = ArrayTransform(mat)

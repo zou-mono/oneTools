@@ -13,10 +13,10 @@ import sys
 import json
 import os
 
-from UICore.DataFactory import workspaceFactory
+from UICore.DataFactory import workspaceFactory, read_table_header
 from UICore.Gv import SplitterState, Dock, DataType, srs_dict
 from UICore.common import defaultImageFile, defaultTileFolder, urlEncodeToFileName, get_paraInfo, get_suffix, \
-    encodeCurrentTime, is_header, read_table_header
+    encodeCurrentTime, is_header
 from UICore.workerThread import coordTransformWorker
 from widgets.mTable import TableModel, mTableStyle, layernameDelegate, srsDelegate, outputPathDelegate, xyfieldDelegate
 from UICore.log4p import Log
@@ -24,6 +24,7 @@ from UICore.log4p import Log
 Slot = QtCore.pyqtSlot
 
 log = Log()
+
 
 # class myFileSelect(QFileDialog):
 #     def __init__(self):
@@ -164,7 +165,11 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
             if datasource is not None:
                 lst_names = wks.getLayerNames()
-                selected_names = nameListDialog().openListDialog(lst_names)
+                selected_names = None
+                if len(lst_names) > 1:
+                    selected_names = nameListDialog().openListDialog(lst_names)
+                elif len(lst_names) == 1:
+                    selected_names = [lst_names[0]]
 
                 rows = []
                 if selected_names is not None:
@@ -193,8 +198,8 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
                 header = read_table_header(fileName, fileType)
                 field_delegate = xyfieldDelegate(self,
-                                                  [None, {'type': 'xy'}, {'type': 'xy'}, {'type': 'srs'},
-                                                   {'type': 'srs'}, {'type': 'f', 'text': '请选择需要保存的文件'}])
+                                                 [None, {'type': 'xy'}, {'type': 'xy'}, {'type': 'srs'},
+                                                  {'type': 'srs'}, {'type': 'f', 'text': '请选择需要保存的文件'}])
                 self.tbl_address.setItemDelegateForRow(row, field_delegate)
 
                 levelData = {
@@ -202,7 +207,6 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                     'srs_list': save_srs_list
                 }
                 self.model.setLevelData(fileName, levelData)
-
 
     def add_table_to_row(self, fileName):
         row = self.model.rowCount(QModelIndex())
@@ -337,53 +341,105 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
     def check_paras(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
-        for row in rows:
-            in_path_index = self.tbl_address.model().index(row, 0, QModelIndex())
-            in_layername_index = self.tbl_address.model().index(row, 1, QModelIndex())
-            in_srs_index = self.tbl_address.model().index(row, 2, QModelIndex())
-            out_srs_index = self.tbl_address.model().index(row, 3, QModelIndex())
-            out_path_index = self.tbl_address.model().index(row, 4, QModelIndex())
-            out_layername_index = self.tbl_address.model().index(row, 5, QModelIndex())
 
-            in_path = str(self.tbl_address.model().data(in_path_index, Qt.DisplayRole)).strip()
-            in_layername = str(self.tbl_address.model().data(in_layername_index, Qt.DisplayRole)).strip()
-            in_srs = str(self.tbl_address.model().data(in_srs_index, Qt.DisplayRole)).strip()
-            out_srs = str(self.tbl_address.model().data(out_srs_index, Qt.DisplayRole)).strip()
-            out_path = str(self.tbl_address.model().data(out_path_index, Qt.DisplayRole)).strip()
-            out_layername = str(self.tbl_address.model().data(out_layername_index, Qt.DisplayRole)).strip()
+        if self.rbtn_table.isChecked():
+            for row in rows:
+                in_path_index = self.tbl_address.model().index(row, 0, QModelIndex())
+                x_field_index = self.tbl_address.model().index(row, 1, QModelIndex())
+                y_field_index = self.tbl_address.model().index(row, 2, QModelIndex())
+                in_srs_index = self.tbl_address.model().index(row, 3, QModelIndex())
+                out_srs_index = self.tbl_address.model().index(row, 4, QModelIndex())
+                out_path_index = self.tbl_address.model().index(row, 5, QModelIndex())
 
-            if in_path == "":
-                log.error('第{}行缺失必要参数"输入路径"，请补全！'.format(row), dialog=True)
-                return False
+                in_path = str(self.tbl_address.model().data(in_path_index, Qt.DisplayRole)).strip()
+                x_field = str(self.tbl_address.model().data(x_field_index, Qt.DisplayRole)).strip()
+                y_field = str(self.tbl_address.model().data(y_field_index, Qt.DisplayRole)).strip()
+                in_srs = str(self.tbl_address.model().data(in_srs_index, Qt.DisplayRole)).strip()
+                out_srs = str(self.tbl_address.model().data(out_srs_index, Qt.DisplayRole)).strip()
+                out_path = str(self.tbl_address.model().data(out_path_index, Qt.DisplayRole)).strip()
 
-            in_format = get_suffix(in_path)
-            if in_format is None:
-                log.error('第{}行的输入数据格式不支持！目前只支持shapefile, fileGDB, geojson和cad dwg'.format(row), dialog=True)
-                return False
-
-            if in_layername == "":
-                if in_format == DataType.fileGDB:
-                    log.error('第{}行参数缺失必要参数"输入图层"！')
+                if in_path == "":
+                    log.error('第{}行缺失必要参数"输入路径"，请补全！'.format(row), dialog=True)
                     return False
-                else:
-                    in_layername, suffix = os.path.splitext(os.path.basename(in_path))
-                    self.tbl_address.model().setData(in_layername_index, in_layername)
-                    log.warning('第{}行参数缺失参数"输入图层"，已自动补全为{}'.format(row, in_layername))
 
-            if in_srs == "":
-                log.error('第{}行缺失必要参数"输入坐标系"，请补全！'.format(row), dialog=True)
-                return False
+                in_format = get_suffix(in_path)
+                if in_format is None:
+                    log.error('第{}行的输入数据格式不支持！目前只支持csv, excel和dbf'.format(row), dialog=True)
+                    return False
 
-            if out_srs == "":
-                log.error('第{}行缺失必要参数"输出坐标系"，请补全！'.format(row), dialog=True)
-                return False
+                if x_field == "":
+                    log.error('第{}行缺失必要参数"x坐标"，请补全!'.format(row))
+                    return False
 
-            if out_layername == "":
-                out_layername = in_layername + "_" + str(out_srs)
-                self.tbl_address.model().setData(out_layername_index, out_layername)
-                log.warning('第{}行参数缺失参数"输出图层"，自动补全为默认值{}'.format(row, out_layername))
+                if y_field == "":
+                    log.error('第{}行缺失必要参数"y坐标"，请补全!'.format(row))
+                    return False
 
-            self.autofill_outpath(row, in_path, out_path, in_layername, out_srs, in_format, out_path_index)
+                if in_srs == "":
+                    log.error('第{}行缺失必要参数"输入坐标系"，请补全!'.format(row))
+                    return False
+
+                if out_srs == "":
+                    log.error('第{}行缺失必要参数"输出坐标系"，请补全!'.format(row))
+                    return False
+
+                if out_path == "":
+                    in_filename, in_suffix = os.path.splitext(os.path.basename(in_path))
+                    out_file = self.default_outfile(in_path, in_format, in_filename, out_srs)
+                    if not os.path.exists("res"):
+                        os.makedirs("res")
+
+                    out_path = os.path.join(os.path.abspath("res"), out_file)
+                    self.tbl_address.model().setData(out_path_index, out_path)
+                    log.warning('第{}行参数"输出路径"缺失数据源，自动补全为默认值{}'.format(row, out_path))
+        else:
+            for row in rows:
+                in_path_index = self.tbl_address.model().index(row, 0, QModelIndex())
+                in_layername_index = self.tbl_address.model().index(row, 1, QModelIndex())
+                in_srs_index = self.tbl_address.model().index(row, 2, QModelIndex())
+                out_srs_index = self.tbl_address.model().index(row, 3, QModelIndex())
+                out_path_index = self.tbl_address.model().index(row, 4, QModelIndex())
+                out_layername_index = self.tbl_address.model().index(row, 5, QModelIndex())
+
+                in_path = str(self.tbl_address.model().data(in_path_index, Qt.DisplayRole)).strip()
+                in_layername = str(self.tbl_address.model().data(in_layername_index, Qt.DisplayRole)).strip()
+                in_srs = str(self.tbl_address.model().data(in_srs_index, Qt.DisplayRole)).strip()
+                out_srs = str(self.tbl_address.model().data(out_srs_index, Qt.DisplayRole)).strip()
+                out_path = str(self.tbl_address.model().data(out_path_index, Qt.DisplayRole)).strip()
+                out_layername = str(self.tbl_address.model().data(out_layername_index, Qt.DisplayRole)).strip()
+
+                if in_path == "":
+                    log.error('第{}行缺失必要参数"输入路径"，请补全！'.format(row), dialog=True)
+                    return False
+
+                in_format = get_suffix(in_path)
+                if in_format is None:
+                    log.error('第{}行的输入数据格式不支持！目前只支持shapefile, fileGDB, geojson和cad dwg'.format(row), dialog=True)
+                    return False
+
+                if in_layername == "":
+                    if in_format == DataType.fileGDB:
+                        log.error('第{}行参数缺失必要参数"输入图层"！')
+                        return False
+                    else:
+                        in_layername, suffix = os.path.splitext(os.path.basename(in_path))
+                        self.tbl_address.model().setData(in_layername_index, in_layername)
+                        log.warning('第{}行参数缺失参数"输入图层"，已自动补全为{}'.format(row, in_layername))
+
+                if in_srs == "":
+                    log.error('第{}行缺失必要参数"输入坐标系"，请补全！'.format(row), dialog=True)
+                    return False
+
+                if out_srs == "":
+                    log.error('第{}行缺失必要参数"输出坐标系"，请补全！'.format(row), dialog=True)
+                    return False
+
+                if out_layername == "":
+                    out_layername = in_layername + "_" + str(out_srs)
+                    self.tbl_address.model().setData(out_layername_index, out_layername)
+                    log.warning('第{}行参数缺失参数"输出图层"，自动补全为默认值{}'.format(row, out_layername))
+
+                self.autofill_outpath(row, in_path, out_path, in_layername, out_srs, in_format, out_path_index)
 
         return True
 
@@ -398,6 +454,8 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
             out_file = "{}_{}_{}.shp".format(in_layername, out_srs, encodeCurrentTime())
         elif in_format == DataType.cad_dwg:
             out_file = "{}_{}_{}.dwg".format(in_layername, out_srs, encodeCurrentTime())
+        elif in_format == DataType.csv:
+            out_file = "{}_{}_{}.csv".format(in_layername, out_srs, encodeCurrentTime())
         return out_file
 
     def autofill_outpath(self, row, in_path, out_path, in_layername, out_srs, in_format, out_path_index):
@@ -531,9 +589,9 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
         self.in_path_no = 0  # 输入路径字段的序号
         self.in_layername_no = 1  # 输入图层的序号
-        self.out_layername_no = 5 # 输出图层的序号
+        self.out_layername_no = 5  # 输出图层的序号
         self.in_srs_no = 2
-        self.out_srs_no = 3 # 输出坐标系的序号
+        self.out_srs_no = 3  # 输出坐标系的序号
 
     def table_init_spatial_data(self):
         self.model = TableModel()
