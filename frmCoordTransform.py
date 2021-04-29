@@ -6,10 +6,11 @@ from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, Q
     QAbstractItemView, QHeaderView, QComboBox, QAbstractButton, QFileDialog
 from PyQt5 import QtWidgets, QtGui, QtCore
 from openpyxl import load_workbook
-from osgeo import osr
+from osgeo import osr, gdal
 
 import UI.UICoordTransform
 import UI.listview_dialog
+import UICore.coordTransform_table
 import sys
 import json
 import os
@@ -17,7 +18,7 @@ import os
 from UICore.DataFactory import workspaceFactory, read_table_header
 from UICore.Gv import SplitterState, Dock, DataType, srs_dict
 from UICore.common import defaultImageFile, defaultTileFolder, urlEncodeToFileName, get_paraInfo, get_suffix, \
-    encodeCurrentTime, is_header
+    encodeCurrentTime, is_header, is_already_opened_in_write_mode, launderName, check_encoding, read_first_line
 from UICore.workerThread import coordTransformWorker
 from widgets.mTable import TableModel, mTableStyle, layernameDelegate, srsDelegate, outputPathDelegate, xyfieldDelegate
 from UICore.log4p import Log
@@ -82,7 +83,10 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.coordTransformThread = coordTransformWorker()
         self.coordTransformThread.moveToThread(self.thread)
         self.coordTransformThread.transform.connect(self.coordTransformThread.coordTransform)
+        self.coordTransformThread.transform_tbl.connect(self.coordTransformThread.tableTransform)
         self.coordTransformThread.finished.connect(self.threadStop)
+
+        gdal.SetConfigOption("OGR_CT_FORCE_TRADITIONAL_GIS_ORDER", "YES")
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
         self.rbtn_file.click()
@@ -198,28 +202,41 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 row = self.add_table_to_row(fileName)
 
                 if fileType == DataType.xlsx:
-                    wb = load_workbook(fileName, read_only=True)
-                    wb.close()
-                    lst_names = wb.sheetnames
-                    selected_name = []
-                    if len(lst_names) > 1:
-                        selected_name = nameListDialog().openListDialog(
-                            "请选择工作表(sheet)", lst_names, QAbstractItemView.SingleSelection)
-                    elif len(lst_names) == 1:
-                        selected_name = lst_names[0]
-                    header = read_table_header(fileName, fileType, sheet=selected_name[0])
-                else:
+                    # selected_sheet = []
+                    # wb = load_workbook(fileName, read_only=True)
+                    # wb.close()
+                    # lst_names = wb.sheetnames
+                    # if len(lst_names) > 1:
+                    #     selected_sheet = nameListDialog().openListDialog(
+                    #         "请选择工作表(sheet)", lst_names, QAbstractItemView.SingleSelection)
+                    # elif len(lst_names) == 1:
+                    #     selected_sheet = lst_names[0]
+                    header, bheader = read_table_header(fileName, fileType, None)
+                    levelData = {
+                        'is_header': bheader,
+                        # 'sheet': selected_sheet[0],
+                        'field_list': header,
+                        'srs_list': save_srs_list
+                    }
+                elif fileType == DataType.csv:
+                    header, encoding, bheader = read_table_header(fileName, fileType)
+                    levelData = {
+                        'is_header': bheader,
+                        'encoding': encoding,
+                        'field_list': header,
+                        'srs_list': save_srs_list
+                    }
+                elif fileType == DataType.dbf:
                     header = read_table_header(fileName, fileType)
-
+                    levelData = {
+                        'is_header': True,
+                        'field_list': header,
+                        'srs_list': save_srs_list
+                    }
                 field_delegate = xyfieldDelegate(self,
                                                  [None, {'type': 'xy'}, {'type': 'xy'}, {'type': 'srs'},
                                                   {'type': 'srs'}, {'type': 'f', 'text': '请选择需要保存的文件'}])
                 self.tbl_address.setItemDelegateForRow(row, field_delegate)
-
-                levelData = {
-                    'field_list': header,
-                    'srs_list': save_srs_list
-                }
                 self.model.setLevelData(fileName, levelData)
 
     def add_table_to_row(self, fileName):
@@ -281,12 +298,30 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
             if self.rbtn_table.isChecked():
                 fileType = get_suffix(imp['in_path'])
-                header = read_table_header(imp['in_path'], fileType)
+                header = imp['field_list']
 
-                self.model.setLevelData(imp['in_path'], {
-                    'field_list': header,
-                    'srs_list': imp['srs_list']
-                })
+                if fileType == DataType.csv:
+                    header, encoding, bheader = read_table_header(imp['in_path'], fileType)
+
+                    self.model.setLevelData(imp['in_path'], {
+                        'is_header': bheader,
+                        'encoding': encoding,
+                        'field_list': header,
+                        'srs_list': imp['srs_list']
+                    })
+                elif fileType == DataType.xlsx:
+                    header, bheader = read_table_header(imp['in_path'], fileType, None)
+                    self.model.setLevelData(imp['in_path'], {
+                        'is_header': bheader,
+                        'field_list': header,
+                        'srs_list': imp['srs_list']
+                    })
+                elif fileType == DataType.dbf:
+                    self.model.setLevelData(imp['in_path'], {
+                        'is_header': True,
+                        'field_list': header,
+                        'srs_list': imp['srs_list']
+                    })
 
                 x_field_index = self.tbl_address.model().index(row, 1)
                 y_field_index = self.tbl_address.model().index(row, 2)
@@ -404,8 +439,11 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                         os.makedirs("res")
 
                     out_path = os.path.join(os.path.abspath("res"), out_file)
-                    self.tbl_address.model().setData(out_path_index, out_path)
-                    log.warning('第{}行参数"输出路径"缺失数据源，自动补全为默认值{}'.format(row, out_path))
+
+                if is_already_opened_in_write_mode(out_path):
+                    out_path = launderName(out_path)
+                self.tbl_address.model().setData(out_path_index, out_path)
+                log.warning('第{}行参数"输出路径"缺失数据源，自动补全为默认值{}'.format(row, out_path))
         else:
             for row in rows:
                 in_path_index = self.tbl_address.model().index(row, 0, QModelIndex())
@@ -493,25 +531,61 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
     def run_process(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
-        for row in rows:
-            in_path_index = self.tbl_address.model().index(row, 0, QModelIndex())
-            in_layername_index = self.tbl_address.model().index(row, 1, QModelIndex())
-            in_srs_index = self.tbl_address.model().index(row, 2, QModelIndex())
-            out_srs_index = self.tbl_address.model().index(row, 3, QModelIndex())
-            out_path_index = self.tbl_address.model().index(row, 4, QModelIndex())
-            out_layername_index = self.tbl_address.model().index(row, 5, QModelIndex())
 
-            in_path = str(self.tbl_address.model().data(in_path_index, Qt.DisplayRole)).strip()
-            in_layername = str(self.tbl_address.model().data(in_layername_index, Qt.DisplayRole)).strip()
-            in_srs = str(self.tbl_address.model().data(in_srs_index, Qt.DisplayRole)).strip()
-            out_srs = str(self.tbl_address.model().data(out_srs_index, Qt.DisplayRole)).strip()
-            out_path = str(self.tbl_address.model().data(out_path_index, Qt.DisplayRole)).strip()
-            out_layername = str(self.tbl_address.model().data(out_layername_index, Qt.DisplayRole)).strip()
+        if self.rbtn_table.isChecked():
+            for row in rows:
+                in_path_index = self.tbl_address.model().index(row, 0, QModelIndex())
+                x_field_index = self.tbl_address.model().index(row, 1, QModelIndex())
+                y_field_index = self.tbl_address.model().index(row, 2, QModelIndex())
+                in_srs_index = self.tbl_address.model().index(row, 3, QModelIndex())
+                out_srs_index = self.tbl_address.model().index(row, 4, QModelIndex())
+                out_path_index = self.tbl_address.model().index(row, 5, QModelIndex())
 
-            in_srs = list(srs_dict.keys())[list(srs_dict.values()).index(in_srs)]
-            out_srs = list(srs_dict.keys())[list(srs_dict.values()).index(out_srs)]
+                in_path = str(self.tbl_address.model().data(in_path_index, Qt.DisplayRole)).strip()
+                x_field = str(self.tbl_address.model().data(x_field_index, Qt.DisplayRole)).strip()
+                y_field = str(self.tbl_address.model().data(y_field_index, Qt.DisplayRole)).strip()
+                in_srs = str(self.tbl_address.model().data(in_srs_index, Qt.DisplayRole)).strip()
+                out_srs = str(self.tbl_address.model().data(out_srs_index, Qt.DisplayRole)).strip()
+                out_path = str(self.tbl_address.model().data(out_path_index, Qt.DisplayRole)).strip()
 
-            self.coordTransformThread.transform.emit(in_path, in_layername, in_srs, out_path, out_layername, out_srs)
+                in_srs = list(srs_dict.keys())[list(srs_dict.values()).index(in_srs)]
+                out_srs = list(srs_dict.keys())[list(srs_dict.values()).index(out_srs)]
+                x = self.model.levels[in_path]['field_list'].index(x_field)
+                y = self.model.levels[in_path]['field_list'].index(y_field)
+
+                # inencode = check_encoding(in_path)
+                fileType = get_suffix(in_path)
+                bheader = self.model.levels[in_path]['is_header']
+
+                if fileType == DataType.csv:
+                    inencode = self.model.levels[in_path]['encoding']
+
+                    # UICore.coordTransform_table.coordTransform(in_path, inencode, bheader, x, y, in_srs, out_srs, out_path, "gbk")
+                    self.coordTransformThread.transform_tbl.emit(
+                        in_path, inencode, bheader, x, y, in_srs, out_srs, out_path, "gbk")
+                else:
+                    self.coordTransformThread.transform_tbl.emit(
+                        in_path, "gbk", bheader, x, y, in_srs, out_srs, out_path, "gbk")
+        else:
+            for row in rows:
+                in_path_index = self.tbl_address.model().index(row, 0, QModelIndex())
+                in_layername_index = self.tbl_address.model().index(row, 1, QModelIndex())
+                in_srs_index = self.tbl_address.model().index(row, 2, QModelIndex())
+                out_srs_index = self.tbl_address.model().index(row, 3, QModelIndex())
+                out_path_index = self.tbl_address.model().index(row, 4, QModelIndex())
+                out_layername_index = self.tbl_address.model().index(row, 5, QModelIndex())
+
+                in_path = str(self.tbl_address.model().data(in_path_index, Qt.DisplayRole)).strip()
+                in_layername = str(self.tbl_address.model().data(in_layername_index, Qt.DisplayRole)).strip()
+                in_srs = str(self.tbl_address.model().data(in_srs_index, Qt.DisplayRole)).strip()
+                out_srs = str(self.tbl_address.model().data(out_srs_index, Qt.DisplayRole)).strip()
+                out_path = str(self.tbl_address.model().data(out_path_index, Qt.DisplayRole)).strip()
+                out_layername = str(self.tbl_address.model().data(out_layername_index, Qt.DisplayRole)).strip()
+
+                in_srs = list(srs_dict.keys())[list(srs_dict.values()).index(in_srs)]
+                out_srs = list(srs_dict.keys())[list(srs_dict.values()).index(out_srs)]
+
+                self.coordTransformThread.transform.emit(in_path, in_layername, in_srs, out_path, out_layername, out_srs)
 
     @Slot()
     def btn_saveMetaFile_clicked(self):

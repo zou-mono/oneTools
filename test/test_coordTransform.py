@@ -5,6 +5,10 @@ import os
 import csv
 
 from osgeo.ogr import Geometry
+import UICore.coordTransform_table
+
+UICore.coordTransform_table.coordTransform(r"D:\Codes\oneTools\data\基准数据\station_wgs84.csv",
+                                           "ascii", False, 0, 1, 4326, 2435, r"D:\Codes\oneTools\res\station_sz_test.csv", "gb2312")
 
 with open("www.csv", "w", newline="") as f:
     writer = csv.writer(f)

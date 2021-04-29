@@ -5,7 +5,7 @@ import traceback
 from openpyxl import load_workbook
 from osgeo import ogr, osr
 
-from UICore.common import launderName, is_header
+from UICore.common import launderName, is_header, check_encoding, read_first_line
 from UICore.log4p import Log
 from UICore.Gv import DataType
 import chardet
@@ -165,22 +165,20 @@ class dwgWorkspaceFactory(workspaceFactory):
 
 def read_table_header(file, format, sheet=None):
     if format == DataType.csv:
-        with open(file, 'rb') as f:
-            data = f.read(10000)  # or a chunk, f.read(1000000)
-            encoding = chardet.detect(data).get("encoding")
+        encoding = check_encoding(file)
 
-        print(encoding)
-
-        with open(file, 'r', newline='', encoding=encoding) as f:
-            reader = csv.reader(f)
-            header = next(reader)  # gets the first line
-            if not is_header(header):
-                header_list = []
-                for i in range(len(header)):
-                    header_list.append("F{}".format(i))
-                return header_list
-            else:
-                return header
+        # with open(file, 'r', newline='', encoding=encoding) as f:
+        #     reader = csv.reader(f)
+        #     header = next(reader)  # gets the first line
+        header = read_first_line(file, format, encoding=encoding)
+        bheader = is_header(header)
+        if not bheader:
+            header_list = []
+            for i in range(len(header)):
+                header_list.append("F{}".format(i))
+            return header_list, encoding, bheader
+        else:
+            return header, encoding, bheader
     elif format == DataType.dbf:
         wks = workspaceFactory().get_factory(DataType.dbf)
         datasource = wks.openFromFile(file)
@@ -198,21 +196,14 @@ def read_table_header(file, format, sheet=None):
                 header_list.append(fieldName)
         return header_list
     elif format == DataType.xlsx:
-        wb = load_workbook(file, read_only=True)
-        ws = wb.get_sheet_by_name(sheet)
-        columns = ws.max_column
-        header = []
-        for i in range(1, columns + 1):
-            cell_value = ws.cell(row=1, column=i).value
-            header.append(str(cell_value))
-        wb.close()
-
-        if not is_header(header):
+        header = read_first_line(file, format, sheet=sheet)
+        bheader = is_header(header)
+        if not bheader:
             header_list = []
             for i in range(len(header)):
                 header_list.append("F{}".format(i))
-            return header_list
+            return header_list, bheader
         else:
-            return header
+            return header, bheader
 
 

@@ -69,7 +69,7 @@ log = Log(__file__)
     '--outencode',
     help='Output encoding. For example, d:/res/data/xxx.csv',
     type=str,
-    default='utf-8',
+    default='gbk',
     required=False)
 def main(inpath, inencode, header, xfield, yfield, insrs, outsrs, outpath, outencode):
     """spatial coordinate transformation program"""

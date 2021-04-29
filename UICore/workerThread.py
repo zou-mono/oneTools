@@ -5,6 +5,7 @@ from UICore.merge_tiles import merge_tiles
 from UICore.log4p import Log
 from UICore.suplicmap_vector2 import crawl_vector, crawl_vector_batch
 from UICore.coordTransform import coordTransform
+import UICore.coordTransform_table
 
 log = Log()
 
@@ -60,6 +61,7 @@ class crawlVectorWorker(QtCore.QObject):
 
 class coordTransformWorker(QtCore.QObject):
     transform = pyqtSignal(str, str, int, str, str, int)
+    transform_tbl = pyqtSignal(str, str, bool, int, int, int, int, str, str)
     finished = pyqtSignal()
 
     def __init__(self):
@@ -70,5 +72,13 @@ class coordTransformWorker(QtCore.QObject):
         if not flag:
             log.error(message)
         self.finished.emit()
+
+    def tableTransform(self, inpath, inencode, header, xfield, yfield, insrs, outsrs, outpath, outencode):
+        flag, message = UICore.coordTransform_table.coordTransform(
+            inpath, inencode, header, xfield, yfield, insrs, outsrs, outpath, outencode)
+        if not flag:
+            log.error(message)
+        self.finished.emit()
+
 
 

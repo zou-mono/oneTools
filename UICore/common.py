@@ -1,10 +1,14 @@
 import base64
+import csv
 import json
 import math
 import os
 import re
 import datetime
 import time
+
+import chardet
+from openpyxl import load_workbook
 
 from UICore.Gv import srs_dict, SpatialReference, DataType
 from UICore.log4p import Log
@@ -216,3 +220,31 @@ def text_line_count(in_path, in_encode):
     with open(in_path, "r", encoding=in_encode) as f:
         total_count = sum(1 for row in f)
     return total_count
+
+
+def check_encoding(file):
+    with open(file, 'rb') as f:
+        data = f.read(10000)  # or a chunk, f.read(1000000)
+        encoding = chardet.detect(data).get("encoding")
+
+    return encoding
+
+
+def read_first_line(file, format, sheet=None, encoding=None):
+    header = []
+    if format == DataType.csv:
+        with open(file, 'r', newline='', encoding=encoding) as f:
+            reader = csv.reader(f)
+            header = next(reader)  # gets the first line
+    elif format == DataType.xlsx:
+        wb = load_workbook(file, read_only=True)
+        ws = wb.active
+        # ws = wb.get_sheet_by_name(sheet)
+        columns = ws.max_column
+        header = []
+        for i in range(1, columns + 1):
+            cell_value = ws.cell(row=1, column=i).value
+            header.append(str(cell_value))
+        wb.close()
+
+    return header
