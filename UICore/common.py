@@ -174,25 +174,26 @@ def helmert_para_dict(insrs, outsrs, first_order="NORTH"):
 def get_suffix(path):
     suffix = None
     basename = os.path.basename(path)
-    if basename.find('.') > 0:
-        suffix = basename.split('.')[1]
+    filename, suffix = os.path.splitext(path)
+    # if basename.find('.') > 0:
+    #     suffix = basename.split('.')[1]
 
     if suffix is None:
         return None
 
-    if suffix.lower() == 'shp':
+    if suffix.lower() == '.shp':
         return DataType.shapefile
-    elif suffix.lower() == 'geojson':
+    elif suffix.lower() == '.geojson':
         return DataType.geojson
-    elif suffix.lower() == 'gdb':
+    elif suffix.lower() == '.gdb':
         return DataType.fileGDB
-    elif suffix.lower() == 'dwg':
+    elif suffix.lower() == '.dwg':
         return DataType.cad_dwg
-    elif suffix.lower() == "csv":
+    elif suffix.lower() == ".csv":
         return DataType.csv
-    elif suffix.lower() == "dbf":
+    elif suffix.lower() == ".dbf":
         return DataType.dbf
-    elif suffix.lower() == "xlsx":
+    elif suffix.lower() == ".xlsx":
         return DataType.xlsx
     else:
         return None

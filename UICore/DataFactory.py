@@ -178,6 +178,9 @@ def read_table_header(file, format, sheet=None):
                 header_list.append("F{}".format(i))
             return header_list, encoding, bheader
         else:
+            for i in range(len(header)):
+                if header[i] == "":
+                    header[i] = "F{}".format(i)
             return header, encoding, bheader
     elif format == DataType.dbf:
         wks = workspaceFactory().get_factory(DataType.dbf)
@@ -204,6 +207,17 @@ def read_table_header(file, format, sheet=None):
                 header_list.append("F{}".format(i))
             return header_list, bheader
         else:
+            for i in range(len(header)):
+                if header[i] == "":
+                    header[i] = "F{}".format(i)
             return header, bheader
+
+
+def get_row_from_excel(ws, logicRow, columns):
+    row = []
+    for i in range(logicRow, columns + 1):
+        cell_value = ws.cell(row=logicRow, column=i).value
+        row.append(str(cell_value))
+    return row
 
 

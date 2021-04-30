@@ -86,8 +86,6 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.coordTransformThread.transform_tbl.connect(self.coordTransformThread.tableTransform)
         self.coordTransformThread.finished.connect(self.threadStop)
 
-        gdal.SetConfigOption("OGR_CT_FORCE_TRADITIONAL_GIS_ORDER", "YES")
-
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
         self.rbtn_file.click()
         # self.table_layout()
@@ -140,6 +138,9 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                     wks = workspaceFactory().get_factory(DataType.geojson)
                 elif fileType == DataType.cad_dwg:
                     wks = workspaceFactory().get_factory(DataType.cad_dwg)
+                else:
+                    log.error("不识别的图形文件格式!", dialog=True)
+                    return None
 
                 datasource = wks.openFromFile(fileName)
 
@@ -160,7 +161,12 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 else:
                     layer_name, suffix = os.path.splitext(os.path.basename(fileName))
                     row = self.add_layer_to_row(None, fileName, layer_name)
-                    self.add_delegate_to_row(row, fileName, [layer_name], save_srs_list)
+                    levelData = {
+                        'layer_names': [layer_name],
+                        'srs_list': save_srs_list
+                    }
+                    self.model.setLevelData(fileName, levelData)
+                    # self.add_delegate_to_row(row, fileName, [layer_name], save_srs_list)
 
         elif self.rbtn_filedb.isChecked():
             fileName = QtWidgets.QFileDialog.getExistingDirectory(self, "选择需要转换的GDB数据库",
@@ -233,6 +239,10 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                         'field_list': header,
                         'srs_list': save_srs_list
                     }
+                else:
+                    log.error("不识别的图形文件格式!", dialog=True)
+                    return None
+
                 field_delegate = xyfieldDelegate(self,
                                                  [None, {'type': 'xy'}, {'type': 'xy'}, {'type': 'srs'},
                                                   {'type': 'srs'}, {'type': 'f', 'text': '请选择需要保存的文件'}])
@@ -506,7 +516,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
             out_file = "{}_{}_{}.shp".format(in_layername, out_srs, encodeCurrentTime())
         elif in_format == DataType.cad_dwg:
             out_file = "{}_{}_{}.dwg".format(in_layername, out_srs, encodeCurrentTime())
-        elif in_format == DataType.csv:
+        elif in_format == DataType.csv or in_format == DataType.xlsx or in_format == DataType.dbf:
             out_file = "{}_{}_{}.csv".format(in_layername, out_srs, encodeCurrentTime())
         return out_file
 

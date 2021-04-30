@@ -5,9 +5,10 @@ import traceback
 import click
 import os
 
+from openpyxl import load_workbook
 from osgeo import ogr, osr, gdal
 
-from UICore.DataFactory import workspaceFactory
+from UICore.DataFactory import workspaceFactory, get_row_from_excel
 from UICore.Gv import DataType, DataType_dict, srs_dict
 from UICore.common import launderName, overwrite_cpg_file, is_already_opened_in_write_mode, \
     helmert_para_dict, get_suffix, is_number, text_line_count
@@ -76,6 +77,8 @@ def main(inpath, inencode, header, xfield, yfield, insrs, outsrs, outpath, outen
     coordTransform(inpath, inencode, header, xfield, yfield, insrs, outsrs, outpath, outencode)
 
 def coordTransform(inpath, inencode, header, xfield, yfield, insrs, outsrs, outpath, outencode):
+    gdal.SetConfigOption("OGR_CT_FORCE_TRADITIONAL_GIS_ORDER", "YES")
+
     if inpath[-1] == os.sep:
         inpath = inpath[:-1]
     if outpath[-1] == os.sep:
@@ -104,6 +107,13 @@ class Transformer(object):
         self.x = x
         self.y = y
 
+        self.rowcount = 0  # 记录遍历到的行号
+        self.iprop = 1  # 用于百分比输出
+        self.points = []  # 记录缓存的点集
+        self.rows = []  # 记录缓存的行
+        self.fail_rows = []  # 记录下无法转换的行号
+        self.total_count = 0  # 记录总行数
+
     def transform(self, srcSRS, dstSRS):
         self.srcSRS = srcSRS
         self.dstSRS = dstSRS
@@ -113,6 +123,8 @@ class Transformer(object):
         res = None
         if self.in_format == DataType.csv:
             export_func = self.export_csv_to_file
+        elif self.in_format == DataType.xlsx:
+            export_func = self.export_xlsx_to_file
         else:
             return False
 
@@ -171,14 +183,21 @@ class Transformer(object):
             log.error("坐标转换失败!\n{}".format(res))
 
     def export_csv_to_file(self, transform_method):
+        self.rowcount = 0  # 记录遍历到的行号
+        self.iprop = 1  # 用于百分比输出
+        self.points = []  # 记录缓存的点集
+        self.rows = []  # 记录缓存的行
+        self.fail_rows = []  # 记录下无法转换的行号
+        self.total_count = 0  # 记录总行数
+
         try:
-            total_count = text_line_count(self.in_path, self.in_encode)
+            self.total_count = text_line_count(self.in_path, self.in_encode)
 
             with open(self.in_path, "r", encoding=self.in_encode) as f:
                 reader = csv.reader(f)
                 if self.header:
                     header = next(reader)
-                    total_count = total_count - 1
+                    self.total_count = self.total_count - 1
 
                 with open(self.out_path, 'w+', encoding=self.out_encode, newline='') as o:
                     writer = csv.writer(o)
@@ -187,46 +206,103 @@ class Transformer(object):
                                        "{}_y".format(srs_dict[self.dstSRS])])
                         writer.writerow(header)
 
-                    icount = 0
-                    iprop = 1
-                    points = []
-                    rows = []
-                    fail_rows = []  # 记录下无法转换的行号
                     for row in reader:
-                        icount += 1
+                        self.rowcount += 1
+                        self.write_row_to_csv(row, writer=writer, transform_method=transform_method)
 
-                        if not is_number(row[self.x]) or not is_number(row[self.y]):
-                            log.warning("第{}行的坐标包含非数字字段，无法转换!".format(icount))
-                            # writer.writerow([])
-                            fail_rows.append(icount)
-                            continue
+                return None
+        except:
+            return traceback.format_exc()
 
-                        points.append([float(row[0]), float(row[1])])
-                        rows.append(row)
+    def export_xlsx_to_file(self, transform_method):
+        self.rowcount = 0  # 记录遍历到的行号
+        self.iprop = 1  # 用于百分比输出
+        self.points = []  # 记录缓存的点集
+        self.rows = []  # 记录缓存的行
+        self.fail_rows = []  # 记录下无法转换的行号
+        self.total_count = 0  # 记录总行数
 
-                        if icount % 5000 == 0 or icount == total_count:
-                            points = transform_method(points)
-                            for fail_row in fail_rows:
-                                points.insert(fail_row - 1, [])
-                                rows.insert(fail_row - 1, [])
-                            for i in range(len(points)):
-                                temp_row = rows[i]
-                                if len(points[i]) > 0:
-                                    temp_row.extend([points[i][0], points[i][1]])
-                                else:
-                                    temp_row = []
-                                writer.writerow(temp_row)
-                            # writer.writerows(points)
-                            rows = []
-                            points = []
-                            fail_rows = []
+        wb = None
+        try:
+            wb = load_workbook(self.in_path, read_only=True)
+            ws = wb.active
+            rows = ws.rows
 
-                        if int(icount * 100 / total_count) == iprop * 20:
-                            log.debug("{:.0%}".format(icount / total_count))
-                            iprop += 1
+            columns = ws.max_column
+            self.total_count = ws.max_row
+
+            with open(self.out_path, 'w+', encoding=self.out_encode, newline='') as o:
+                writer = csv.writer(o)
+
+                if self.header:
+                    header = []
+                    excel_row = next(rows)
+                    for cell in excel_row:
+                        header.append(str(cell.value))
+                    # header = get_row_from_excel(ws, 1, columns)
+                    header.extend(["{}_x".format(srs_dict[self.dstSRS]),
+                                   "{}_y".format(srs_dict[self.dstSRS])])
+                    writer.writerow(header)
+                    self.total_count = self.total_count - 1
+
+                for excel_row in rows:
+                    self.rowcount += 1
+
+                    # if self.rowcount == 1:
+                    #     if self.header:
+                    #         header = get_row_from_excel(ws, 1, columns)
+                    #         header.extend(["{}_x".format(srs_dict[self.dstSRS]),
+                    #                        "{}_y".format(srs_dict[self.dstSRS])])
+                    #         writer.writerow(header)
+                    #         self.rowcount = self.rowcount + 1
+                    #         continue
+
+                    row = []
+                    # row = get_row_from_excel(ws, self.rowcount, columns)
+                    for cell in excel_row:
+                        row.append(str(cell.value))
+                    self.write_row_to_csv(row, writer=writer, transform_method=transform_method)
+
             return None
         except:
             return traceback.format_exc()
+        finally:
+            if wb is not None:
+                wb.close()
+
+    def write_row_to_csv(self, row, writer, transform_method):
+        if not is_number(row[self.x]) or not is_number(row[self.y]):
+            log.warning("第{}行的坐标包含非数字字段，无法转换!".format(self.rowcount))
+            # writer.writerow([])
+            self.fail_rows.append(self.rowcount)
+            return False
+
+        self.points.append([float(row[0]), float(row[1])])
+        self.rows.append(row)
+
+        if self.rowcount % 5000 == 0 or self.rowcount == self.total_count:
+            points = transform_method(self.points)
+            for fail_row in self.fail_rows:
+                points.insert(fail_row - 1, [])
+                self.rows.insert(fail_row - 1, [])
+            for i in range(len(points)):
+                temp_row = self.rows[i]
+                if len(points[i]) > 0:
+                    temp_row.extend([points[i][0], points[i][1]])
+                else:
+                    temp_row = []
+                writer.writerow(temp_row)
+            # writer.writerows(points)
+            self.rows = []
+            self.points = []
+            self.fail_rows = []
+
+        if int(self.rowcount * 100 / self.total_count) == self.iprop * 20:
+            log.debug("{:.0%}".format(self.rowcount / self.total_count))
+            self.iprop += 1
+
+        return True
+
 
     def proj_transform(self, srcSRS, dstSRS, points):
         sourceSRS = osr.SpatialReference()

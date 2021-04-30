@@ -3,5 +3,7 @@
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/222.json" charset="GBK" />
     <file url="file://$PROJECT_DIR$/res/station_sz.csv" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/res/station_wgs84_深圳独立_2021-04-30_11-36-25.csv" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/res/station_wgs84_深圳独立_2021-04-30_11-37-53.csv" charset="GBK" />
   </component>
 </project>
