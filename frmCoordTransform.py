@@ -801,7 +801,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     style = QStyleFactory.create("windows")
     app.setStyle(style)
-    MainWindow = QDialog()
     window = Ui_Window()
+    window.setWindowFlags(Qt.Window)
     window.show()
     sys.exit(app.exec_())
