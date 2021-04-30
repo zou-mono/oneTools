@@ -129,7 +129,6 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
             if len(fileNames) == 0:
                 return
 
-            wks = None
             for fileName in fileNames:
                 fileType = get_suffix(fileName)
                 if fileType == DataType.shapefile:
@@ -572,10 +571,10 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
                     # UICore.coordTransform_table.coordTransform(in_path, inencode, bheader, x, y, in_srs, out_srs, out_path, "gbk")
                     self.coordTransformThread.transform_tbl.emit(
-                        in_path, inencode, bheader, x, y, in_srs, out_srs, out_path, "gbk")
+                        in_path, inencode, bheader, x, y, in_srs, out_srs, out_path, "gb18030")
                 else:
                     self.coordTransformThread.transform_tbl.emit(
-                        in_path, "gbk", bheader, x, y, in_srs, out_srs, out_path, "gbk")
+                        in_path, "gbk", bheader, x, y, in_srs, out_srs, out_path, "gb18030")
         else:
             for row in rows:
                 in_path_index = self.tbl_address.model().index(row, 0, QModelIndex())

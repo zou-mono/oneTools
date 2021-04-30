@@ -1,3 +1,5 @@
+
+
 import csv
 import time
 import traceback
@@ -264,12 +266,53 @@ class Transformer(object):
                 wb.close()
 
     def export_dbf_to_file(self, transform_method):
-        wks = workspaceFactory().get_factory(DataType.dbf)
-        datasource = wks.openFromFile(self.in_path)
-        if datasource is not None:
-            layer = datasource.GetLayer()
-            for row in layer:
-                print(row)
+        # gdal.SetConfigOption('SHAPE_ENCODING', 'GB2312')
+        driver = ogr.GetDriverByName("ESRI Shapefile")
+        driver.SetMetadataItem("ENCODING_FROM_CPG", "GB2312")
+        driver.SetMetadataItem("SOURCE_ENCODING", "GB2312")
+
+        datasource = None
+        layer = None
+        try:
+            datasource = driver.Open(self.in_path, 1)
+            if datasource is None:
+                raise Exception("无法读取{}".format(self.in_path))
+
+            with open(self.out_path, 'w+', encoding=self.out_encode, newline='') as o:
+                writer = csv.writer(o)
+
+                layer = datasource.GetLayer()
+                defn = layer.GetLayerDefn()
+                self.total_count = layer.GetFeatureCount()
+
+                header = []
+
+                for i in range(defn.GetFieldCount()):
+                    fieldName = defn.GetFieldDefn(i).GetName()
+                    header.append(fieldName)
+
+                header.extend(["{}_x".format(srs_dict[self.dstSRS]),
+                               "{}_y".format(srs_dict[self.dstSRS])])
+                writer.writerow(header)
+                self.total_count = self.total_count - 1
+
+                for feature in layer:
+                    row = []
+                    for field in feature:
+                        row.append(str(field))
+
+                    self.rowcount += 1
+                    self.write_row_to_csv(row, writer=writer, transform_method=transform_method)
+
+            return None
+        except:
+            return traceback.format_exc()
+        finally:
+            driver = None
+            if datasource is not None:
+                datasource.Release()
+            datasource = None
+            layer = None
 
     def write_row_to_csv(self, row, writer, transform_method):
         if not is_number(row[self.x]) or not is_number(row[self.y]):
@@ -278,7 +321,7 @@ class Transformer(object):
             self.fail_rows.append(self.rowcount)
             return False
 
-        self.points.append([float(row[0]), float(row[1])])
+        self.points.append([float(row[self.x]), float(row[self.y])])
         self.rows.append(row)
 
         if self.rowcount % 5000 == 0 or self.rowcount == self.total_count:
