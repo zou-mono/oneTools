@@ -435,15 +435,21 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         selModel = self.tbl_address.selectionModel()
         if selModel is None:
             return
+        if len(selModel.selectedRows()) < 1:
+            return
         for model_index in selModel.selectedRows():
             index = QPersistentModelIndex(model_index)
             index_list.append(index)
 
+        oldrow = index.row()
         for index in index_list:
             self.model.removeRows(index.row(), 1, 0)
 
-        next_index = self.model.index(self.model.rowCount(QModelIndex()) - 1, 0)
-        # self.tableView.setCurrentIndex(next_index)
+        if self.model.rowCount(QModelIndex()) == 1:
+            next_index = self.model.index(0, 0)
+        else:
+            next_index = self.model.index(oldrow, 0)
+        # next_index = self.model.index(self.model.rowCount(QModelIndex()) - 1, 0)
         selModel.select(next_index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
         self.tbl_address.setFocus()
 

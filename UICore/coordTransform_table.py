@@ -125,6 +125,8 @@ class Transformer(object):
             export_func = self.export_csv_to_file
         elif self.in_format == DataType.xlsx:
             export_func = self.export_xlsx_to_file
+        elif self.in_format == DataType.dbf:
+            export_func = self.export_dbf_to_file
         else:
             return False
 
@@ -228,7 +230,7 @@ class Transformer(object):
             ws = wb.active
             rows = ws.rows
 
-            columns = ws.max_column
+            # columns = ws.max_column
             self.total_count = ws.max_row
 
             with open(self.out_path, 'w+', encoding=self.out_encode, newline='') as o:
@@ -248,15 +250,6 @@ class Transformer(object):
                 for excel_row in rows:
                     self.rowcount += 1
 
-                    # if self.rowcount == 1:
-                    #     if self.header:
-                    #         header = get_row_from_excel(ws, 1, columns)
-                    #         header.extend(["{}_x".format(srs_dict[self.dstSRS]),
-                    #                        "{}_y".format(srs_dict[self.dstSRS])])
-                    #         writer.writerow(header)
-                    #         self.rowcount = self.rowcount + 1
-                    #         continue
-
                     row = []
                     # row = get_row_from_excel(ws, self.rowcount, columns)
                     for cell in excel_row:
@@ -269,6 +262,14 @@ class Transformer(object):
         finally:
             if wb is not None:
                 wb.close()
+
+    def export_dbf_to_file(self, transform_method):
+        wks = workspaceFactory().get_factory(DataType.dbf)
+        datasource = wks.openFromFile(self.in_path)
+        if datasource is not None:
+            layer = datasource.GetLayer()
+            for row in layer:
+                print(row)
 
     def write_row_to_csv(self, row, writer, transform_method):
         if not is_number(row[self.x]) or not is_number(row[self.y]):
