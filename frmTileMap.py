@@ -577,6 +577,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
             self.add_address_rows_from_paras()
         except:
+            if self.model.rowCount(QModelIndex()) > 0:
+                self.model.removeRows(self.model.rowCount(QModelIndex()) - 1, 1, QModelIndex())
             log.error("读取参数文件失败！", dialog=True)
 
     def add_address_rows_from_paras(self):

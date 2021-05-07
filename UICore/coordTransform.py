@@ -72,9 +72,11 @@ def coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs):
         in_wks = workspaceFactory().get_factory(in_format)
 
         if in_wks is None:
-            return False, ''
+            return False
 
-        in_wks.openFromFile(inpath)
+        if in_wks.driver is None:
+            log.error("缺失图形文件引擎{}!".format(in_wks.driverName))
+            return False
         in_layer = in_wks.openLayer(inlayer)
 
         if in_layer is None:

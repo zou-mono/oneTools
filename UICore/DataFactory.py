@@ -17,6 +17,7 @@ class workspaceFactory(object):
     def __init__(self):
         self.datasource = None
         self.driver = None
+        self.driverName = ""
 
     def get_factory(self, factory):
         wks = None
@@ -36,7 +37,7 @@ class workspaceFactory(object):
 
     def openFromFile(self, file):
         if self.driver is None:
-            log.error("缺失相应的图形文件读取引擎!")
+            log.error("缺失图形文件引擎{}!".format(self.driverName))
             return None
         else:
             try:
@@ -138,29 +139,29 @@ class workspaceFactory(object):
 class shapefileWorkspaceFactory(workspaceFactory):
     def __init__(self):
         super().__init__()
-        driverName = "ESRI Shapefile"
-        self.driver = ogr.GetDriverByName(driverName)
+        self.driverName = "ESRI Shapefile"
+        self.driver = ogr.GetDriverByName(self.driverName)
 
 
 class geojsonWorkspaceFactory(workspaceFactory):
     def __init__(self):
         super().__init__()
-        driverName = "GeoJSON"
-        self.driver = ogr.GetDriverByName(driverName)
+        self.driverName = "GeoJSON"
+        self.driver = ogr.GetDriverByName(self.driverName)
 
 
 class filegdbWorkspaceFactory(workspaceFactory):
     def __init__(self):
         super().__init__()
-        driverName = "FileGDB"
-        self.driver = ogr.GetDriverByName(driverName)
+        self.driverName = "FileGDB"
+        self.driver = ogr.GetDriverByName(self.driverName)
 
 
 class dwgWorkspaceFactory(workspaceFactory):
     def __init__(self):
         super().__init__()
-        driverName = "CAD"
-        self.driver = ogr.GetDriverByName(driverName)
+        self.driverName = "CAD"
+        self.driver = ogr.GetDriverByName(self.driverName)
 
 
 def read_table_header(file, format, sheet=None):

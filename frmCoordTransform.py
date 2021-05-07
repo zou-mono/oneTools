@@ -424,6 +424,11 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 if in_format is None:
                     log.error('第{}行的输入数据格式不支持！目前只支持csv, excel和dbf'.format(row), dialog=True)
                     return False
+                else:
+                    in_wks = workspaceFactory().get_factory(in_format)
+                    if in_wks.driver is None:
+                        log.error("缺失图形文件引擎{}!".format(in_wks.driverName))
+                        return False
 
                 if x_field == "":
                     log.error('第{}行缺失必要参数"x坐标"，请补全!'.format(row))

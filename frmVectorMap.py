@@ -153,6 +153,16 @@ class Ui_Window(QDialog, Ui_Dialog):
                 log.error('第{}行缺失必要参数"服务号"，请补全！'.format(row), dialog=True)
                 return False
 
+            # in_format = get_suffix(in_path)
+            # if in_format is None:
+            #     log.error('第{}行的输入数据格式不支持！目前只支持csv, excel和dbf'.format(row), dialog=True)
+            #     return False
+            # else:
+            #     in_wks = workspaceFactory().get_factory(in_format)
+            #     if in_wks.driver is None:
+            #         log.error("缺失图形文件引擎{}!".format(in_wks.driverName))
+            #         return False
+
             if service != "*":
                 key = url + "_" + str(service)
                 url_lst = url.split(r'/')
@@ -248,7 +258,8 @@ class Ui_Window(QDialog, Ui_Dialog):
 
             self.add_address_rows_from_paras()
         except:
-            self.model.removeRows(self.model.rowCount(QModelIndex()) - 1, 1, QModelIndex())
+            if self.model.rowCount(QModelIndex()) > 0:
+                self.model.removeRows(self.model.rowCount(QModelIndex()) - 1, 1, QModelIndex())
             log.error("读取参数文件失败！", dialog=True)
 
     def add_address_rows_from_paras(self):
