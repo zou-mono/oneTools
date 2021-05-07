@@ -9,8 +9,10 @@ from PyQt5.QtWidgets import QApplication, QDialog, QStyleFactory, QVBoxLayout, Q
     QHeaderView, QAbstractItemView, QAbstractButton
 from PyQt5.QtCore import Qt, QItemSelectionModel, QModelIndex, QPersistentModelIndex, QThread
 from PyQt5 import QtCore
-from UICore.Gv import SplitterState, Dock
-from UICore.common import get_paraInfo, urlEncodeToFileName
+
+from UICore.DataFactory import workspaceFactory
+from UICore.Gv import SplitterState, Dock, DataType
+from UICore.common import get_paraInfo, urlEncodeToFileName, get_suffix
 from UICore.log4p import Log
 from UICore.workerThread import crawlVectorWorker
 from widgets.mTable import mTableStyle, TableModel, vectorTableDelegate
@@ -21,7 +23,7 @@ Slot = QtCore.pyqtSlot
 log = Log()
 
 class Ui_Window(QDialog, Ui_Dialog):
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super(Ui_Window, self).__init__(parent=parent)
         self.setupUi(self)
 
@@ -163,17 +165,25 @@ class Ui_Window(QDialog, Ui_Dialog):
             #         log.error("缺失图形文件引擎{}!".format(in_wks.driverName))
             #         return False
 
+            out_format = get_suffix(output)
+            out_wks = workspaceFactory().get_factory(DataType.fileGDB)
+
+            if out_wks.driver is None:
+                log.error("缺失图形文件引擎{}!".format(out_wks.driverName))
+                return False
+
             if service != "*":
                 key = url + "_" + str(service)
                 url_lst = url.split(r'/')
                 service_name = url_lst[-2]
-                filepath, filename = os.path.split(output)
+                # filepath, filename = os.path.split(output)
 
                 if layername == "":
                     layername = self.paras[key]['old_layername']
                     log.warning('第{}行缺失非必要参数"输出图层名"，将使用默认值"{}".'.format(row + 1, layername))
 
-                if os.path.splitext(filename)[1] != '.gdb':
+                if out_format != DataType.fileGDB:
+                # if os.path.splitext(filename)[1] != '.gdb':
                     gdb_name = service_name + ".gdb"
                     if output == "":
                         if not os.path.exists("res"):
@@ -188,7 +198,8 @@ class Ui_Window(QDialog, Ui_Dialog):
             else:
                 filepath, filename = os.path.split(output)
                 key_all = url + "_*"
-                if os.path.splitext(filename)[1] != '.gdb':
+                # if os.path.splitext(filename)[1] != '.gdb':
+                if out_format != DataType.fileGDB:
                     gdb_name = urlEncodeToFileName(url) + ".gdb"
                     output = os.path.join(output, gdb_name)
                     self.paras[key_all]['output'] = output
@@ -487,7 +498,7 @@ class Ui_Window(QDialog, Ui_Dialog):
 
         url_encodeStr = urlEncodeToFileName(url)
         url_lst = url.split(r'/')
-        service_name = url_lst[-2]
+        service_name = url_lst[-3]
         self.paras[key] = {
             'url': url,
             'service': service,

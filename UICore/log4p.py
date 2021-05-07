@@ -64,10 +64,10 @@ class Handler(QObject, logging.Handler):
     set_record = pyqtSignal(object)
 
     def __init__(self, parent):
-        # super().__init__(parent)
-        # super(logging.Handler).__init__()
-        QObject.__init__(self)
-        logging.Handler.__init__(self)
+        super().__init__(parent)
+        super(logging.Handler).__init__()
+        # QObject.__init__(self)
+        # logging.Handler.__init__(self)
         self.parent = parent
         self.stringList = []
         formatter = logging.Formatter(
