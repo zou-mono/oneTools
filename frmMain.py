@@ -1,32 +1,20 @@
 import csv
 
-from PyQt5.QtCore import QRect, Qt, QPersistentModelIndex, QItemSelectionModel, QModelIndex, QThread, QObject, QSize
-from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette, QIcon
-from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, QDialogButtonBox, QStyleFactory, \
-    QMainWindow, QSystemTrayIcon, QAction, QMenu
-from PyQt5 import QtWidgets, QtGui, QtCore
-from openpyxl import load_workbook
-from osgeo import osr, gdal
-
+from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow, QSystemTrayIcon, QAction, QMenu
+from PyQt5 import QtCore
 import UI.UIMain
 import sys
 import frmVectorMap
 import frmTileMap
 import frmCoordTransform
-import json
-import os
-
-from UICore.DataFactory import workspaceFactory, read_table_header
-from UICore.Gv import SplitterState, Dock, DataType, srs_dict
-from UICore.common import defaultImageFile, defaultTileFolder, urlEncodeToFileName, get_paraInfo, get_suffix, \
-    encodeCurrentTime, is_header, is_already_opened_in_write_mode, launderName, check_encoding, read_first_line
-from UICore.workerThread import coordTransformWorker
-from widgets.mTable import TableModel, mTableStyle, layernameDelegate, srsDelegate, outputPathDelegate, xyfieldDelegate
 from UICore.log4p import Log
 
 Slot = QtCore.pyqtSlot
 
 log = Log()
+
 
 class Ui_Window(QMainWindow, UI.UIMain.Ui_MainWindow):
     def __init__(self):
@@ -71,7 +59,7 @@ class Ui_Window(QMainWindow, UI.UIMain.Ui_MainWindow):
     def closeEvent(self, event):
         if self.bFirstHint:
             QMessageBox.information(self, "工具集",
-                                    "窗口将缩至系统托盘并在后台继续运行,如果需要完全"
+                                    "窗口将缩至系统托盘并在后台继续运行,如需完全"
                                     "退出程序请在托盘小图标的右键菜单中选择<b>退出</b>按钮.")
             self.bFirstHint = False
 

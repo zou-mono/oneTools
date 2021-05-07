@@ -57,14 +57,17 @@ log_colors_config = {
 #         self.err_no=err_no
 #         self.err_msg=err_msg
 
+# QObject,
 class Handler(QObject, logging.Handler):
     new_record = pyqtSignal(object)
     clear_record = pyqtSignal(object)
     set_record = pyqtSignal(object)
 
     def __init__(self, parent):
-        super().__init__(parent)
-        super(logging.Handler).__init__()
+        # super().__init__(parent)
+        # super(logging.Handler).__init__()
+        QObject.__init__(self)
+        logging.Handler.__init__(self)
         self.parent = parent
         self.stringList = []
         formatter = logging.Formatter(
