@@ -64,10 +64,10 @@ class Handler(QObject, logging.Handler):
     set_record = pyqtSignal(object)
 
     def __init__(self, parent):
-        super().__init__(parent)
-        super(logging.Handler).__init__()
-        # QObject.__init__(self)
-        # logging.Handler.__init__(self)
+        # super().__init__(parent)
+        # super(logging.Handler).__init__()
+        QObject.__init__(self)
+        logging.Handler.__init__(self)
         self.parent = parent
         self.stringList = []
         formatter = logging.Formatter(
@@ -170,13 +170,13 @@ class Log:
         self.logger.addHandler(fh)
 
         # 创建一个StreamHandler,用于输出到控制台
-        formatter = colorlog.ColoredFormatter(
-            '%(log_color)s[%(asctime)s] [%(filename)s:%(lineno)d] [%(module)s:%(funcName)s] [%(levelname)s]- %(message)s',
-            log_colors=log_colors_config)  # 日志输出格式
-        ch = colorlog.StreamHandler()
-        ch.setLevel(logging.DEBUG)
-        ch.setFormatter(formatter)
-        self.logger.addHandler(ch)
+        # formatter = colorlog.ColoredFormatter(
+        #     '%(log_color)s[%(asctime)s] [%(filename)s:%(lineno)d] [%(module)s:%(funcName)s] [%(levelname)s]- %(message)s',
+        #     log_colors=log_colors_config)  # 日志输出格式
+        # ch = colorlog.StreamHandler()
+        # ch.setLevel(logging.DEBUG)
+        # ch.setFormatter(formatter)
+        # self.logger.addHandler(ch)
 
         if level == 'info':
             self.logger.info(message)
@@ -188,7 +188,7 @@ class Log:
             self.logger.error(message)
 
         # 这两行代码是为了避免日志输出重复问题
-        self.logger.removeHandler(ch)
+        # self.logger.removeHandler(ch)
         self.logger.removeHandler(fh)
         if self.handler is not None:
             self.logger.removeHandler(self.handler)

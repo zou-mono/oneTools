@@ -87,6 +87,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.coordTransformThread.finished.connect(self.threadStop)
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
+        log.setLogViewer(parent=self, logViewer=self.txt_log)
         self.rbtn_file.click()
         # self.table_layout()
 
@@ -424,11 +425,6 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 if in_format is None:
                     log.error('第{}行的输入数据格式不支持！目前只支持csv, excel和dbf'.format(row), dialog=True)
                     return False
-                else:
-                    in_wks = workspaceFactory().get_factory(in_format)
-                    if in_wks.driver is None:
-                        log.error("缺失图形文件引擎{}!".format(in_wks.driverName))
-                        return False
 
                 if x_field == "":
                     log.error('第{}行缺失必要参数"x坐标"，请补全!'.format(row))
@@ -482,6 +478,15 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
                 if in_format is None:
                     log.error('第{}行的输入数据格式不支持！目前只支持shapefile, fileGDB, geojson和cad dwg'.format(row), dialog=True)
                     return False
+                else:
+                    in_wks = workspaceFactory().get_factory(in_format)
+                    if in_wks is None:
+                        log.error("缺失图形文件引擎!")
+                        return False
+
+                    if in_wks.driver is None:
+                        log.error("缺失图形文件引擎{}!".format(in_wks.driverName))
+                        return False
 
                 if in_layername == "":
                     if in_format == DataType.fileGDB:

@@ -23,7 +23,7 @@ log = Log()
 
 
 class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super(Ui_Window, self).__init__(parent=parent)
         self.setupUi(self)
 
@@ -380,6 +380,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         # self.rbtn_spiderAndHandle.setChecked(True)
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
+        log.setLogViewer(parent=self, logViewer=self.txt_log)
         self.rbtn_spiderAndHandle.click()
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:

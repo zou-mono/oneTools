@@ -76,6 +76,7 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.crawlVectorThread.finished.connect(self.threadStop)
 
     def showEvent(self, a0: QShowEvent) -> None:
+        log.setLogViewer(parent=self, logViewer=self.txt_log)
         self.table_layout()
 
     def resizeEvent(self, a0: QResizeEvent) -> None:
