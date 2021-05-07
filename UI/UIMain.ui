@@ -28,8 +28,12 @@
   <property name="windowTitle">
    <string>工具集</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../icons.qrc">
+    <normaloff>:/icons/icons/GeoprocessingToolbox48.png</normaloff>:/icons/icons/GeoprocessingToolbox48.png</iconset>
+  </property>
   <property name="unifiedTitleAndToolBarOnMac">
-   <bool>true</bool>
+   <bool>false</bool>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QPushButton" name="btn_coordTransform">
