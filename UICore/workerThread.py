@@ -68,16 +68,16 @@ class coordTransformWorker(QtCore.QObject):
         super(coordTransformWorker, self).__init__()
 
     def coordTransform(self, inpath, inlayer, insrs, outpath, outlayer, outsrs):
-        flag, message = coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs)
-        if not flag:
-            log.error(message)
+        flag = coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs)
+        # if not flag:
+        #     log.error(message)
         self.finished.emit()
 
     def tableTransform(self, inpath, inencode, header, xfield, yfield, insrs, outsrs, outpath, outencode):
-        flag, message = UICore.coordTransform_table.coordTransform(
+        flag = UICore.coordTransform_table.coordTransform(
             inpath, inencode, header, xfield, yfield, insrs, outsrs, outpath, outencode)
-        if not flag:
-            log.error(message)
+        # if not flag:
+        #     log.error(message)
         self.finished.emit()
 
 

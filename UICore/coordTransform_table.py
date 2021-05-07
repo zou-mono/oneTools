@@ -92,9 +92,10 @@ def coordTransform(inpath, inencode, header, xfield, yfield, insrs, outsrs, outp
     try:
         tfer = Transformer(in_format, out_format, inpath, inencode, header, xfield, yfield, outpath, outencode)
         tfer.transform(insrs, outsrs)
-        return True, ''
+        return True
     except:
-        return False, traceback.format_exc()
+        # log.error(traceback.format_exc())
+        return False
 
 
 class Transformer(object):

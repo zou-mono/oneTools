@@ -72,7 +72,7 @@ def coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs):
         in_wks = workspaceFactory().get_factory(in_format)
 
         if in_wks is None:
-            return False
+            return False, ''
 
         in_wks.openFromFile(inpath)
         in_layer = in_wks.openLayer(inlayer)
@@ -106,9 +106,10 @@ def coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs):
     try:
         tfer = Transformer(in_format, out_format, inpath, inlayer, outpath, outlayer)
         tfer.transform(checked_insrs, checked_outsrs)
-        return True, ''
+        return True
     except:
-        return False, traceback.format_exc()
+        log.error(traceback.format_exc())
+        return False
 
 
 def check_srs(srs, srs_ref):

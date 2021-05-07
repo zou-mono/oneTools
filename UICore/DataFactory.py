@@ -36,7 +36,7 @@ class workspaceFactory(object):
 
     def openFromFile(self, file):
         if self.driver is None:
-            log.error("缺失相应的图形文件读取引擎!", dialog=True)
+            log.error("缺失相应的图形文件读取引擎!")
             return None
         else:
             try:
