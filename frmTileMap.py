@@ -67,7 +67,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.btn_tileInfoDialog.clicked.connect(self.open_tileInfoFile)
         self.btn_addressFile.clicked.connect(self.open_addressFile)
 
-
         self.txt_originX.editingFinished.connect(self.txt_originX_edited)
         self.txt_originY.editingFinished.connect(self.txt_originY_edited)
         self.txt_xmin.editingFinished.connect(self.txt_xmin_edited)

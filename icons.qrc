@@ -5,11 +5,14 @@
     <file>icons/GenericBlackSubtract32.png</file>
     <file>icons/MetadataImport32.png</file>
     <file>icons/RasterImageAnalysisDifference16.png</file>
+    <file>icons/RasterImageAnalysisDifference32.png</file>
     <file>icons/FolderAdd32.png</file>
     <file>icons/Text_File32.png</file>
     <file>icons/Folder32.png</file>
     <file>icons/GenericSave32.png</file>
     <file>icons/AnimationCreateGroup16.png</file>
+    <file>icons/AnimationCreateGroup32.png</file>
     <file>icons/EditingAdjustmentModifyLink16.png</file>
+    <file>icons/EditingAdjustmentModifyLink32.png</file>
   </qresource>
 </RCC>
