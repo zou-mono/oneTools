@@ -39,27 +39,28 @@ class Ui_Window(QMainWindow, UI.UIMain.Ui_MainWindow):
         self.btn_imageCrawler.setStyleSheet("text-align:left;")
         self.btn_vectorCrawler.setStyleSheet("text-align:left;")
 
+    # def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+    #     sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     style = QStyleFactory.create("windows")
     app.setStyle(style)
 
-    frmVectorMap = frmVectorMap.Ui_Window()
-    frmTileMap = frmTileMap.Ui_Window()
-    frmCoordTransform = frmCoordTransform.Ui_Window()
-
     frmMain = Ui_Window()
-    # frmMain.setWindowFlags(Qt.Window)
+
+    frmVectorMap = frmVectorMap.Ui_Window(frmMain)
+    frmTileMap = frmTileMap.Ui_Window(frmMain)
+    frmCoordTransform = frmCoordTransform.Ui_Window(frmMain)
+    frmTileMap.setWindowFlags(Qt.Window)
+    frmCoordTransform.setWindowFlag(Qt.WindowMinMaxButtonsHint)
+    frmVectorMap.setWindowFlags(Qt.Window)
 
     frmMain.btn_vectorCrawler.clicked.connect(frmVectorMap.show)
     frmMain.btn_imageCrawler.clicked.connect(frmTileMap.show)
     frmMain.btn_coordTransform.clicked.connect(frmCoordTransform.show)
 
     frmMain.show()
-
-    frmTileMap.setWindowFlags(Qt.Window)
-    frmCoordTransform.setWindowFlag(Qt.WindowMinMaxButtonsHint)
-    frmVectorMap.setWindowFlags(Qt.Window)
 
     sys.exit(app.exec_())

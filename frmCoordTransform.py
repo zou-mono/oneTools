@@ -33,8 +33,8 @@ log = Log()
 #         super().__init__()
 
 class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
-    def __init__(self):
-        super(Ui_Window, self).__init__()
+    def __init__(self, parent):
+        super(Ui_Window, self).__init__(parent=parent)
         self.setupUi(self)
 
         font = QtGui.QFont()
