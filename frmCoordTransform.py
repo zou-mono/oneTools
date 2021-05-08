@@ -1,4 +1,5 @@
 import csv
+import traceback
 
 from PyQt5.QtCore import QRect, Qt, QPersistentModelIndex, QItemSelectionModel, QModelIndex, QThread, QObject
 from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
@@ -121,133 +122,136 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
 
     @Slot()
     def btn_addRow_clicked(self):
-        save_srs_list = list(srs_dict.values())
+        try:
+            save_srs_list = list(srs_dict.values())
 
-        if self.rbtn_file.isChecked():
-            fileNames, types = QFileDialog.getOpenFileNames(
-                self, "选择需要转换的图形文件", os.getcwd(),
-                "图形文件(*.shp *.geojson *.dwg);;ESRI Shapefile(*.shp);;GeoJson(*.geojson);;CAD drawing(*.dwg)")
-            if len(fileNames) == 0:
-                return
+            if self.rbtn_file.isChecked():
+                fileNames, types = QFileDialog.getOpenFileNames(
+                    self, "选择需要转换的图形文件", os.getcwd(),
+                    "图形文件(*.shp *.geojson *.dwg);;ESRI Shapefile(*.shp);;GeoJson(*.geojson);;CAD drawing(*.dwg)")
+                if len(fileNames) == 0:
+                    return
 
-            for fileName in fileNames:
-                fileType = get_suffix(fileName)
-                if fileType == DataType.shapefile:
-                    wks = workspaceFactory().get_factory(DataType.shapefile)
-                elif fileType == DataType.geojson:
-                    wks = workspaceFactory().get_factory(DataType.geojson)
-                elif fileType == DataType.cad_dwg:
-                    wks = workspaceFactory().get_factory(DataType.cad_dwg)
-                else:
-                    log.error("不识别的图形文件格式!", dialog=True)
-                    return None
+                for fileName in fileNames:
+                    fileType = get_suffix(fileName)
+                    if fileType == DataType.shapefile:
+                        wks = workspaceFactory().get_factory(DataType.shapefile)
+                    elif fileType == DataType.geojson:
+                        wks = workspaceFactory().get_factory(DataType.geojson)
+                    elif fileType == DataType.cad_dwg:
+                        wks = workspaceFactory().get_factory(DataType.cad_dwg)
+                    else:
+                        log.error("不识别的图形文件格式!", dialog=True)
+                        return None
 
-                datasource = wks.openFromFile(fileName)
+                    datasource = wks.openFromFile(fileName)
 
-                if datasource is not None:
-                    layer_name = wks.getLayerNames()[0]
-                    in_layer = datasource.GetLayer()
-                    row = self.add_layer_to_row(in_layer, fileName, layer_name)
-                    # self.add_delegate_to_row(row, fileName, [layer_name], save_srs_list)
-                    levelData = {
-                        'layer_names': [layer_name],
-                        'srs_list': save_srs_list
-                    }
-                    self.model.setLevelData(fileName, levelData)
-
-                    datasource.Release()
-                    datasource = None
-                    in_layer = None
-                else:
-                    layer_name, suffix = os.path.splitext(os.path.basename(fileName))
-                    row = self.add_layer_to_row(None, fileName, layer_name)
-                    levelData = {
-                        'layer_names': [layer_name],
-                        'srs_list': save_srs_list
-                    }
-                    self.model.setLevelData(fileName, levelData)
-                    # self.add_delegate_to_row(row, fileName, [layer_name], save_srs_list)
-
-        elif self.rbtn_filedb.isChecked():
-            fileName = QtWidgets.QFileDialog.getExistingDirectory(self, "选择需要转换的GDB数据库",
-                                                                  os.getcwd(), QFileDialog.ShowDirsOnly)
-            wks = workspaceFactory().get_factory(DataType.fileGDB)
-            datasource = wks.openFromFile(fileName)
-
-            if datasource is not None:
-                lst_names = wks.getLayerNames()
-                selected_names = None
-                if len(lst_names) > 1:
-                    selected_names = nameListDialog().openListDialog("请选择要转换的图层", lst_names)
-                elif len(lst_names) == 1:
-                    selected_names = [lst_names[0]]
-
-                rows = []
-                if selected_names is not None:
-                    for selected_name in selected_names:
-                        layer = wks.openLayer(selected_name)
-                        row = self.add_layer_to_row(layer, fileName, selected_name)
-                        rows.append(row)
-
-                    for row in rows:
+                    if datasource is not None:
+                        layer_name = wks.getLayerNames()[0]
+                        in_layer = datasource.GetLayer()
+                        row = self.add_layer_to_row(in_layer, fileName, layer_name)
+                        # self.add_delegate_to_row(row, fileName, [layer_name], save_srs_list)
                         levelData = {
-                            'layer_names': lst_names,
+                            'layer_names': [layer_name],
                             'srs_list': save_srs_list
                         }
                         self.model.setLevelData(fileName, levelData)
-                        # self.add_delegate_to_row(row, fileName, lst_names, save_srs_list)
 
-        elif self.rbtn_table.isChecked():
-            fileNames, types = QFileDialog.getOpenFileNames(
-                self, "选择需要转换的表格文件", os.getcwd(),
-                "表格文件(*.csv *.xlsx *.dbf);;csv文件(*.csv);;excel文件(*.xlsx);;dbf文件(*.dbf)")
-            if len(fileNames) == 0:
-                return
-            for fileName in fileNames:
-                fileType = get_suffix(fileName)
-                row = self.add_table_to_row(fileName)
+                        datasource.Release()
+                        datasource = None
+                        in_layer = None
+                    else:
+                        layer_name, suffix = os.path.splitext(os.path.basename(fileName))
+                        row = self.add_layer_to_row(None, fileName, layer_name)
+                        levelData = {
+                            'layer_names': [layer_name],
+                            'srs_list': save_srs_list
+                        }
+                        self.model.setLevelData(fileName, levelData)
+                        # self.add_delegate_to_row(row, fileName, [layer_name], save_srs_list)
 
-                if fileType == DataType.xlsx:
-                    # selected_sheet = []
-                    # wb = load_workbook(fileName, read_only=True)
-                    # wb.close()
-                    # lst_names = wb.sheetnames
-                    # if len(lst_names) > 1:
-                    #     selected_sheet = nameListDialog().openListDialog(
-                    #         "请选择工作表(sheet)", lst_names, QAbstractItemView.SingleSelection)
-                    # elif len(lst_names) == 1:
-                    #     selected_sheet = lst_names[0]
-                    header, bheader = read_table_header(fileName, fileType, None)
-                    levelData = {
-                        'is_header': bheader,
-                        # 'sheet': selected_sheet[0],
-                        'field_list': header,
-                        'srs_list': save_srs_list
-                    }
-                elif fileType == DataType.csv:
-                    header, encoding, bheader = read_table_header(fileName, fileType)
-                    levelData = {
-                        'is_header': bheader,
-                        'encoding': encoding,
-                        'field_list': header,
-                        'srs_list': save_srs_list
-                    }
-                elif fileType == DataType.dbf:
-                    header = read_table_header(fileName, fileType)
-                    levelData = {
-                        'is_header': True,
-                        'field_list': header,
-                        'srs_list': save_srs_list
-                    }
-                else:
-                    log.error("不识别的图形文件格式!", dialog=True)
-                    return None
+            elif self.rbtn_filedb.isChecked():
+                fileName = QtWidgets.QFileDialog.getExistingDirectory(self, "选择需要转换的GDB数据库",
+                                                                      os.getcwd(), QFileDialog.ShowDirsOnly)
+                wks = workspaceFactory().get_factory(DataType.fileGDB)
+                datasource = wks.openFromFile(fileName)
 
-                field_delegate = xyfieldDelegate(self,
-                                                 [None, {'type': 'xy'}, {'type': 'xy'}, {'type': 'srs'},
-                                                  {'type': 'srs'}, {'type': 'f', 'text': '请选择需要保存的文件'}])
-                self.tbl_address.setItemDelegateForRow(row, field_delegate)
-                self.model.setLevelData(fileName, levelData)
+                if datasource is not None:
+                    lst_names = wks.getLayerNames()
+                    selected_names = None
+                    if len(lst_names) > 1:
+                        selected_names = nameListDialog().openListDialog("请选择要转换的图层", lst_names)
+                    elif len(lst_names) == 1:
+                        selected_names = [lst_names[0]]
+
+                    rows = []
+                    if selected_names is not None:
+                        for selected_name in selected_names:
+                            layer = wks.openLayer(selected_name)
+                            row = self.add_layer_to_row(layer, fileName, selected_name)
+                            rows.append(row)
+
+                        for row in rows:
+                            levelData = {
+                                'layer_names': lst_names,
+                                'srs_list': save_srs_list
+                            }
+                            self.model.setLevelData(fileName, levelData)
+                            # self.add_delegate_to_row(row, fileName, lst_names, save_srs_list)
+
+            elif self.rbtn_table.isChecked():
+                fileNames, types = QFileDialog.getOpenFileNames(
+                    self, "选择需要转换的表格文件", os.getcwd(),
+                    "表格文件(*.csv *.xlsx *.dbf);;csv文件(*.csv);;excel文件(*.xlsx);;dbf文件(*.dbf)")
+                if len(fileNames) == 0:
+                    return
+                for fileName in fileNames:
+                    fileType = get_suffix(fileName)
+                    row = self.add_table_to_row(fileName)
+
+                    if fileType == DataType.xlsx:
+                        # selected_sheet = []
+                        # wb = load_workbook(fileName, read_only=True)
+                        # wb.close()
+                        # lst_names = wb.sheetnames
+                        # if len(lst_names) > 1:
+                        #     selected_sheet = nameListDialog().openListDialog(
+                        #         "请选择工作表(sheet)", lst_names, QAbstractItemView.SingleSelection)
+                        # elif len(lst_names) == 1:
+                        #     selected_sheet = lst_names[0]
+                        header, bheader = read_table_header(fileName, fileType, None)
+                        levelData = {
+                            'is_header': bheader,
+                            # 'sheet': selected_sheet[0],
+                            'field_list': header,
+                            'srs_list': save_srs_list
+                        }
+                    elif fileType == DataType.csv:
+                        header, encoding, bheader = read_table_header(fileName, fileType)
+                        levelData = {
+                            'is_header': bheader,
+                            'encoding': encoding,
+                            'field_list': header,
+                            'srs_list': save_srs_list
+                        }
+                    elif fileType == DataType.dbf:
+                        header = read_table_header(fileName, fileType)
+                        levelData = {
+                            'is_header': True,
+                            'field_list': header,
+                            'srs_list': save_srs_list
+                        }
+                    else:
+                        log.error("不识别的图形文件格式!", dialog=True)
+                        return None
+
+                    field_delegate = xyfieldDelegate(self,
+                                                     [None, {'type': 'xy'}, {'type': 'xy'}, {'type': 'srs'},
+                                                      {'type': 'srs'}, {'type': 'f', 'text': '请选择需要保存的文件'}])
+                    self.tbl_address.setItemDelegateForRow(row, field_delegate)
+                    self.model.setLevelData(fileName, levelData)
+        except:
+            log.error(traceback.format_exc())
 
     def add_table_to_row(self, fileName):
         row = self.model.rowCount(QModelIndex())

@@ -74,8 +74,8 @@ def coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs):
         if in_wks is None:
             return False
 
-        if in_wks.driver is None:
-            log.error("缺失图形文件引擎{}!".format(in_wks.driverName))
+        if in_wks.openFromFile(inpath) is None:
+            log.error("无法读取输入文件!可能原因:数据引擎未加载或者数据格式不正确.")
             return False
         in_layer = in_wks.openLayer(inlayer)
 
