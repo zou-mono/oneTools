@@ -85,6 +85,9 @@ class Handler(QObject, logging.Handler):
 
     def emit(self, record):
         msg = self.format(record)
+        # msg = "<span style=\" font-size:8pt; font-weight:600; color:#ff0000;\" >"
+        # msg += self.format(record)
+        # msg += "</span>"
         if self.parent.splitter.splitterState == SplitterState.expanded:
             if len(self.stringList) > 500:
                 self.clear_record.emit(self.parent)

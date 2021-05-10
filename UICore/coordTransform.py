@@ -118,7 +118,18 @@ def check_srs(srs, srs_ref):
     if srs not in SpatialReference.lst():
         return -4547
 
-    if srs > 0 or srs == -99:
+    if srs > 0:
+        srs_epsg = get_srs(srs_ref)
+        in_srs = osr.SpatialReference()
+        try:
+            in_srs.ImportFromEPSG(srs)
+            if srs != srs_epsg and srs_epsg is not None:
+                log.warning("选择的空间参考与图层自带的空间参考不一致,有可能会导致错误的转换结果!")
+            return srs
+        except:
+            return -2435
+
+    if srs == -99:
         srs_epsg = get_srs(srs_ref)
         in_srs = osr.SpatialReference()
         if srs_epsg is None:
