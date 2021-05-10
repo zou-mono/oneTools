@@ -1,4 +1,5 @@
 import csv
+import os
 
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon
@@ -34,6 +35,10 @@ class Ui_Window(QMainWindow, UI.UIMain.Ui_MainWindow):
         self.trayIcon.activated.connect(self.iconActivated)
 
         self.trayIcon.show()
+
+    print(os.environ['GDAL_DRIVER_PATH'])
+    print(os.environ['GDAL_DATA'])
+    print(os.environ['PROJ_LIB'])
 
     @Slot(QSystemTrayIcon.ActivationReason)
     def iconActivated(self, reason):
@@ -71,6 +76,14 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     # style = QStyleFactory.create("windows")
     # app.setStyle(style)
+    # os.environ['PROJ_LIB'] = r'.\osgeo\data\proj'
+    # os.environ['PROJ_LIB'] = r"./Library/share/proj"
+    # os.environ['GDAL_DRIVER_PATH'] = os.path.dirname(sys.argv[0]) + "/Library/lib/gdalplugins"
+    # os.environ['GDAL_DATA'] = r"./Library/share/gdal"
+    # print(os.path.dirname(sys.argv[0]))
+    log.debug(os.environ['GDAL_DRIVER_PATH'])
+    log.debug(os.environ['GDAL_DATA'])
+    log.debug(os.environ['PROJ_LIB'])
 
     if not QSystemTrayIcon.isSystemTrayAvailable():
         QMessageBox.critical(None, "工具集", "无法检查到系统托盘程序.")

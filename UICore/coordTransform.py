@@ -294,7 +294,7 @@ class Transformer(object):
         if gdal.VectorTranslate(outpath, inpath, options=translateOptions):
             return [outpath, outlayername]
         else:
-            return None
+            return [None, None]
 
     # 二次转换
     def transform_bridge(self, srcSRS, midSRS, dstSRS, inpath=None, midpath=None, midlayername=None,
@@ -318,7 +318,7 @@ class Transformer(object):
                                                         layerCreationOptions=layerCreationOptions)
 
         if out_path is None or out_layername is None:
-            return None
+            return [None, None]
 
         helmert_para = helmert_para_dict(midSRS, dstSRS)
 

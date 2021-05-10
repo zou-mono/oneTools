@@ -68,7 +68,7 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.tbl_address.verticalHeader().sectionClicked.connect(self.table_section_clicked)
 
         #  最后运算过程放至到另一个线程避免GUI卡住
-        self.thread = QThread()
+        self.thread = QThread(self)
         self.crawlVectorThread = crawlVectorWorker()
         self.crawlVectorThread.moveToThread(self.thread)
         self.crawlVectorThread.crawl.connect(self.crawlVectorThread.crawlVector)

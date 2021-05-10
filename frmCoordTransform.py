@@ -80,7 +80,7 @@ class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
         self.rbtn_filedb.clicked.connect(self.rbtn_toggled)
         self.rbtn_table.clicked.connect(self.rbtn_toggled)
 
-        self.thread = QThread()
+        self.thread = QThread(self)
         self.coordTransformThread = coordTransformWorker()
         self.coordTransformThread.moveToThread(self.thread)
         self.coordTransformThread.transform.connect(self.coordTransformThread.coordTransform)

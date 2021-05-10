@@ -98,7 +98,7 @@ def transform_dwg(input, type, output):
                 continue
         else:
             log.error("打开dwg文件失败!\n{}".format(traceback.format_exc()))
-            return False
+            return None
 
         trytime = 0
         for layer in layers:

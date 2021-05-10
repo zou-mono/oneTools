@@ -66,5 +66,7 @@ fabric.properties
 /data
 /release
 /.vagrant
+/dist
+/build
 
 **/__pycache__

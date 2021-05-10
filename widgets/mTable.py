@@ -293,15 +293,15 @@ class srsDelegate(addressTableDelegate):
         if currentData is not None:
             self.cmb_srs.setCurrentText(str(currentData))
 
-        self.cmb_srs.currentIndexChanged.connect(self.cmb_selectionchange)
+        # self.cmb_srs.currentIndexChanged.connect(self.cmb_selectionchange)
         return self.cmb_srs
 
     def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex) -> None:
         model.setData(index, editor.currentText())
         self.mainWindow.update_outlayername(self.index, editor.currentText())
 
-    def cmb_selectionchange(self, i):
-        pass
+    # def cmb_selectionchange(self, i):
+    #     pass
 
 
 class outputPathDelegate(addressTableDelegate):

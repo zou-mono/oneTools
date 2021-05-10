@@ -87,7 +87,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.txt_log.setReadOnly(True)
 
         #  最后运算过程放至到另一个线程避免GUI卡住
-        self.thread = QThread()
+        self.thread = QThread(self)
         self.crawlTilesThread = crawlTilesWorker()
         self.crawlTilesThread.moveToThread(self.thread)
         self.crawlTilesThread.crawl.connect(self.crawlTilesThread.crawlTiles)
