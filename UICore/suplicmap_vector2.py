@@ -15,6 +15,7 @@ import aiohttp
 import asyncio
 from UICore.asyncRequest import send_http
 from UICore.common import urlEncodeToFileName, check_layer_name
+import encodings.idna
 
 try_num = 5
 num_return = 1000  # 返回条数
@@ -180,6 +181,7 @@ def crawl_vector_batch(url, key, output, paras):
                 layername = None
 
             crawl_vector(res_url, service_name=service_name, layer_order=service, layer_name=layername, output_path=output, sr=sr)
+
 
 def getIds(query_url, loop_pos):
     # 定义请求头
@@ -391,7 +393,7 @@ async def get_json_by_query_async(url, query_clause):
                                        data=body_value, url=url, retries=0)
             return respData
         except:
-            # log.error('url:{} data:{} error:{}'.format(url, query_clause, traceback.format_exc()))
+            log.error('url:{} data:{} error:{}'.format(url, query_clause, traceback.format_exc()))
             return None
 
 
@@ -426,8 +428,12 @@ async def output_data_async(url, query_clause, out_layer, startID, endID):
     try:
         respData = await get_json_by_query_async(url, query_clause)
         esri_json = ogr.GetDriverByName('ESRIJSON')
-        if not isinstance(respData, str):
-            raise Exception("返回数据不是str类型！")
+        if respData is not None:
+            respData = str(respData, encoding='utf-8')
+            if not isinstance(respData, str):
+                raise Exception("返回数据类型不是str！")
+        else:
+            raise Exception("返回数据为None！")
 
         geoObjs = esri_json.Open(respData, 0)
         if geoObjs is not None:

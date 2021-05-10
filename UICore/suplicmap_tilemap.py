@@ -10,6 +10,7 @@ import click
 import traceback
 from UICore.asyncRequest import send_http
 from UICore.common import get_col_row
+import encodings.idna
 
 try_num = 5
 coroutine_num = 3000  # 协程数
@@ -205,6 +206,7 @@ async def get_tile_async(url, output_path, i, j):
             return respData, url, output_path, i, j
         except:
             log.error('url:{} error:{}'.format(url, traceback.format_exc()))
+            return None, url, output_path, i, j
 
 
 async def output_img_asyc(url, output_path, i, j):
