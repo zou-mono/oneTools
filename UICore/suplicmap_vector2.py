@@ -430,8 +430,8 @@ async def output_data_async(url, query_clause, out_layer, startID, endID):
         esri_json = ogr.GetDriverByName('ESRIJSON')
         if respData is not None:
             respData = str(respData, encoding='utf-8')
-            if not isinstance(respData, str):
-                raise Exception("返回数据类型不是str！")
+            # if not isinstance(respData, str):
+            #     raise Exception("返回数据类型不是str！")
         else:
             raise Exception("返回数据为None！")
 

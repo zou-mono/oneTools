@@ -182,10 +182,10 @@ class Transformer(object):
         end = time.time()
 
         if res is None:
-            log.info("坐标转换完成! 共耗时{}秒. 输出路径:{}"
+            log.info("坐标转换完成! 共耗时{}秒. 输出路径:{}.\n"
                      .format("{:.2f}".format(end-start), self.out_path))
         else:
-            log.error("坐标转换失败!\n{}".format(res))
+            log.error("坐标转换失败!\n{}\n".format(res))
 
     def export_csv_to_file(self, transform_method):
         self.rowcount = 0  # 记录遍历到的行号

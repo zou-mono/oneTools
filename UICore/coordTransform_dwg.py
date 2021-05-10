@@ -152,7 +152,7 @@ def transform_dwg(input, type, output):
         # log.info("保存结果...")
         doc.SaveAs(output_dir + os.sep + output_file_name)
         acad.Quit()
-        log.info("dwg文件转换完成! Success: {}, Failure: {}".format(isuccess_num, ierror_num))
+        log.info("dwg文件转换完成! Success: {}, Failure: {}.".format(isuccess_num, ierror_num))
         return output, output_file_name
     except:
         log.error("转换失败.\n{}".format(traceback.format_exc()))
