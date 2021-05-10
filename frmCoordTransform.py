@@ -26,7 +26,7 @@ from UICore.log4p import Log
 
 Slot = QtCore.pyqtSlot
 
-log = Log()
+log = Log(__name__)
 
 
 # class myFileSelect(QFileDialog):

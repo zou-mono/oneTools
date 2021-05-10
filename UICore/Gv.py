@@ -54,15 +54,6 @@ DataType_dict = {
     DataType.cad_dwg: "CAD"
 }
 
-def singleton(cls):
-    instances = {}
-
-    def _singleton(*args, **kwargs):
-        if cls not in instances:
-            instances[cls] = cls(*args, **kwargs)
-        return instances[cls]
-
-    return _singleton
 
 srs_dict = {
     SpatialReference.sz_Local: "深圳独立",
@@ -77,6 +68,16 @@ srs_dict = {
     SpatialReference.pcs_xian80_zone: "西安80投影(包含带号)"
 }
 
+
+def singleton(cls):
+    instances = {}
+
+    def _singleton(*args, **kwargs):
+        if cls not in instances:
+            instances[cls] = cls(*args, **kwargs)
+        return instances[cls]
+
+    return _singleton
 # srs_desc_dict = {
 #     "深圳独立": SpatialReference.sz_Local,
 #     "CGCS2000地理": SpatialReference.gcs_2000,

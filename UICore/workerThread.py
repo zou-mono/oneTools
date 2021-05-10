@@ -7,7 +7,7 @@ from UICore.suplicmap_vector2 import crawl_vector, crawl_vector_batch
 from UICore.coordTransform import coordTransform
 import UICore.coordTransform_table
 
-log = Log()
+log = Log(__name__)
 
 
 class crawlTilesWorker(QtCore.QObject):

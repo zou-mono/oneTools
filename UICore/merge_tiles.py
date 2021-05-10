@@ -7,7 +7,7 @@ import math
 import traceback
 from UICore.common import get_col_row
 
-log = Log()
+log = Log(__name__)
 try_num = 10
 
 @click.command()

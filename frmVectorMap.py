@@ -20,7 +20,7 @@ from UICore.suplicmap_vector2 import crawl_vector, crawl_vector_batch
 
 Slot = QtCore.pyqtSlot
 
-log = Log()
+log = Log(__name__)
 
 class Ui_Window(QDialog, Ui_Dialog):
     def __init__(self, parent=None):

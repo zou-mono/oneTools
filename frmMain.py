@@ -14,7 +14,7 @@ from UICore.log4p import Log
 
 Slot = QtCore.pyqtSlot
 
-log = Log()
+log = Log(__name__)
 
 
 class Ui_Window(QMainWindow, UI.UIMain.Ui_MainWindow):

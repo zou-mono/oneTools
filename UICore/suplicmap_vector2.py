@@ -82,7 +82,7 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, lo
         query_url = url + "/query"
         url_json = url + "?f=pjson"
 
-    log.info("开始创建文件数据库...")
+    log.info("\n开始创建文件数据库...")
 
     gdb, out_layer, OID = createFileGDB(output_path, layer_name, url_json, service_name, layer_order)
 

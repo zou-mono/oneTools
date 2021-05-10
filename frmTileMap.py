@@ -19,8 +19,7 @@ from UICore.workerThread import crawlTilesWorker
 
 Slot = QtCore.pyqtSlot
 
-log = Log()
-
+log = Log(__name__)
 
 class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self, parent=None):

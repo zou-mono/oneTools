@@ -10,7 +10,7 @@ from UICore.log4p import Log
 from UICore.Gv import DataType
 import chardet
 
-log = Log()
+log = Log(__name__)
 
 
 class workspaceFactory(object):

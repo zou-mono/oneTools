@@ -84,13 +84,13 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
     print(str(max_col) + " " + str(max_row))
 
     if min_row > max_row:
-        log.error("最小行号大于最大行号,请检查参数！")
+        log.error("最小行号大于最大行号,请检查参数！\n")
         return False
     elif min_col > max_col:
-        log.error("最小列号大于最大列号,请检查参数！")
+        log.error("最小列号大于最大列号,请检查参数！\n")
         return False
 
-    log.info('开始使用协程抓取...')
+    log.info('\n开始使用协程抓取...')
     # for i in range(min_row, max_row):
     #     for j in range(min_col, max_col):
     #         tile_url = f'{url}/tile/{level}/{i}/{j}'

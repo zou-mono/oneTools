@@ -15,7 +15,7 @@ from UICore.coordTransform_web import gcj02_to_wgs84_acc, wgs84_to_gcj02, bd09_t
 from UICore.log4p import Log
 from UICore.Gv import SpatialReference
 
-log = Log(__file__)
+log = Log(__name__)
 
 @click.command()
 @click.option(
@@ -179,7 +179,7 @@ class Transformer(object):
         self.in_wks = workspaceFactory().get_factory(self.in_format)
 
     def transform(self, srcSRS, dstSRS):
-        log.info("启动从{}到{}的转换...".format(self.in_path, self.out_path))
+        log.info("\n启动从{}到{}的转换...".format(self.in_path, self.out_path))
 
         start = time.time()
 
