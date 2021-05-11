@@ -81,9 +81,19 @@ if __name__ == '__main__':
     # os.environ['GDAL_DRIVER_PATH'] = os.path.dirname(sys.argv[0]) + "/Library/lib/gdalplugins"
     # os.environ['GDAL_DATA'] = r"./Library/share/gdal"
     # print(os.path.dirname(sys.argv[0]))
-    log.debug(os.environ['GDAL_DRIVER_PATH'])
-    log.debug(os.environ['GDAL_DATA'])
-    log.debug(os.environ['PROJ_LIB'])
+    if 'GDAL_DRIVER_PATH' not in os.environ:
+        log.error("缺失环境变量GDAL_DRIVER_PATH")
+        sys.exit()
+    else:
+        log.debug(os.environ['GDAL_DRIVER_PATH'])
+    if 'GDAL_DATA' not in os.environ:
+        log.error("缺失环境变量GDAL_DATA")
+    else:
+        log.debug(os.environ['GDAL_DATA'])
+    if 'PROJ_LIB' not in os.environ:
+        log.error("缺失环境变量GDAL_DATA")
+    else:
+        log.debug(os.environ['PROJ_LIB'])
 
     if not QSystemTrayIcon.isSystemTrayAvailable():
         QMessageBox.critical(None, "工具集", "无法检查到系统托盘程序.")
