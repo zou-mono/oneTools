@@ -92,12 +92,12 @@ def transform_dwg(input, type, output):
                 layers = doc.Layers
                 break
             except:
-                # print("try{}".format(trytime))
+                log.debug("第{}次尝试重新打开...".format(trytime))
                 time.sleep(1)
                 trytime += 1
                 continue
         else:
-            log.error("打开dwg文件失败!\n{}".format(traceback.format_exc()))
+            log.error("打开dwg文件失败!{}".format(traceback.format_exc()))
             return None
 
         trytime = 0

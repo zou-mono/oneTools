@@ -170,7 +170,7 @@ class Transformer(object):
         self.lco = []
 
         if out_format == DataType.shapefile:
-            self.lco = ["ENCODING=GBK"]
+            self.lco = ["ENCODING=UTF-8"]
             self.out = outpath
         elif out_format == DataType.fileGDB:
             self.lco = ["FID=FID"]
@@ -269,7 +269,7 @@ class Transformer(object):
                 out_path = os.path.dirname(self.out_path)
                 out_file, suffix = os.path.splitext(os.path.basename(self.out_path))
 
-                overwrite_cpg_file(out_path, out_file, 'GB2312')
+                overwrite_cpg_file(out_path, out_file, 'UTF-8')
 
             log.info("坐标转换完成! 共耗时{}秒. 输出数据源:{},输出图层名:{}.\n"
                      .format("{:.2f}".format(end-start), res[0], res[1]))

@@ -16,7 +16,6 @@ from UICore.common import get_paraInfo, urlEncodeToFileName, get_suffix
 from UICore.log4p import Log
 from UICore.workerThread import crawlVectorWorker
 from widgets.mTable import mTableStyle, TableModel, vectorTableDelegate
-from UICore.suplicmap_vector2 import crawl_vector, crawl_vector_batch
 
 Slot = QtCore.pyqtSlot
 

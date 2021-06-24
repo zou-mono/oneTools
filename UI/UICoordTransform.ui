@@ -68,7 +68,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>453</width>
+          <width>430</width>
           <height>402</height>
          </rect>
         </property>
@@ -102,6 +102,7 @@
                 <font>
                  <family>微软雅黑</family>
                  <pointsize>9</pointsize>
+                 <stylestrategy>PreferAntialias</stylestrategy>
                 </font>
                </property>
                <property name="text">
@@ -114,6 +115,7 @@
                <property name="font">
                 <font>
                  <family>微软雅黑</family>
+                 <stylestrategy>PreferAntialias</stylestrategy>
                 </font>
                </property>
                <property name="text">
@@ -146,6 +148,7 @@
                <property name="font">
                 <font>
                  <family>微软雅黑</family>
+                 <stylestrategy>PreferAntialias</stylestrategy>
                 </font>
                </property>
                <property name="text">
@@ -394,6 +397,7 @@
     <property name="font">
      <font>
       <family>微软雅黑</family>
+      <stylestrategy>PreferAntialias</stylestrategy>
      </font>
     </property>
     <property name="readOnly">

@@ -16,6 +16,8 @@ import sys
 import json
 import os
 
+from UI.UICoordTransform import Ui_Dialog
+
 from UICore.DataFactory import workspaceFactory, read_table_header
 from UICore.Gv import SplitterState, Dock, DataType, srs_dict
 from UICore.common import defaultImageFile, defaultTileFolder, urlEncodeToFileName, get_paraInfo, get_suffix, \
@@ -33,8 +35,8 @@ log = Log(__name__)
 #     def __init__(self):
 #         super().__init__()
 
-class Ui_Window(QtWidgets.QDialog, UI.UICoordTransform.Ui_Dialog):
-    def __init__(self, parent):
+class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
+    def __init__(self, parent=None):
         super(Ui_Window, self).__init__(parent=parent)
         self.setupUi(self)
 

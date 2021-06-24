@@ -3,7 +3,7 @@ import os
 
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow, QSystemTrayIcon, QAction, QMenu
+from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow, QSystemTrayIcon, QAction, QMenu, QStyleFactory
 from PyQt5 import QtCore
 import UI.UIMain
 import sys
@@ -74,8 +74,15 @@ class Ui_Window(QMainWindow, UI.UIMain.Ui_MainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    # style = QStyleFactory.create("windows")
-    # app.setStyle(style)
+    # Enable high DPI scaling
+    if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
+        app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
+
+    if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
+        app.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
+
+    style = QStyleFactory.create("windows")
+    app.setStyle(style)
     # os.environ['PROJ_LIB'] = r'.\osgeo\data\proj'
     # os.environ['PROJ_LIB'] = r"./Library/share/proj"
     # os.environ['GDAL_DRIVER_PATH'] = os.path.dirname(sys.argv[0]) + "/Library/lib/gdalplugins"
@@ -100,15 +107,17 @@ if __name__ == '__main__':
         sys.exit(1)
 
     QApplication.setQuitOnLastWindowClosed(False)
-
+    
     frmMain = Ui_Window()
 
     frmVectorMap = frmVectorMap.Ui_Window(frmMain)
     frmTileMap = frmTileMap.Ui_Window(frmMain)
     frmCoordTransform = frmCoordTransform.Ui_Window(frmMain)
     frmTileMap.setWindowFlags(Qt.Window)
-    frmCoordTransform.setWindowFlag(Qt.WindowMinMaxButtonsHint)
+    frmCoordTransform.setWindowFlags(Qt.Window)  # Window WindowMinMaxButtonsHint
     frmVectorMap.setWindowFlags(Qt.Window)
+    #
+    # frmVectorMap.setWindowFlags(Qt.Window)
 
     frmMain.btn_vectorCrawler.clicked.connect(frmVectorMap.show)
     frmMain.btn_imageCrawler.clicked.connect(frmTileMap.show)

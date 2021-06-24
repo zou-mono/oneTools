@@ -21,6 +21,7 @@ Slot = QtCore.pyqtSlot
 
 log = Log(__name__)
 
+
 class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self, parent=None):
         super(Ui_Window, self).__init__(parent=parent)
