@@ -41,7 +41,7 @@ class workspaceFactory(object):
             return None
         else:
             try:
-                self.datasource = self.driver.Open(file, 1)
+                self.datasource = self.driver.Open(file, 0)
                 return self.datasource
             except:
                 log.error("打开文件{}发生错误!\n{}".format(file, traceback.format_exc()))
@@ -153,7 +153,8 @@ class geojsonWorkspaceFactory(workspaceFactory):
 class filegdbWorkspaceFactory(workspaceFactory):
     def __init__(self):
         super().__init__()
-        self.driverName = "FileGDB"
+        # self.driverName = "FileGDB"
+        self.driverName = "OpenFileGDB"
         self.driver = ogr.GetDriverByName(self.driverName)
 
 
