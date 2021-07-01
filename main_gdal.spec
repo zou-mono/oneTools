@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['frmMain.py','frmCoordTransform.py','frmTileMap.py','frmVectorMap.py','icons_rc.py',
+a = Analysis(['frmMain.py', 'frmCoordTransform.py', 'frmTileMap.py', 'frmVectorMap.py', 'icons_rc.py',
               'UI\\listview_dialog.py',
               'UI\\UICoordTransform.py',
               'UI\\UIMain.py',
@@ -26,9 +26,9 @@ a = Analysis(['frmMain.py','frmCoordTransform.py','frmTileMap.py','frmVectorMap.
               'widgets\\CollapsibleSplitter.py',
               'widgets\\mTable.py'],
              pathex=['D:\\Codes\\oneTools'],
-             binaries=[('C:\\Program Files\\GDAL\\gdalplugins','Library\\lib\\gdalplugins'),
+             binaries=[('C:\\Program Files\\GDAL\\gdalplugins', 'Library\\lib\\gdalplugins'),
                        ('C:\\Program Files\\GDAL\\FileGDBAPI.dll', '.')],
-             datas=[('C:\\Program Files\\GDAL\\projlib','Library\\share\\proj'),
+             datas=[('C:\\Program Files\\GDAL\\projlib', 'Library\\share\\proj'),
                     ('C:\\Users\\mono-office-laptop\\miniconda3\\envs\\test_python3.7'
                      '\\Lib\\site-packages\\PyQt5\\Qt\\plugins\\styles\\qwindowsvistastyle.dll', 'Library\\styles\\qwindowsvistastyle.dll')],
              hiddenimports=['osgeo'],
@@ -40,7 +40,7 @@ a = Analysis(['frmMain.py','frmCoordTransform.py','frmTileMap.py','frmVectorMap.
              cipher=block_cipher,
              noarchive=False)
 pyz = PYZ(a.pure, a.zipped_data,
-             cipher=block_cipher)
+          cipher=block_cipher)
 exe = EXE(pyz,
           a.scripts,
           a.binaries,
@@ -56,7 +56,8 @@ exe = EXE(pyz,
           icon="D:\\Codes\\oneTools\\icons\\GeoprocessingToolbox.ico",
           upx_exclude=[],
           runtime_tmpdir=None,
-          console=False)
+          console=False,
+          version="version.py")
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
