@@ -35,13 +35,13 @@ class workspaceFactory(object):
 
         return wks
 
-    def openFromFile(self, file):
+    def openFromFile(self, file, access=0):
         if self.driver is None:
             log.error("缺失图形文件引擎{}!".format(self.driverName))
             return None
         else:
             try:
-                self.datasource = self.driver.Open(file, 0)
+                self.datasource = self.driver.Open(file, access)
                 return self.datasource
             except:
                 log.error("打开文件{}发生错误!\n{}".format(file, traceback.format_exc()))

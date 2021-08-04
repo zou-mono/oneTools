@@ -269,7 +269,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             if in_srs is not None:
                 in_srs = osr.SpatialReference(in_srs.ExportToWkt())
                 srs_epsg = in_srs.GetAttrValue("AUTHORITY", 1)
-                srs_desc = srs_dict[int(srs_epsg)]
+                if srs_epsg is None:
+                    srs_desc = None
+                else:
+                    srs_desc = srs_dict[int(srs_epsg)]
             else:
                 srs_desc = None
         else:

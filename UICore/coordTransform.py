@@ -595,7 +595,7 @@ class Transformer(object):
                                                           outlayername, outSRS, outformat)
 
         if out_path is not None:
-            outDS = out_wks.openFromFile(out_path)
+            outDS = out_wks.openFromFile(out_path, 1)
             out_layer = outDS.GetLayer(out_layername)
             res = self.transform_pointwise(in_layer, out_layer, transform_func)
 
