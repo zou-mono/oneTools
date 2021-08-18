@@ -185,16 +185,20 @@ class Ui_Window(QDialog, Ui_Dialog):
                 if out_format != DataType.fileGDB:
                 # if os.path.splitext(filename)[1] != '.gdb':
                     gdb_name = service_name + ".gdb"
-                    if output == "":
-                        if not os.path.exists("res"):
-                            os.makedirs("res")
-                        output = os.path.join(os.path.abspath("res"), gdb_name)
-                        self.paras[key]['output'] = output
-                        log.warning('第{}行缺失非必要参数"输出路径"，将使用默认值"{}".'.format(row + 1, output))
+                    if key in self.paras:
+                        if output == "":
+                            if not os.path.exists("res"):
+                                os.makedirs("res")
+                            output = os.path.join(os.path.abspath("res"), gdb_name)
+                            self.paras[key]['output'] = output
+                            log.warning('第{}行缺失非必要参数"输出路径"，将使用默认值"{}".'.format(row + 1, output))
+                        else:
+                            output = os.path.join(output, gdb_name)
+                            self.paras[key]['output'] = output
+                            log.warning('第{}行"输出路径"参数缺失输出gdb数据库名，将使用默认值"{}".'.format(row + 1, gdb_name))
                     else:
-                        output = os.path.join(output, gdb_name)
-                        self.paras[key]['output'] = output
-                        log.warning('第{}行"输出路径"参数缺失输出gdb数据库名，将使用默认值"{}".'.format(row + 1, gdb_name))
+                        log.error("{}地址填写错误.".format(url))
+                        return False
             else:
                 filepath, filename = os.path.split(output)
                 key_all = url + "_*"

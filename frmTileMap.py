@@ -272,6 +272,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         for row in rows:
             url_index, level_index, url, level = self.return_url_and_level(row)
 
+            if url not in self.paras:
+                log.error("{}地址错误".format(url))
+                continue
+
             if self.rbtn_spiderAndHandle.isChecked():
                 paras = self.paras[url]['paras'][level]
                 tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
