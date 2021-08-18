@@ -192,7 +192,7 @@ def getIds(query_url, loop_pos):
     # 定义post的参数
     body_value = {'where': '1=1',
                   'returnIdsOnly': 'true',
-                  'f': 'json'}
+                  'f': 'pjson'}
 
     # 对请求参数进行编码
     data = urllib.parse.urlencode(body_value).encode(encoding='UTF8')
@@ -217,7 +217,10 @@ def getIds(query_url, loop_pos):
                     return False
 
                 if loop_pos == -1:
-                    looplst = list(range(firstId, endId, num_return))
+                    if firstId == endId:
+                        looplst = [endId]
+                    else:
+                        looplst = list(range(firstId, endId, num_return))
                 else:
                     looplst = list(range(loop_pos, endId, num_return))
                 if looplst[len(looplst) - 1] != endId + 1:
