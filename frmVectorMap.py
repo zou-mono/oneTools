@@ -502,7 +502,7 @@ class Ui_Window(QDialog, Ui_Dialog):
 
         url_encodeStr = urlEncodeToFileName(url)
         url_lst = url.split(r'/')
-        service_name = url_lst[-3]
+        service_name = url_lst[-2]
         self.paras[key] = {
             'url': url,
             'service': service,
