@@ -31,7 +31,7 @@ def get_json(url):
     try_num = 5
     # 定义请求头
     reqheaders = {'Content-Type': 'application/x-www-form-urlencoded',
-                  'Host': 'suplicmap.pnr.sz',
+                  # 'Host': 'suplicmap.pnr.sz',
                   'Pragma': 'no-cache'}
     # 请求不同页面的数据
     trytime = 0
@@ -44,6 +44,8 @@ def get_json(url):
             res = json.loads(respData)
             if 'error' not in res.keys():
                 return res
+            else:
+                trytime += 1
         except:
             # log.error('HTTP请求失败！重新尝试...')
             trytime += 1

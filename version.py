@@ -31,12 +31,12 @@ VSVersionInfo(
         u'000004b0',
         [StringStruct(u'CompanyName', u''),
         StringStruct(u'FileDescription', u'工具集'),
-        StringStruct(u'FileVersion', u'1.3.2'),
+        StringStruct(u'FileVersion', u'1.3.3'),
         StringStruct(u'InternalName', u''),
         StringStruct(u'LegalCopyright', u'MIT'),
         StringStruct(u'OriginalFilename', u'oneTools.exe'),
         StringStruct(u'ProductName', u'oneTools'),
-        StringStruct(u'ProductVersion', u'1.3.2')])
+        StringStruct(u'ProductVersion', u'1.3.3')])
       ]), 
     VarFileInfo([VarStruct(u'Translation', [0, 1200])])
   ]

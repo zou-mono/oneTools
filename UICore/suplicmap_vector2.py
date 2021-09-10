@@ -33,7 +33,7 @@ OID_NAME = "OBJECTID"  # FID字段名称
 reqheaders = {
     'User-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36 Edg/81.0.416.72',
     'Content-Type': 'application/x-www-form-urlencoded',
-    'Host': 'suplicmap.pnr.sz',
+    # 'Host': 'suplicmap.pnr.sz',
     'Pragma': 'no-cache'}
 
 
@@ -186,11 +186,12 @@ def crawl_vector_batch(url, key, output, paras):
 def getIds(query_url, loop_pos):
     # 定义请求头
     reqheaders = {'Content-Type': 'application/x-www-form-urlencoded',
-                  'Host': 'suplicmap.pnr.sz',
+                  # 'Host': 'suplicmap.pnr.sz',
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36 Edg/93.0.961.38',
                   'Pragma': 'no-cache'}
 
     # 定义post的参数
-    body_value = {'where': '1=1',
+    body_value = {'where': '{}>=0'.format(OID_NAME),
                   'returnIdsOnly': 'true',
                   'f': 'pjson'}
 
@@ -388,7 +389,7 @@ async def get_json_by_query_async(url, query_clause):
     body_value = {'where': query_clause,
                   'outFields': '*',
                   'inSR': str(epsg),
-                  'f': 'json'}
+                  'f': 'geojson'}
 
     async with aiohttp.ClientSession() as session:
         try:
@@ -430,7 +431,7 @@ def get_json_by_query(url, query_clause):
 async def output_data_async(url, query_clause, out_layer, startID, endID):
     try:
         respData = await get_json_by_query_async(url, query_clause)
-        esri_json = ogr.GetDriverByName('ESRIJSON')
+        esri_json = ogr.GetDriverByName('GeoJSON')
         if respData is not None:
             respData = str(respData, encoding='utf-8')
             # if not isinstance(respData, str):
