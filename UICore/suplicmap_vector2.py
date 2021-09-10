@@ -65,7 +65,7 @@ def main(url, layer_name, sr, loop_pos, output_path):
     """crawler program for vector data in http://suplicmap.pnr.sz."""
     url_lst = url.split(r'/')
     layer_order = url_lst[-1]
-    service_name = url_lst[-3]
+    service_name = url_lst[-1]
     crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, loop_pos)
 
 
@@ -388,7 +388,7 @@ async def get_json_by_query_async(url, query_clause):
     # 定义post的参数
     body_value = {'where': query_clause,
                   'outFields': '*',
-                  'inSR': str(epsg),
+                  'outSR': str(epsg),
                   'f': 'geojson'}
 
     async with aiohttp.ClientSession() as session:
