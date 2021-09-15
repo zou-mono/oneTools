@@ -13,7 +13,7 @@ from UICore.common import get_col_row
 import encodings.idna
 
 try_num = 5
-coroutine_num = 3000  # 协程数
+coroutine_num = 1000  # 协程数
 
 log = Log()
 failed_urls = []
