@@ -13,7 +13,7 @@ from UICore.common import get_col_row
 import encodings.idna
 
 try_num = 5
-coroutine_num = 1000  # 协程数
+coroutine_num = 3000  # 协程数
 
 log = Log()
 failed_urls = []
@@ -205,22 +205,26 @@ async def get_tile_async(url, output_path, i, j):
             # response = await session.post(url, data=data, headers=reqheaders)
             return respData, url, output_path, i, j
         except:
-            log.error('url:{} error:{}'.format(url, traceback.format_exc()))
+            # log.error('url:{} error:{}'.format(url, traceback.format_exc()))
             return None, url, output_path, i, j
 
 
 async def output_img_asyc(url, output_path, i, j):
+    bSkip = False
     try:
         img, url, output_path, i, j = await get_tile_async(url, output_path, i, j)
         # log.info('任务载入完成.')
         # log.info('开始抓取...')
+        if img is None:
+            bSkip = True
         with open(f'{output_path}/{i}_{j}.png', "wb") as f:
             f.write(img)
     except:
         await lock.acquire()
         failed_urls.append([url, i, j])
         lock.release()
-        log.error('url:{} error:{}'.format(url, traceback.format_exc()))
+        if not bSkip:
+            log.error('url:{} error:{}'.format(url, traceback.format_exc()))
 
 
 def get_lod(lods, level):
