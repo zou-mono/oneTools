@@ -138,15 +138,16 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     fileType = get_suffix(fileName)
                     if fileType == DataType.shapefile:
                         wks = workspaceFactory().get_factory(DataType.shapefile)
+                        datasource = wks.openFromFile(fileName)
                     elif fileType == DataType.geojson:
                         wks = workspaceFactory().get_factory(DataType.geojson)
+                        datasource = wks.openFromFile(fileName)
                     elif fileType == DataType.cad_dwg:
                         wks = workspaceFactory().get_factory(DataType.cad_dwg)
+                        datasource = None
                     else:
                         log.error("不识别的图形文件格式!", dialog=True)
                         return None
-
-                    datasource = wks.openFromFile(fileName)
 
                     if datasource is not None:
                         layer_name = wks.getLayerNames()[0]
