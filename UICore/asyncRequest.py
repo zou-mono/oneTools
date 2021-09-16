@@ -30,7 +30,7 @@ class FailedRequest(Exception):
 async def send_http(session, method, url, *,
                     retries=1,
                     respond_Type='content',
-                    interval=5,
+                    interval=1,
                     backoff=1,
                     read_timeout=10,
                     http_status_codes_to_retry=HTTP_STATUS_CODES_TO_RETRY,
@@ -75,7 +75,8 @@ async def send_http(session, method, url, *,
         # log.info('向服务器发送{} {}, 参数为{}'.format(method.upper(), url, kwargs))
         try:
             # with aiohttp.ClientTimeout(total=read_timeout) as timeout:
-            async with getattr(session, method)(url, **kwargs) as response:
+            timeout = aiohttp.ClientTimeout(total=5)
+            async with getattr(session, method)(url, timeout=timeout, **kwargs) as response:
                 if response.status == 200:
                     # try:
                     if respond_Type == 'content':
@@ -125,8 +126,9 @@ async def send_http(session, method, url, *,
                 code = exc.status
             except AttributeError:
                 code = ''
-            raised_exc = FailedRequest(code=code, message=exc, url=url,
-                                       raised=exc.__class__.__name__)
+            log.error('code:{} url={} message={} raised={}'.format(code, url, exc, exc.__class__.__name__))
+            # raised_exc = FailedRequest(code=code, message=exc, url=url,
+            #                            raised=exc.__class__.__name__)
         else:
             raised_exc = None
             break

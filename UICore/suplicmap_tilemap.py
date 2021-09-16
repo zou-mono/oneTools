@@ -13,11 +13,11 @@ from UICore.common import get_col_row
 import encodings.idna
 
 try_num = 5
-coroutine_num = 3000  # 协程数
+coroutine_num = 500  # 协程数
 
 log = Log()
 failed_urls = []
-lock = asyncio.Lock()
+lock = asyncio.Lock()  # 协程锁
 
 @click.command()
 @click.option('--url', '-u',
@@ -220,9 +220,11 @@ async def output_img_asyc(url, output_path, i, j):
         with open(f'{output_path}/{i}_{j}.png', "wb") as f:
             f.write(img)
     except:
-        await lock.acquire()
-        failed_urls.append([url, i, j])
-        lock.release()
+        # await lock.acquire()
+        # failed_urls.append([url, i, j])
+        # lock.release()
+        async with lock:
+            failed_urls.append([url, i, j])
         if not bSkip:
             log.error('url:{} error:{}'.format(url, traceback.format_exc()))
 
