@@ -105,6 +105,10 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
         iloop = 0
         for i in range(min_row, max_row + 1):
             for j in range(min_col, max_col + 1):
+                iloop += 1
+
+                if os.path.exists(f'{output_path}/{i}_{j}.png'):
+                    continue
                 # tile_url = url + "/tile/" + str(level) + "/" + str(i) + "/" + str(j)
                 tile_url = f'{url}/tile/{level}/{i}/{j}'
 
@@ -112,8 +116,8 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
                     tasks.append(asyncio.ensure_future(output_img_asyc(tile_url, output_path, i, j)))
                     loop.run_until_complete(asyncio.wait(tasks))
                     tasks = []
-                    iloop += 1
-                    log.debug("{:.0%}".format(iloop * coroutine_num / total_count))
+                    # iloop += 1
+                    log.debug("{:.0%}".format(iloop / total_count))
                     continue
                 else:
                     tasks.append(asyncio.ensure_future(output_img_asyc(tile_url, output_path, i, j)))
