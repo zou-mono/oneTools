@@ -125,12 +125,14 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
         loop.run_until_complete(asyncio.wait(tasks))
         log.info('协程抓取完成.')
 
+        dead_link = 0
         if len(failed_urls) > 0:
             log.info('开始用单线程抓取失败的url...')
             while len(failed_urls) > 0:
                 furl = failed_urls.pop()
                 if not output_img2(furl[0], output_path, furl[1], furl[2]):
                     log.error('url:{} error:{}'.format(url, traceback.format_exc()))
+                    dead_link += 1
     except:
         log.error("抓取失败，请检查参数！{}".format(traceback.format_exc()))
         return False
@@ -139,7 +141,7 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
     if lock.locked():
         lock.release()
     # log.info('爬取瓦片任务完成！瓦片存储至{}.'.format(output_path))
-    log.info('爬取瓦片任务完成！总共耗时:{}秒. 瓦片存储至{}.'.format("{:.2f} \n".format(end - start), output_path))
+    log.info('爬取瓦片任务完成！死链接数目为:{}. 总共耗时:{}秒. 瓦片存储至{}.'.format("{:.2f} \n".format(end - start), dead_link, output_path))
     return True
 
 
@@ -172,7 +174,7 @@ def get_tile(url):
             respData = r.read()
             return respData
         except:
-            log.debug('{}请求失败！重新尝试...'.format(url))
+            # log.debug('{}请求失败！重新尝试...'.format(url))
             trytime += 1
 
         time.sleep(2)
