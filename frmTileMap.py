@@ -646,8 +646,15 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     row = self.model.rowCount(QModelIndex())
                     self.model.addEmptyRow(self.model.rowCount(QModelIndex()), 1, 0)
 
-                    self.tbl_address.model().setData(self.tbl_address.model().index(row, 0), imp['tileFolder'])
-                    self.tbl_address.model().setData(self.tbl_address.model().index(row, 1), imp['imageFile'])
+                    if 'tileFolder' not in imp:
+                        self.tbl_address.model().setData(self.tbl_address.model().index(row, 0), "")
+                    else:
+                        self.tbl_address.model().setData(self.tbl_address.model().index(row, 0), imp['tileFolder'])
+
+                    if 'imageFile' not in imp:
+                        self.tbl_address.model().setData(self.tbl_address.model().index(row, 1), "")
+                    else:
+                        self.tbl_address.model().setData(self.tbl_address.model().index(row, 1), imp['imageFile'])
         except:
             log.error("读取参数文件失败！", dialog=True)
 
