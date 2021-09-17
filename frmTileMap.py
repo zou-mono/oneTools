@@ -270,6 +270,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def run_process(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
         for row in rows:
+
+            # if self.rbtn_onlyHandle:
+            #     pass
+            # else:
             url_index, level_index, url, level = self.return_url_and_level(row)
 
             if url not in self.paras:

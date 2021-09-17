@@ -108,6 +108,7 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
                 iloop += 1
 
                 if os.path.exists(f'{output_path}/{i}_{j}.png'):
+                    # if os.path.getsize(f'{output_path}/{i}_{j}.png') > 0:
                     continue
                 # tile_url = url + "/tile/" + str(level) + "/" + str(i) + "/" + str(j)
                 tile_url = f'{url}/tile/{level}/{i}/{j}'
@@ -172,7 +173,10 @@ def get_tile(url):
             req = urllib.request.Request(url=url)
             r = urllib.request.urlopen(req)
             respData = r.read()
-            return respData
+            if len(respData) > 0:
+                return respData
+            else:
+                raise Exception("传回数据为空")
         except:
             # log.debug('{}请求失败！重新尝试...'.format(url))
             trytime += 1
@@ -209,7 +213,10 @@ async def get_tile_async(url, output_path, i, j):
         try:
             respData = await send_http(session, method="get", respond_Type="content", url=url, retries=0)
             # response = await session.post(url, data=data, headers=reqheaders)
-            return respData, url, output_path, i, j
+            if len(respData) > 0:
+                return respData, url, output_path, i, j
+            else:
+                raise Exception("传回数据为空")
         except:
             # log.error('url:{} error:{}'.format(url, traceback.format_exc()))
             return None, url, output_path, i, j
