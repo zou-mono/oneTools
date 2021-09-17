@@ -11,26 +11,28 @@
     "tileFolder": "D:/Codes/Spider/tilemap_ui/data/tiles/aHR0cDovL3N1cGxpY21hcC5wbnIuc3ovdGlsZXN6bWFwXzEvcmVzdC9zZXJ2aWNlcy9TWklNQUdFL1NaQVZJMjAwMV8xMDBaV0RML0ltYWdlU2VydmVy/3",
     "imageFile": "D:/Codes/Spider/tilemap_ui/data/output_img"
   },
-  "D:/Codes/oneTools/data/tiles/aHR0cDovL21waXAuc3pwbC5nb3YvdGlsZW1hcF8xL3Jlc3Qvc2VydmljZXMvSU1BR0UvU1pBVkkyMDIwMTJfMjBaV180NTQ3L0ltYWdlU2VydmVy/7_D:/Codes/oneTools/data/tiles/aHR0cDovL21waXAuc3pwbC5nb3YvdGlsZW1hcF8xL3Jlc3Qvc2VydmljZXMvSU1BR0UvU1pBVkkyMDIwMTJfMjBaV180NTQ3L0ltYWdlU2VydmVy/level7": {
+  "_": {
     "origin_x": "-5123200",
     "origin_y": "10002100",
     "xmin": "474210.4",
-    "ymin": "2477590.74183",
     "xmax": "564370.6000000001",
+    "ymin": "2477590.74183",
     "ymax": "2530753.3418300003",
-    "resolution": "1.3229193125052918",
-    "tilesize": "256"
-  },
-  "D:/Codes/oneTools/data/tiles/aHR0cDovL21waXAuc3pwbC5nb3YvdGlsZW1hcF8xL3Jlc3Qvc2VydmljZXMvSU1BR0UvU1pBVkkyMDIwMTJfMjBaV180NTQ3L0ltYWdlU2VydmVy/5_D:/Codes/oneTools/data/tiles/aHR0cDovL21waXAuc3pwbC5nb3YvdGlsZW1hcF8xL3Jlc3Qvc2VydmljZXMvSU1BR0UvU1pBVkkyMDIwMTJfMjBaV180NTQ3L0ltYWdlU2VydmVy/level5": {
-    "origin_x": "-5123200",
-    "origin_y": "10002100",
-    "resolution": "5.291677250021167",
     "tilesize": "256",
+    "resolution": "5.291677250021167",
+    "tileFolder": "",
+    "imageFile": ""
+  },
+  "D:\\Codes/oneTools/data/tiles/aHR0cDovL21waXAuc3pwbC5nb3YvdGlsZW1hcF8xL3Jlc3Qvc2VydmljZXMvSU1BR0UvU1pBVkkyMDIwMTJfMjBaV180NTQ3L0ltYWdlU2VydmVy/5_D:/Codes/oneTools/data/tiles/aHR0cDovL21waXAuc3pwbC5nb3YvdGlsZW1hcF8xL3Jlc3Qvc2VydmljZXMvSU1BR0UvU1pBVkkyMDIwMTJfMjBaV180NTQ3L0ltYWdlU2VydmVy/level5": {
+    "origin_x": "-5123200",
+    "origin_y": "10002100",
     "xmin": "474210.4",
-    "ymin": "2477590.74183",
     "xmax": "564370.6000000001",
+    "ymin": "2477590.74183",
     "ymax": "2530753.3418300003",
-    "tileFolder": "D:/Codes/oneTools/data/tiles/aHR0cDovL21waXAuc3pwbC5nb3YvdGlsZW1hcF8xL3Jlc3Qvc2VydmljZXMvSU1BR0UvU1pBVkkyMDIwMTJfMjBaV180NTQ3L0ltYWdlU2VydmVy/5",
+    "tilesize": "256",
+    "resolution": "5.291677250021167",
+    "tileFolder": "D:\\Codes/oneTools/data/tiles/aHR0cDovL21waXAuc3pwbC5nb3YvdGlsZW1hcF8xL3Jlc3Qvc2VydmljZXMvSU1BR0UvU1pBVkkyMDIwMTJfMjBaV180NTQ3L0ltYWdlU2VydmVy/5",
     "imageFile": "D:/Codes/oneTools/data/tiles/aHR0cDovL21waXAuc3pwbC5nb3YvdGlsZW1hcF8xL3Jlc3Qvc2VydmljZXMvSU1BR0UvU1pBVkkyMDIwMTJfMjBaV180NTQ3L0ltYWdlU2VydmVy/level5"
   }
 }

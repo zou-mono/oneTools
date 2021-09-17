@@ -128,6 +128,7 @@ class addressTableDelegate(QStyledItemDelegate):
                 #         self.cmb_level.addItem(str(data))
                 url_index, level_index, url, level = self.mainWindow.return_url_and_level(self.index.row())
                 key = ""
+
                 if url in index.model().levelData():
                     key = url
                 if url + "_" + str(level) in index.model().levelData():
@@ -199,6 +200,7 @@ class addressTableDelegate(QStyledItemDelegate):
 
     def commitAndCloseEditor(self):
         url_index, level_index, url, level = self.mainWindow.return_url_and_level(self.index.row())
+
         old_key = str(url) + "_" + str(level)
 
         editor = self.sender()
@@ -207,6 +209,7 @@ class addressTableDelegate(QStyledItemDelegate):
         if url == '' or level == '':
             return
         new_url_index, new_level_index, new_url, new_level = self.mainWindow.return_url_and_level(self.index.row())
+
         new_key = str(new_url) + "_" + str(new_level)
         if old_key != new_key:
             self.mainWindow.update_all_paras_value(old_key, new_key, new_url, new_level)

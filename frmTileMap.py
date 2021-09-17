@@ -179,6 +179,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     @Slot()
     def btn_saveMetaFile_clicked(self):
+        fileName = ''
         datas = self.tbl_address.model().datas
         # selModel = self.tbl_address.selectionModel()
         # if selModel is None:
@@ -237,18 +238,26 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             if bHasData and bool(self.paras):
                 fileName, fileType = QFileDialog.getSaveFileName(self, "请选择保存的参数文件", os.getcwd(),
                                                                  "json file(*.json)")
-            for row in rows:
-                tileFolder = datas[row][0]
-                imageFile = datas[row][1]
-                key = tileFolder + "_" + imageFile
 
-                if key in self.paras:
-                    self.paras[key]['tileFolder'] = tileFolder
-                    self.paras[key]['imageFile'] = imageFile
-                else:
-                    self.paras[key] = self.update_para_dict()
-                    self.paras[key]['tileFolder'] = tileFolder
-                    self.paras[key]['imageFile'] = imageFile
+                keys = []
+                for row in rows:
+                    tileFolder = datas[row][0]
+                    imageFile = datas[row][1]
+                    key = tileFolder + "_" + imageFile
+
+                    keys.append(key)
+
+                    if key in self.paras:
+                        self.paras[key]['tileFolder'] = tileFolder
+                        self.paras[key]['imageFile'] = imageFile
+                    else:
+                        self.paras[key] = self.update_para_dict()
+                        self.paras[key]['tileFolder'] = tileFolder
+                        self.paras[key]['imageFile'] = imageFile
+
+                for k in list(self.paras.keys()):
+                    if k not in keys:
+                        del self.paras[k]
         try:
             if fileName != '':
                 with open(fileName, 'w', encoding='UTF-8') as f:
@@ -773,10 +782,11 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     def update_txt_info(self, index: QModelIndex, level=-1):
         # print([index.row(), index.column()])
-        key1_index = self.tbl_address.model().index(index.row(), 0)
-        key1 = self.tbl_address.model().data(key1_index, Qt.DisplayRole)
-        key2_index = self.tbl_address.model().index(index.row(), 1)
-        key2 = self.tbl_address.model().data(key2_index, Qt.DisplayRole)
+        key1_index, key2_index, key1, key2 = self.return_url_and_level(index.row())
+        # key1_index = self.tbl_address.model().index(index.row(), 0)
+        # key1 = self.tbl_address.model().data(key1_index, Qt.DisplayRole)
+        # key2_index = self.tbl_address.model().index(index.row(), 1)
+        # key2 = self.tbl_address.model().data(key2_index, Qt.DisplayRole)
 
         self.txt_level.setText("")
         self.txt_originX.setText("")

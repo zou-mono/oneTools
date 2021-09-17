@@ -531,10 +531,11 @@ class Ui_Window(QDialog, Ui_Dialog):
         return url_index, level_index, url, level
 
     def update_txt_info(self, index: QModelIndex, level=-1):
-        key1_index = self.tbl_address.model().index(index.row(), 0)
-        key1 = self.tbl_address.model().data(key1_index, Qt.DisplayRole)
-        key2_index = self.tbl_address.model().index(index.row(), 1)
-        key2 = self.tbl_address.model().data(key2_index, Qt.DisplayRole)
+        # key1_index = self.tbl_address.model().index(index.row(), 0)
+        # key1 = self.tbl_address.model().data(key1_index, Qt.DisplayRole)
+        # key2_index = self.tbl_address.model().index(index.row(), 1)
+        # key2 = self.tbl_address.model().data(key2_index, Qt.DisplayRole)
+        key1_index, key2_index, key1, key2 = self.return_url_and_level(index.row())
 
         self.txt_xmin.setText("")
         self.txt_xmax.setText("")
