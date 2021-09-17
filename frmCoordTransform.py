@@ -89,9 +89,14 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.coordTransformThread.transform_tbl.connect(self.coordTransformThread.tableTransform)
         self.coordTransformThread.finished.connect(self.threadStop)
 
+        self.bInit = True
+
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
         log.setLogViewer(parent=self, logViewer=self.txt_log)
-        self.rbtn_file.click()
+        if self.bInit:
+            self.rbtn_file.click()
+            self.bInit = False
+
         # self.table_layout()
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:

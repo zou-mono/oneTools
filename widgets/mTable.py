@@ -161,17 +161,17 @@ class addressTableDelegate(QStyledItemDelegate):
             self.mainWindow.update_txt_info(self.index, self.cmb_level.currentText())
 
     def mBtn_address_clicked(self, parent, title, type):
-            if type == 'f':
-                fileName, fileType = QFileDialog.getSaveFileName(parent, title, os.getcwd(),
-                                                                 "All Files(*)")
-            elif type == 'd':
-                fileName = QFileDialog.getExistingDirectory(parent, title, os.getcwd(), QFileDialog.ShowDirsOnly)
+        if type == 'f':
+            fileName, fileType = QFileDialog.getSaveFileName(parent, title, os.getcwd(),
+                                                             "All Files(*)")
+        elif type == 'd':
+            fileName = QFileDialog.getExistingDirectory(parent, title, os.getcwd(), QFileDialog.ShowDirsOnly)
 
-            if not sip.isdeleted(self.mAddressDialog):
-                self.mAddressDialog.setText(fileName)
-                self.commitAndCloseEditor()
-            else:
-                print("deleted, {}".format(fileName))
+        if not sip.isdeleted(self.mAddressDialog):
+            self.mAddressDialog.setText(fileName)
+            self.commitAndCloseEditor()
+        else:
+            print("deleted, {}".format(fileName))
 
     def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex) -> None:
         if isinstance(editor, FileAddressEditor):
@@ -204,6 +204,7 @@ class addressTableDelegate(QStyledItemDelegate):
         old_key = str(url) + "_" + str(level)
 
         editor = self.sender()
+        editor.mTxt_address.setText(editor.mTxt_address.text().replace("\\", "/"))  # 统一将路径的反斜杠改成正斜杠
         self.commitData.emit(editor)
         self.closeEditor.emit(editor)
         if url == '' or level == '':
@@ -214,7 +215,8 @@ class addressTableDelegate(QStyledItemDelegate):
         if old_key != new_key:
             self.mainWindow.update_all_paras_value(old_key, new_key, new_url, new_level)
 
-    def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: 'QStyleOptionViewItem', index: QModelIndex) -> bool:
+    def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: 'QStyleOptionViewItem',
+                    index: QModelIndex) -> bool:
         if (event.type() == QEvent.MouseButtonPress and
                 event.button() == Qt.LeftButton and
                 index in option.widget.selectedIndexes()):
@@ -439,6 +441,7 @@ class xyfieldDelegate(QStyledItemDelegate):
         print(i)
         pass
 
+
 class TableModel(QAbstractTableModel):
     def __init__(self, parent=None):
         super(TableModel, self).__init__(parent)
@@ -461,7 +464,8 @@ class TableModel(QAbstractTableModel):
         return len(self.headers)
 
     def flags(self, index):
-        f = Qt.ItemFlags(super(TableModel, self).flags(index) | Qt.ItemIsEditable | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled)
+        f = Qt.ItemFlags(
+            super(TableModel, self).flags(index) | Qt.ItemIsEditable | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled)
         if not index.isValid():
             f = f | Qt.ItemIsEnabled | Qt.ItemIsDragEnabled
         return f
@@ -564,7 +568,8 @@ class TableModel(QAbstractTableModel):
         mimeData.setData('application/x-tableview-dragRow', encodedData)
         return mimeData
 
-    def dropMimeData(self, data: 'QMimeData', action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
+    def dropMimeData(self, data: 'QMimeData', action: Qt.DropAction, row: int, column: int,
+                     parent: QModelIndex) -> bool:
         if action == Qt.IgnoreAction:
             return True
         if column > 0:
@@ -606,7 +611,8 @@ class TableModel(QAbstractTableModel):
 
         return True
 
-    def moveRows(self, sourceParent: QModelIndex, sourceRow: int, count: int, destinationParent: QModelIndex, destinationChild: int) -> bool:
+    def moveRows(self, sourceParent: QModelIndex, sourceRow: int, count: int, destinationParent: QModelIndex,
+                 destinationChild: int) -> bool:
         self.beginMoveRows(QModelIndex(), sourceRow, sourceRow + count - 1, QModelIndex(), destinationChild)
         for i in range(0, count):
             self.datas.insert(destinationChild + i, self.datas[sourceRow])
@@ -614,6 +620,3 @@ class TableModel(QAbstractTableModel):
             self.datas.remove(self.datas[removeIndex])
         self.endMoveRows()
         return True
-
-
-

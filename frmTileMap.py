@@ -95,6 +95,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.crawlTilesThread.finished.connect(self.threadStop)
         self.crawlTilesThread.merge.connect(self.crawlTilesThread.mergeTiles)
 
+        self.bInit = True  # 第一次初始化窗口
+
     def update_para_value(self, key, editor, bSel=True):
         value = editor.text()
         if bSel and self.selIndex.row() < 0:
@@ -122,7 +124,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def update_all_paras_value(self, oldValue, newValue, url, level):
         print(oldValue)
         if self.rbtn_onlyHandle.isChecked():
-            del self.paras[oldValue]
+            if oldValue in self.paras:
+                del self.paras[oldValue]
             self.paras[newValue] = self.update_para_dict()
 
     @Slot()
@@ -407,7 +410,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
         log.setLogViewer(parent=self, logViewer=self.txt_log)
-        self.rbtn_spiderAndHandle.click()
+        if self.bInit:
+            self.rbtn_spiderAndHandle.click()
+            self.bInit = False
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
         self.table_layout()
