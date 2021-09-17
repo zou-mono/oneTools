@@ -200,9 +200,12 @@ class addressTableDelegate(QStyledItemDelegate):
     def commitAndCloseEditor(self):
         url_index, level_index, url, level = self.mainWindow.return_url_and_level(self.index.row())
         old_key = str(url) + "_" + str(level)
+
         editor = self.sender()
         self.commitData.emit(editor)
         self.closeEditor.emit(editor)
+        if url == '' or level == '':
+            return
         new_url_index, new_level_index, new_url, new_level = self.mainWindow.return_url_and_level(self.index.row())
         new_key = str(new_url) + "_" + str(new_level)
         if old_key != new_key:

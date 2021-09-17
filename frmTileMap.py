@@ -276,11 +276,12 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             # else:
             url_index, level_index, url, level = self.return_url_and_level(row)
 
-            if url not in self.paras:
-                log.error("{}地址错误".format(url))
-                continue
 
             if self.rbtn_spiderAndHandle.isChecked():
+                if url not in self.paras:
+                    log.error("{}地址错误".format(url))
+                    continue
+
                 paras = self.paras[url]['paras'][level]
                 tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
                 imgFile_index = self.tbl_address.model().index(row, 3, QModelIndex())
@@ -305,6 +306,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                                                          float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']),
                                                          tileFolder, imgFile)
             elif self.rbtn_onlySpider.isChecked():
+                if url not in self.paras:
+                    log.error("{}地址错误".format(url))
+                    continue
+
                 paras = self.paras[url]['paras'][level]
                 tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
                 tileFolder = str(self.tbl_address.model().data(tileFolder_index, Qt.DisplayRole)).strip()
@@ -322,6 +327,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                                                  float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']), tileFolder)
             elif self.rbtn_onlyHandle.isChecked():
                 key = url + "_" + level
+                if key not in self.paras:
+                    log.error("参数错误！")
+                    continue
+
                 paras = self.paras[key]
                 imgFile_index = self.tbl_address.model().index(row, 1, QModelIndex())
                 imgFile = str(self.tbl_address.model().data(imgFile_index, Qt.DisplayRole)).strip()
