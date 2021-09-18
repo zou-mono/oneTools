@@ -178,7 +178,7 @@ def create_merge_file(temp_file, tilewidth, tileheight, tilesize):
     try:
         # log.info('开始创建merged_file...')
         dr = gdal.GetDriverByName("GTiff")
-        out_ds = dr.Create(temp_file, tilewidth * tilesize, tileheight * tilesize, 3, gdal.GDT_Int16, options=["BIGTIFF=YES", "COMPRESS=LZW", "TILED=YES", "INTERLEAVE=PIXEL"])
+        out_ds = dr.Create(temp_file, tilewidth * tilesize, tileheight * tilesize, 3, gdal.GDT_Int16, options=["BIGTIFF=YES", "COMPRESS=NONE", "TILED=YES", "INTERLEAVE=PIXEL"])
         # log.info('创建成功.')
         return out_ds
     except:
