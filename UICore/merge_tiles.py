@@ -150,7 +150,7 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
 
     tmp_ds = gdal.Open(temp_file, 1)
     # gdal的config放在creationOptions参数里面
-    translateOptions = gdal.TranslateOptions(format='GTiff', creationOptions=["BIGTIFF=YES", "COMPRESS=LZW"], GCPs=gcp_list)
+    translateOptions = gdal.TranslateOptions(format='GTiff', creationOptions=["BIGTIFF=YES", "COMPRESS=LZW"], GCPs=gcp_list, callback=progress_callback)
     gdal.Translate(merged_file, tmp_ds, options=translateOptions)
     tmp_ds = None
     log.info("影像纠偏完成.")
@@ -158,12 +158,20 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
     log.info("开始构建影像金字塔...")
     out_ds = gdal.OpenEx(merged_file, gdal.OF_RASTER | gdal.OF_READONLY)
     gdal.SetConfigOption('COMPRESS_OVERVIEW', 'LZW')
-    out_ds.BuildOverviews("nearest", range(2, 16, 2))  # 第二个参数表示建立多少级金字塔, QGIS里面默认是2,4,8,16
+    out_ds.BuildOverviews("nearest", range(2, 16, 2), callback=progress_callback)  # 第二个参数表示建立多少级金字塔, QGIS里面默认是2,4,8,16
     out_ds=None
     log.info("影像金字塔构建成功.")
 
     end = time.time()
     log.info("合并瓦片任务完成! 总共耗时{}秒. 影像存储至{}.\n".format("{:.2f}".format(end - start), merged_file))
+
+
+def progress_callback(complete, message, unknown):
+    # Calculate percent by integer values (1, 2, ..., 100)
+    if int(complete * 100) % 20 == 0:
+        percent = int(complete * 100)
+        log.debug("{}%".format(percent))
+    return 1
 
 
 def create_merge_file(temp_file, tilewidth, tileheight, tilesize):
