@@ -123,7 +123,8 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
                 else:
                     tasks.append(asyncio.ensure_future(output_img_asyc(tile_url, output_path, i, j)))
 
-        loop.run_until_complete(asyncio.wait(tasks))
+        if len(tasks) > 0:
+            loop.run_until_complete(asyncio.wait(tasks))
         log.info('协程抓取完成.')
 
         dead_link = 0
@@ -142,7 +143,7 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
     if lock.locked():
         lock.release()
     # log.info('爬取瓦片任务完成！瓦片存储至{}.'.format(output_path))
-    log.info('爬取瓦片任务完成！死链接数目为:{}. 总共耗时:{}秒. 瓦片存储至{}.'.format("{:.2f} \n".format(end - start), dead_link, output_path))
+    log.info('爬取瓦片任务完成！总共耗时:{}秒. 死链接数目为:{}. 瓦片存储至{}.'.format("{:.2f} \n".format(end - start), dead_link, output_path))
     return True
 
 

@@ -204,6 +204,7 @@ class addressTableDelegate(QStyledItemDelegate):
         old_key = str(url) + "_" + str(level)
 
         editor = self.sender()
+        # if editor.mTxt_address is not None:
         editor.mTxt_address.setText(editor.mTxt_address.text().replace("\\", "/"))  # 统一将路径的反斜杠改成正斜杠
         self.commitData.emit(editor)
         self.closeEditor.emit(editor)
