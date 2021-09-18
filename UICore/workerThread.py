@@ -1,7 +1,7 @@
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 from UICore.suplicmap_tilemap import crawl_tilemap
-from UICore.merge_tiles2 import merge_tiles
+from UICore.merge_tiles import merge_tiles
 from UICore.log4p import Log
 from UICore.suplicmap_vector2 import crawl_vector, crawl_vector_batch
 from UICore.coordTransform import coordTransform

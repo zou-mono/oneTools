@@ -81,32 +81,59 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
     cur_path = os.path.dirname(merged_file)
     if not os.path.exists(os.path.join(cur_path, "tmp")):
         os.makedirs(os.path.join(cur_path, "tmp"))
-    temp_file = os.path.join(cur_path, "tmp", name + "_temp" + "." + suffix)    # 没有纠偏的临时文件
+    temp_file = os.path.join(cur_path, "tmp", name + "_temp" + "." + suffix)    # 纠偏后的临时文件
+    temp_origin_file = os.path.join(cur_path, "tmp", name + "_origin_temp" + "." + suffix)    # 没有纠偏的临时文件
 
     start = time.time()
 
     if os.path.exists(temp_file):
         os.remove(temp_file)
+    if os.path.exists(temp_origin_file):
+        os.remove(temp_origin_file)
 
-    out_ds = create_merge_file(temp_file, tilewidth, tileheight, tilesize)
+    out_ds = create_merge_file(temp_origin_file, tilewidth, tileheight, tilesize)
 
     if out_ds is None:
         return
 
+    log.info("开始影像纠偏...")
+    gcp_x0 = math.floor(((minX - originX) - min_col * (resolution * tilesize)) / resolution)
+    gcp_y0 = math.floor(((originY - maxY) - min_row * (resolution * tilesize)) / resolution)
+    gcp_x1 = tilewidth * tilesize - (tilesize - math.floor(((maxX - originX) - max_col * (resolution * tilesize)) / resolution))
+    gcp_y1 = tileheight * tilesize - (tilesize - math.floor(((originY - minY) - max_row * (resolution * tilesize)) / resolution))
+
+    gcp_list = [gdal.GCP(minX, maxY, 0, gcp_x0, gcp_y0),
+                gdal.GCP(maxX, maxY, 0, gcp_x1, gcp_y0),
+                gdal.GCP(minX, minY, 0, gcp_x0, gcp_y1),
+                gdal.GCP(maxX, minY, 0, gcp_x1, gcp_y1)]
+
+    # gdal的config放在creationOptions参数里面
+    translateOptions = gdal.TranslateOptions(format='GTiff', creationOptions=["BIGTIFF=YES", "COMPRESS=NONE"], GCPs=gcp_list, callback=progress_callback)
+    gdal.Translate(merged_file, out_ds, options=translateOptions)
+    log.info("影像纠偏完成.")
+    out_ds = None
+
+    if os.path.exists(temp_origin_file):
+        os.remove(temp_origin_file)
+
+    log.info('开始拼接...')
+    out_ds = gdal.Open(merged_file, 1)
     out_r = out_ds.GetRasterBand(1)
     out_g = out_ds.GetRasterBand(2)
     out_b = out_ds.GetRasterBand(3)
 
-    log.info('开始拼接...')
     icount = 0
     iprop = 1
     total_count = tilewidth * tileheight
+
     for root, subDir, files in os.walk(input_folder):  # e:/8_res E:/Source code/TrafficDataAnalysis/Spider/res/tilemap/5
         for filename in files:
             ds = gdal.Open(os.path.join(root, filename))
+
             redBand = ds.GetRasterBand(1)
             greenBand = ds.GetRasterBand(2)
             blueBand = ds.GetRasterBand(3)
+
             r = redBand.ReadRaster(0, 0, tilesize, tilesize, tilesize, tilesize, gdal.GDT_Int16)
             g = greenBand.ReadRaster(0, 0, tilesize, tilesize, tilesize, tilesize, gdal.GDT_Int16)
             b = blueBand.ReadRaster(0, 0, tilesize, tilesize, tilesize, tilesize, gdal.GDT_Int16)
@@ -117,10 +144,6 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
             out_r.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, r, tilesize, tilesize)
             out_g.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, g, tilesize, tilesize)
             out_b.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, b, tilesize, tilesize)
-
-            # out_r.FlushCache()
-            # out_g.FlushCache()
-            # out_b.FlushCache()
 
             icount += 1
             # if icount % 1000 == 0:
@@ -137,23 +160,10 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
     else:
         log.info('拼接完成.')
 
-    log.info("开始影像纠偏...")
-    gcp_x0 = math.floor(((minX - originX) - min_col * (resolution * tilesize)) / resolution)
-    gcp_y0 = math.floor(((originY - maxY) - min_row * (resolution * tilesize)) / resolution)
-    gcp_x1 = tilewidth * tilesize - (tilesize - math.floor(((maxX - originX) - max_col * (resolution * tilesize)) / resolution))
-    gcp_y1 = tileheight * tilesize - (tilesize - math.floor(((originY - minY) - max_row * (resolution * tilesize)) / resolution))
-
-    gcp_list = [gdal.GCP(minX, maxY, 0, gcp_x0, gcp_y0),
-                gdal.GCP(maxX, maxY, 0, gcp_x1, gcp_y0),
-                gdal.GCP(minX, minY, 0, gcp_x0, gcp_y1),
-                gdal.GCP(maxX, minY, 0, gcp_x1, gcp_y1)]
-
-    tmp_ds = gdal.Open(temp_file, 1)
-    # gdal的config放在creationOptions参数里面
-    translateOptions = gdal.TranslateOptions(format='GTiff', creationOptions=["BIGTIFF=YES", "COMPRESS=LZW"], GCPs=gcp_list, callback=progress_callback)
-    gdal.Translate(merged_file, tmp_ds, options=translateOptions)
-    tmp_ds = None
-    log.info("影像纠偏完成.")
+    # log.info("开始压缩...")
+    # translateOptions = gdal.TranslateOptions(format='GTiff', creationOptions=["BIGTIFF=YES", "COMPRESS=LZW"], callback=progress_callback)
+    # gdal.Translate("tmp.tiff", temp_file, options=translateOptions)
+    # log.info("压缩完成...")
 
     log.info("开始构建影像金字塔...")
     out_ds = gdal.OpenEx(merged_file, gdal.OF_RASTER | gdal.OF_READONLY)
