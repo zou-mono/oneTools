@@ -6,6 +6,7 @@ import click
 import math
 import traceback
 from UICore.common import get_col_row
+import asyncio
 
 log = Log(__name__)
 try_num = 10
@@ -85,49 +86,69 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
 
     start = time.time()
 
-    if os.path.exists(temp_file):
-        os.remove(temp_file)
-
-    out_ds = create_merge_file(temp_file, tilewidth, tileheight, tilesize)
+    log.info("创建输出文件...")
+    out_ds = create_merge_file(merged_file, tilewidth, tileheight, tilesize)
 
     if out_ds is None:
+        log.error("输出文件创建失败!")
         return
+    log.info("输出文件创建成功！")
 
-    out_r = out_ds.GetRasterBand(1)
-    out_g = out_ds.GetRasterBand(2)
-    out_b = out_ds.GetRasterBand(3)
+    log.info("开始影像纠偏...")
+
+    ulx = originX + min_col * tilesize * resolution
+    uly = originY - min_row * tilesize * resolution
+
+    geotransform = [ulx, resolution, 0, uly, 0, -resolution]
+    out_ds.SetGeoTransform(geotransform)
+
+    log.info("影像纠偏完成.")
+    out_ds = None
+
+    # if os.path.exists(temp_origin_file):
+    #     os.remove(temp_origin_file)
+
+    out_ds = gdal.Open(merged_file, 1)
 
     log.info('开始拼接...')
-    icount = 0
-    iprop = 1
-    total_count = tilewidth * tileheight
-    for root, subDir, files in os.walk(input_folder):  # e:/8_res E:/Source code/TrafficDataAnalysis/Spider/res/tilemap/5
-        for filename in files:
-            ds = gdal.Open(os.path.join(root, filename))
-            redBand = ds.GetRasterBand(1)
-            greenBand = ds.GetRasterBand(2)
-            blueBand = ds.GetRasterBand(3)
-            r = redBand.ReadRaster(0, 0, tilesize, tilesize, tilesize, tilesize, gdal.GDT_Int16)
-            g = greenBand.ReadRaster(0, 0, tilesize, tilesize, tilesize, tilesize, gdal.GDT_Int16)
-            b = blueBand.ReadRaster(0, 0, tilesize, tilesize, tilesize, tilesize, gdal.GDT_Int16)
+    try:
+        icount = 0
+        total_count = tilewidth * tileheight
+        tasks = []
+        loop = asyncio.ProactorEventLoop()
+        asyncio.set_event_loop(loop)
 
-            name = os.path.splitext(filename)[0]
-            y = int(name.split('_')[0])
-            x = int(name.split('_')[1])
-            out_r.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, r, tilesize, tilesize)
-            out_g.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, g, tilesize, tilesize)
-            out_b.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, b, tilesize, tilesize)
+        for root, subDirs, files in os.walk(input_folder):  # e:/8_res E:/Source code/TrafficDataAnalysis/Spider/res/tilemap/5
+            for subDir in subDirs:
+                y = int(subDir)
+                for root2, subDirs2, files2 in os.walk(os.path.join(root, subDir)):
+                # input_file = os.path.join(root, filename)
+                #
+                # name = os.path.splitext(filename)[0]
+                    for filename in files2:
+                        x = int(os.path.splitext(filename)[0])
+                        input_file = os.path.join(root, subDir, filename)
 
-            # out_r.FlushCache()
-            # out_g.FlushCache()
-            # out_b.FlushCache()
+                        icount += 1
 
-            icount += 1
-            # if icount % 1000 == 0:
-            #     log.debug("{:.0%}".format(icount / total_count))
-            if int(icount * 100 / total_count) == iprop * 20:
-                log.debug("{:.0%}".format(icount / total_count))
-                iprop += 1
+                        if len(tasks) >= 5000:
+                            tasks.append(asyncio.ensure_future(merge_one_tile(input_file, out_ds, tilesize, x, y, min_col, min_row)))
+                            loop.run_until_complete(asyncio.wait(tasks))
+
+                            tasks = []
+
+                            log.debug("{:.0%}".format(icount / total_count))
+                            continue
+                        else:
+                            tasks.append(asyncio.ensure_future(merge_one_tile(input_file, out_ds, tilesize, x, y, min_col, min_row)))
+
+        if len(tasks) > 0:
+            loop.run_until_complete(asyncio.wait(tasks))
+
+    except:
+        log.error("拼接失败，请检查输入文件！{}".format(traceback.format_exc()))
+        return
+
     out_ds = None
     dr = None
 
@@ -136,24 +157,6 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
         return
     else:
         log.info('拼接完成.')
-
-    log.info("开始影像纠偏...")
-    gcp_x0 = math.floor(((minX - originX) - min_col * (resolution * tilesize)) / resolution)
-    gcp_y0 = math.floor(((originY - maxY) - min_row * (resolution * tilesize)) / resolution)
-    gcp_x1 = tilewidth * tilesize - (tilesize - math.floor(((maxX - originX) - max_col * (resolution * tilesize)) / resolution))
-    gcp_y1 = tileheight * tilesize - (tilesize - math.floor(((originY - minY) - max_row * (resolution * tilesize)) / resolution))
-
-    gcp_list = [gdal.GCP(minX, maxY, 0, gcp_x0, gcp_y0),
-                gdal.GCP(maxX, maxY, 0, gcp_x1, gcp_y0),
-                gdal.GCP(minX, minY, 0, gcp_x0, gcp_y1),
-                gdal.GCP(maxX, minY, 0, gcp_x1, gcp_y1)]
-
-    tmp_ds = gdal.Open(temp_file, 1)
-    # gdal的config放在creationOptions参数里面
-    translateOptions = gdal.TranslateOptions(format='GTiff', creationOptions=["BIGTIFF=YES", "COMPRESS=LZW"], GCPs=gcp_list, callback=progress_callback)
-    gdal.Translate(merged_file, tmp_ds, options=translateOptions)
-    tmp_ds = None
-    log.info("影像纠偏完成.")
 
     log.info("开始构建影像金字塔...")
     out_ds = gdal.OpenEx(merged_file, gdal.OF_RASTER | gdal.OF_READONLY)
@@ -164,6 +167,41 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
 
     end = time.time()
     log.info("合并瓦片任务完成! 总共耗时{}秒. 影像存储至{}.\n".format("{:.2f}".format(end - start), merged_file))
+
+
+async def merge_one_tile(input_file, out_ds, tilesize, x, y, min_col, min_row):
+    ds = gdal.Open(input_file)
+
+    r, g, b = await read_raster(ds, 0, 0, tilesize, tilesize, gdal.GDT_Int16)
+
+    await write_raster(out_ds, x, y, min_col, min_row, tilesize, tilesize, r, g, b)
+    # out_r.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, r, tilesize, tilesize)
+    # out_g.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, g, tilesize, tilesize)
+    # out_b.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, b, tilesize, tilesize)
+
+    ds = None
+
+
+async def read_raster(ds, x0, y0, tilesize_x, tilesize_y, type):
+    redBand = ds.GetRasterBand(1)
+    greenBand = ds.GetRasterBand(2)
+    blueBand = ds.GetRasterBand(3)
+
+    r = redBand.ReadRaster(x0, y0, tilesize_x, tilesize_y, tilesize_x, tilesize_y, type)
+    g = greenBand.ReadRaster(x0, y0, tilesize_x, tilesize_y, tilesize_x, tilesize_y, type)
+    b = blueBand.ReadRaster(x0, y0, tilesize_x, tilesize_y, tilesize_x, tilesize_y, type)
+
+    return r, g, b
+
+
+async def write_raster(out_ds, x, y, min_col, min_row, tilesize_x, tilesize_y, r, g, b):
+    out_r = out_ds.GetRasterBand(1)
+    out_g = out_ds.GetRasterBand(2)
+    out_b = out_ds.GetRasterBand(3)
+
+    out_r.WriteRaster((x - min_col) * tilesize_x, (y - min_row) * tilesize_y, tilesize_x, tilesize_y, r, tilesize_x, tilesize_y)
+    out_g.WriteRaster((x - min_col) * tilesize_x, (y - min_row) * tilesize_y, tilesize_x, tilesize_y, g, tilesize_x, tilesize_y)
+    out_b.WriteRaster((x - min_col) * tilesize_x, (y - min_row) * tilesize_y, tilesize_x, tilesize_y, b, tilesize_x, tilesize_y)
 
 
 def progress_callback(complete, message, unknown):
@@ -178,7 +216,7 @@ def create_merge_file(temp_file, tilewidth, tileheight, tilesize):
     try:
         # log.info('开始创建merged_file...')
         dr = gdal.GetDriverByName("GTiff")
-        out_ds = dr.Create(temp_file, tilewidth * tilesize, tileheight * tilesize, 3, gdal.GDT_Int16, options=["BIGTIFF=YES", "COMPRESS=LZW", "TILED=YES", "INTERLEAVE=PIXEL"])
+        out_ds = dr.Create(temp_file, tilewidth * tilesize, tileheight * tilesize, 3, gdal.GDT_Int16, options=["BIGTIFF=YES", "TILED=YES", "INTERLEAVE=PIXEL"])
         # log.info('创建成功.')
         return out_ds
     except:

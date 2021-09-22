@@ -107,7 +107,10 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
             for j in range(min_col, max_col + 1):
                 iloop += 1
 
-                if os.path.exists(f'{output_path}/{i}_{j}.png'):
+                if not os.path.exists(f'{output_path}/{i}'):
+                    os.makedirs(f'{output_path}/{i}')
+
+                if os.path.exists(f'{output_path}/{i}/{j}.png'):
                     # if os.path.getsize(f'{output_path}/{i}_{j}.png') > 0:
                     continue
                 # tile_url = url + "/tile/" + str(level) + "/" + str(i) + "/" + str(j)
@@ -190,7 +193,7 @@ def get_tile(url):
 def output_img(url, output_path, i, j):
     try:
         img = get_tile(url)
-        with open(f'{output_path}/{i}_{j}.png', "wb") as f:
+        with open(f'{output_path}/{i}/{j}.png', "wb") as f:
             f.write(img)
         return True
     except:
@@ -202,7 +205,7 @@ def output_img(url, output_path, i, j):
 def output_img2(url, output_path, i, j):
     try:
         img = get_tile(url)
-        with open(f'{output_path}/{i}_{j}.png', "wb") as f:
+        with open(f'{output_path}/{i}/{j}.png', "wb") as f:
             f.write(img)
         return True
     except:
@@ -231,7 +234,7 @@ async def output_img_asyc(url, output_path, i, j):
         # log.info('开始抓取...')
         if img is None:
             bSkip = True
-        with open(f'{output_path}/{i}_{j}.png', "wb") as f:
+        with open(f'{output_path}/{i}/{j}.png', "wb") as f:
             f.write(img)
     except:
         # await lock.acquire()
