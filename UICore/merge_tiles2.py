@@ -6,6 +6,7 @@ import click
 import math
 import traceback
 from UICore.common import get_col_row
+import asyncio
 
 log = Log(__name__)
 try_num = 10
@@ -67,6 +68,9 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
     minY = scope[2]
     maxY = scope[3]
 
+    d = gdal.Open(r"D:\Codes\oneTools\data\tiles\out5_1.tif")
+    print(d.GetGeoTransform())
+
     min_col, min_row = get_col_row(originX, originY, minX, maxY, tilesize, resolution)
     max_col, max_row = get_col_row(originX, originY, maxX, minY, tilesize, resolution)
 
@@ -104,8 +108,10 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
     # gcp_y0 = math.floor(((originY - maxY) - min_row * (resolution * tilesize)) / resolution)
     # gcp_x1 = tilewidth * tilesize - (tilesize - math.floor(((maxX - originX) - max_col * (resolution * tilesize)) / resolution))
     # gcp_y1 = tileheight * tilesize - (tilesize - math.floor(((originY - minY) - max_row * (resolution * tilesize)) / resolution))
+    ulx = originX + min_col * tilesize * resolution
+    uly = originY - min_row * tilesize * resolution
 
-    geotransform = [minX, tilewidth, 0, minY, 0, tileheight]
+    geotransform = [ulx, resolution, 0, uly, 0, -resolution]
     out_ds.SetGeoTransform(geotransform)
 
     # gcp_list = [gdal.GCP(minX, maxY, 0, gcp_x0, gcp_y0),
@@ -131,32 +137,32 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
     icount = 0
     iprop = 1
     total_count = tilewidth * tileheight
+    tasks = []
+    loop = asyncio.ProactorEventLoop()
+    asyncio.set_event_loop(loop)
 
     for root, subDir, files in os.walk(input_folder):  # e:/8_res E:/Source code/TrafficDataAnalysis/Spider/res/tilemap/5
         for filename in files:
-            ds = gdal.Open(os.path.join(root, filename))
-
-            redBand = ds.GetRasterBand(1)
-            greenBand = ds.GetRasterBand(2)
-            blueBand = ds.GetRasterBand(3)
-
-            r = redBand.ReadRaster(0, 0, tilesize, tilesize, tilesize, tilesize, gdal.GDT_Int16)
-            g = greenBand.ReadRaster(0, 0, tilesize, tilesize, tilesize, tilesize, gdal.GDT_Int16)
-            b = blueBand.ReadRaster(0, 0, tilesize, tilesize, tilesize, tilesize, gdal.GDT_Int16)
-
+            input_file = os.path.join(root, filename)
             name = os.path.splitext(filename)[0]
             y = int(name.split('_')[0])
             x = int(name.split('_')[1])
-            out_r.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, r, tilesize, tilesize)
-            out_g.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, g, tilesize, tilesize)
-            out_b.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, b, tilesize, tilesize)
 
             icount += 1
-            # if icount % 1000 == 0:
-            #     log.debug("{:.0%}".format(icount / total_count))
-            if int(icount * 100 / total_count) == iprop * 20:
-                log.debug("{:.0%}".format(icount / total_count))
-                iprop += 1
+
+            if icount >= 5000:
+                tasks.append(asyncio.ensure_future(merge_one_tile(input_file, out_ds, tilesize, x, y, min_col, min_row)))
+                loop.run_until_complete(asyncio.wait(tasks))
+
+                if int(icount * 100 / total_count) == iprop * 20:
+                    log.debug("{:.0%}".format(icount / total_count))
+                    iprop += 1
+            else:
+                tasks.append(asyncio.ensure_future(merge_one_tile(input_file, out_ds, tilesize, x, y, min_col, min_row)))
+
+    if len(tasks) > 0:
+        loop.run_until_complete(asyncio.wait(tasks))
+
     out_ds = None
     dr = None
 
@@ -180,6 +186,45 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
 
     end = time.time()
     log.info("合并瓦片任务完成! 总共耗时{}秒. 影像存储至{}.\n".format("{:.2f}".format(end - start), merged_file))
+
+
+async def merge_one_tile(input_file, out_ds, tilesize, x, y, min_col, min_row):
+    ds = gdal.Open(input_file)
+
+    out_r = out_ds.GetRasterBand(1)
+    out_g = out_ds.GetRasterBand(2)
+    out_b = out_ds.GetRasterBand(3)
+
+    r, g, b = await read_raster(ds, 0, 0, tilesize, tilesize, gdal.GDT_Int16)
+
+    await write_raster(out_ds, x, y, min_col, min_row, tilesize, tilesize, r, g, b)
+    # out_r.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, r, tilesize, tilesize)
+    # out_g.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, g, tilesize, tilesize)
+    # out_b.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, b, tilesize, tilesize)
+
+    ds = None
+
+
+async def read_raster(ds, x0, y0, tilesize_x, tilesize_y, type):
+    redBand = ds.GetRasterBand(1)
+    greenBand = ds.GetRasterBand(2)
+    blueBand = ds.GetRasterBand(3)
+
+    r = redBand.ReadRaster(x0, y0, tilesize_x, tilesize_y, tilesize_x, tilesize_y, type)
+    g = greenBand.ReadRaster(x0, y0, tilesize_x, tilesize_y, tilesize_x, tilesize_y, type)
+    b = blueBand.ReadRaster(x0, y0, tilesize_x, tilesize_y, tilesize_x, tilesize_y, type)
+
+    return r, g, b
+
+
+async def write_raster(out_ds, x, y, min_col, min_row, tilesize_x, tilesize_y, r, g, b):
+    out_r = out_ds.GetRasterBand(1)
+    out_g = out_ds.GetRasterBand(2)
+    out_b = out_ds.GetRasterBand(3)
+
+    out_r.WriteRaster((x - min_col) * tilesize_x, (y - min_row) * tilesize_y, tilesize_x, tilesize_y, r, tilesize_x, tilesize_y)
+    out_g.WriteRaster((x - min_col) * tilesize_x, (y - min_row) * tilesize_y, tilesize_x, tilesize_y, g, tilesize_x, tilesize_y)
+    out_b.WriteRaster((x - min_col) * tilesize_x, (y - min_row) * tilesize_y, tilesize_x, tilesize_y, b, tilesize_x, tilesize_y)
 
 
 def progress_callback(complete, message, unknown):
