@@ -91,30 +91,36 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
     if os.path.exists(temp_origin_file):
         os.remove(temp_origin_file)
 
-    out_ds = create_merge_file(temp_origin_file, tilewidth, tileheight, tilesize)
+    log.info("创建输出文件...")
+    out_ds = create_merge_file(merged_file, tilewidth, tileheight, tilesize)
 
     if out_ds is None:
+        log.error("输出文件创建失败!")
         return
+    log.info("输出文件创建成功！")
 
     log.info("开始影像纠偏...")
-    gcp_x0 = math.floor(((minX - originX) - min_col * (resolution * tilesize)) / resolution)
-    gcp_y0 = math.floor(((originY - maxY) - min_row * (resolution * tilesize)) / resolution)
-    gcp_x1 = tilewidth * tilesize - (tilesize - math.floor(((maxX - originX) - max_col * (resolution * tilesize)) / resolution))
-    gcp_y1 = tileheight * tilesize - (tilesize - math.floor(((originY - minY) - max_row * (resolution * tilesize)) / resolution))
+    # gcp_x0 = math.floor(((minX - originX) - min_col * (resolution * tilesize)) / resolution)
+    # gcp_y0 = math.floor(((originY - maxY) - min_row * (resolution * tilesize)) / resolution)
+    # gcp_x1 = tilewidth * tilesize - (tilesize - math.floor(((maxX - originX) - max_col * (resolution * tilesize)) / resolution))
+    # gcp_y1 = tileheight * tilesize - (tilesize - math.floor(((originY - minY) - max_row * (resolution * tilesize)) / resolution))
 
-    gcp_list = [gdal.GCP(minX, maxY, 0, gcp_x0, gcp_y0),
-                gdal.GCP(maxX, maxY, 0, gcp_x1, gcp_y0),
-                gdal.GCP(minX, minY, 0, gcp_x0, gcp_y1),
-                gdal.GCP(maxX, minY, 0, gcp_x1, gcp_y1)]
+    geotransform = [minX, tilewidth, 0, minY, 0, tileheight]
+    out_ds.SetGeoTransform(geotransform)
 
-    # gdal的config放在creationOptions参数里面
-    translateOptions = gdal.TranslateOptions(format='GTiff', creationOptions=["BIGTIFF=YES", "COMPRESS=NONE"], GCPs=gcp_list, callback=progress_callback)
-    gdal.Translate(merged_file, out_ds, options=translateOptions)
+    # gcp_list = [gdal.GCP(minX, maxY, 0, gcp_x0, gcp_y0),
+    #             gdal.GCP(maxX, maxY, 0, gcp_x1, gcp_y0),
+    #             gdal.GCP(minX, minY, 0, gcp_x0, gcp_y1),
+    #             gdal.GCP(maxX, minY, 0, gcp_x1, gcp_y1)]
+
+    # # gdal的config放在creationOptions参数里面
+    # translateOptions = gdal.TranslateOptions(format='GTiff', creationOptions=["BIGTIFF=YES", "COMPRESS=NONE"], GCPs=gcp_list, callback=progress_callback)
+    # gdal.Translate(merged_file, out_ds, options=translateOptions)
     log.info("影像纠偏完成.")
     out_ds = None
 
-    if os.path.exists(temp_origin_file):
-        os.remove(temp_origin_file)
+    # if os.path.exists(temp_origin_file):
+    #     os.remove(temp_origin_file)
 
     log.info('开始拼接...')
     out_ds = gdal.Open(merged_file, 1)

@@ -18,7 +18,7 @@ a = Analysis(['frmMain.py', 'frmCoordTransform.py', 'frmTileMap.py', 'frmVectorM
               'UICore\\DataFactory.py',
               'UICore\\Gv.py',
               'UICore\\log4p.py',
-              'UICore\\merge_tiles.py',
+              'UICore\\merge_tiles2.py',
               'UICore\\pycomcad.py',
               'UICore\\suplicmap_tilemap.py',
               'UICore\\suplicmap_vector2.py',
