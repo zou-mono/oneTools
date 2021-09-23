@@ -314,7 +314,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.run_process()
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
             if self.thread.isRunning():
-                self.thread.exit(0)
+                self.thread.terminate()
+                self.thread.wait()
             self.close()
 
     def run_process(self):
@@ -417,7 +418,11 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
 
     def threadStop(self):
-        self.thread.quit()
+        if self.thread.isRunning():
+            self.thread.terminate()
+            self.thread.wait()
+        else:
+            self.thread.quit()
 
     def table_init(self):
         self.tbl_address.setStyle(mTableStyle())

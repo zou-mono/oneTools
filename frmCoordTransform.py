@@ -103,7 +103,12 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.table_layout()
 
     def threadStop(self):
-        self.thread.quit()
+        def threadStop(self):
+            if self.thread.isRunning():
+                self.thread.terminate()
+                self.thread.wait()
+            else:
+                self.thread.quit()
 
     def splitterMoved(self):
         self.table_layout()
@@ -411,6 +416,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.thread.start()
             self.run_process()
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
+            if self.thread.isRunning():
+                self.thread.terminate()
+                self.thread.wait()
             self.close()
 
     def check_paras(self):
