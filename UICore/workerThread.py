@@ -12,8 +12,8 @@ log = Log(__name__)
 
 class crawlTilesWorker(QtCore.QObject):
     crawl = pyqtSignal(str, int, int, int, float, float, float, float, float, int, str)
-    crawlAndMerge = pyqtSignal(str, int, int, int, float, float, float, float, float, int, str, str, str)
-    merge = pyqtSignal(str, int, int, float, float, float, float, float, int, str, str)
+    crawlAndMerge = pyqtSignal(str, int, int, int, float, float, float, float, float, int, str, bool, str, str)
+    merge = pyqtSignal(str, int, int, float, float, float, float, float, int, str, bool, str)
     finished = pyqtSignal()
 
     def __init__(self):
@@ -28,14 +28,14 @@ class crawlTilesWorker(QtCore.QObject):
         crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path)
         self.finished.emit()
 
-    def crawlAndMergeTiles(self, url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, pixelType, output_path, merged_file):
+    def crawlAndMergeTiles(self, url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, pixelType, bCompression, output_path, merged_file):
         crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path)
-        merge_tiles(output_path, [xmin, xmax, ymin, ymax], [x0, y0], resolution, tile_size, pixelType, merged_file)
+        merge_tiles(output_path, [xmin, xmax, ymin, ymax], [x0, y0], resolution, tile_size, pixelType, bCompression, merged_file)
 
         self.finished.emit()
 
-    def mergeTiles(self, output_path, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, pixelType, merged_file):
-        merge_tiles(output_path, [xmin, xmax, ymin, ymax], [x0, y0], resolution, tile_size, pixelType, merged_file)
+    def mergeTiles(self, output_path, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, pixelType, bCompression, merged_file):
+        merge_tiles(output_path, [xmin, xmax, ymin, ymax], [x0, y0], resolution, tile_size, pixelType, bCompression, merged_file)
 
         self.finished.emit()
 

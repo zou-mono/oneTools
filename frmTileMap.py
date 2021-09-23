@@ -109,6 +109,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.init_cmb_pixelType() # 初始化pixel type下拉框
         self.cmb_pixelType.currentIndexChanged.connect(self.cmb_pixelType_changed)
 
+        # self.cb_compression.stateChanged.connect(self.cb_compression_changed)
+
     def init_cmb_pixelType(self):
         for value in pixelType_dict.values():
             self.cmb_pixelType.addItem(value)
@@ -311,10 +313,15 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.thread.start()
             self.run_process()
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
+            if self.thread.isRunning():
+                self.thread.exit(0)
             self.close()
 
     def run_process(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
+
+        bCompression = True if self.cb_compression.checkState() == 2 else False
+
         for row in rows:
 
             # if self.rbtn_onlyHandle:
@@ -350,7 +357,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 self.crawlTilesThread.crawlAndMerge.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
                                                          float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
                                                          float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']),
-                                                         str(paras['pixelType']), tileFolder, imgFile)
+                                                         str(paras['pixelType']), bCompression, tileFolder, imgFile)
             elif self.rbtn_onlySpider.isChecked():
                 if url not in self.paras:
                     log.error("{}地址错误".format(url))
@@ -386,7 +393,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
                 self.crawlTilesThread.merge.emit(url, int(paras['origin_x']), int(paras['origin_y']),
                                                  float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
-                                                 float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']), str(paras['pixelType']), imgFile)
+                                                 float(paras['ymax']), float(paras['resolution']),
+                                                 int(paras['tilesize']), str(paras['pixelType']), bCompression, imgFile)
 
     def check_paras(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
@@ -599,6 +607,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         self.paras = {}
 
+        self.cb_compression.setEnabled(True)
+
     def table_init_onlySpider(self):
         self.model.setHeaderData(1, Qt.Horizontal, "等级", Qt.DisplayRole)
         self.model.setHeaderData(2, Qt.Horizontal, "瓦片文件夹", Qt.DisplayRole)
@@ -610,6 +620,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.tbl_address.setColumnWidth(0, self.tbl_address.width() * 0.4)
         self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
         self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.4)
+
+        self.cb_compression.setEnabled(False)
 
     def table_init_spiderAndHandle(self):
         self.model.setHeaderData(1, Qt.Horizontal, "等级", Qt.DisplayRole)
@@ -625,6 +637,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.tbl_address.setColumnWidth(1, self.tbl_address.width() * 0.2)
         self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)
         self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.2)
+
+        self.cb_compression.setEnabled(True)
 
         self.paras = {}
 

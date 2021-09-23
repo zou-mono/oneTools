@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1255</width>
-    <height>750</height>
+    <height>744</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -48,6 +48,12 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="font">
+        <font>
+         <family>微软雅黑</family>
+         <pointsize>9</pointsize>
+        </font>
+       </property>
        <property name="frameShape">
         <enum>QFrame::WinPanel</enum>
        </property>
@@ -68,8 +74,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>516</width>
-          <height>690</height>
+          <width>502</width>
+          <height>707</height>
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -149,7 +155,7 @@
                <property name="font">
                 <font>
                  <family>微软雅黑</family>
-                 <pointsize>10</pointsize>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="text">
@@ -164,6 +170,7 @@
                  <property name="font">
                   <font>
                    <family>微软雅黑</family>
+                   <pointsize>9</pointsize>
                   </font>
                  </property>
                 </widget>
@@ -215,7 +222,7 @@
                <property name="font">
                 <font>
                  <family>微软雅黑</family>
-                 <pointsize>10</pointsize>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="text">
@@ -297,6 +304,7 @@
                <property name="font">
                 <font>
                  <family>微软雅黑</family>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
               </widget>
@@ -599,6 +607,7 @@
                <property name="font">
                 <font>
                  <family>微软雅黑</family>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
               </widget>
@@ -646,6 +655,7 @@
                <property name="font">
                 <font>
                  <family>微软雅黑</family>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
               </widget>
@@ -659,7 +669,7 @@
                <property name="font">
                 <font>
                  <family>微软雅黑</family>
-                 <pointsize>10</pointsize>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="text">
@@ -973,6 +983,7 @@
                <property name="font">
                 <font>
                  <family>微软雅黑</family>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
               </widget>
@@ -1020,11 +1031,25 @@
                <property name="font">
                 <font>
                  <family>微软雅黑</family>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
               </widget>
              </item>
             </layout>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="cb_compression">
+             <property name="font">
+              <font>
+               <family>微软雅黑</family>
+               <pointsize>9</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>压缩数据</string>
+             </property>
+            </widget>
            </item>
            <item>
             <spacer name="verticalSpacer">

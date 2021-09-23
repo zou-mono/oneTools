@@ -59,14 +59,20 @@ try_num = 10
     default='U16',
     required=False)
 @click.option(
+    '--compression', '-c',
+    help='If or not compress data, the default is false.',
+    type=bool,
+    default=False,
+    required=False)
+@click.option(
     '--merged-file', '-o',
     help='The name of merged file. For example, res/2019_image_data.tif.',
     required=True)
-def main(input_folder, scope, origin, resolution, tilesize, pixeltype, merged_file):
-    merge_tiles(input_folder, scope, origin, resolution, tilesize, pixeltype, merged_file)
+def main(input_folder, scope, origin, resolution, tilesize, pixeltype, compression, merged_file):
+    merge_tiles(input_folder, scope, origin, resolution, tilesize, pixeltype, compression, merged_file)
 
 
-def merge_tiles(input_folder, scope, origin, resolution, tilesize, pixeltype, merged_file):
+def merge_tiles(input_folder, scope, origin, resolution, tilesize, pixeltype, compression, merged_file):
     originX = origin[0]
     originY = origin[1]
     minX = scope[0]
@@ -185,6 +191,16 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, pixeltype, me
     out_ds.BuildOverviews("nearest", range(2, 16, 2), callback=progress_callback)  # 第二个参数表示建立多少级金字塔, QGIS里面默认是2,4,8,16
     out_ds=None
     log.info("影像金字塔构建成功.")
+
+    if compression:
+        log.info("开始压缩...")
+        filename = os.path.splitext(merged_file)[0]
+        suffix = os.path.splitext(merged_file)[1]
+        compression_file = filename + "_compression" + suffix
+        translateOptions = gdal.TranslateOptions(format='GTiff', creationOptions=["BIGTIFF=YES", "COMPRESS=LZW"], callback=progress_callback)
+        gdal.Translate(compression_file, merged_file, options=translateOptions)
+        log.info("压缩完成...")
+        merged_file = compression_file
 
     end = time.time()
     log.info("合并瓦片任务完成! 总共耗时{}秒. 影像存储至{}.\n".format("{:.2f}".format(end - start), merged_file))
