@@ -53,14 +53,20 @@ try_num = 10
     default=256,
     required=False)
 @click.option(
+    '--pixeltype', '-p',
+    help='The pixel type, the default is U16.',
+    type=str,
+    default='U16',
+    required=False)
+@click.option(
     '--merged-file', '-o',
     help='The name of merged file. For example, res/2019_image_data.tif.',
     required=True)
-def main(input_folder, scope, origin, resolution, tilesize, merged_file):
-    merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file)
+def main(input_folder, scope, origin, resolution, tilesize, pixeltype, merged_file):
+    merge_tiles(input_folder, scope, origin, resolution, tilesize, pixeltype, merged_file)
 
 
-def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
+def merge_tiles(input_folder, scope, origin, resolution, tilesize, pixeltype, merged_file):
     originX = origin[0]
     originY = origin[1]
     minX = scope[0]
@@ -74,20 +80,35 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
     tilewidth = max_col - min_col + 1
     tileheight = max_row - min_row + 1
 
-    name = os.path.basename(merged_file).split('.')[0]
+    if pixeltype == 'U8':
+        gdal_pixel_type = gdal.GDT_Byte
+    elif pixeltype == 'S8':
+        gdal_pixel_type = gdal.GDT_Byte
+    elif pixeltype == 'U16':
+        gdal_pixel_type = gdal.GDT_UInt16
+    elif pixeltype == 'S16':
+        gdal_pixel_type = gdal.GDT_Int16
+    elif pixeltype == 'U32':
+        gdal_pixel_type = gdal.GDT_UInt32
+    elif pixeltype == 'S32':
+        gdal_pixel_type = gdal.GDT_Int32
+    elif pixeltype == 'F32':
+        gdal_pixel_type = gdal.GDT_Float32
+    elif pixeltype == 'F64':
+        gdal_pixel_type = gdal.GDT_Float64
+    else:
+        log.warning('未知的像素类型，使用默认值64位浮点型.')
+        gdal_pixel_type = gdal.GDT_Float64
+
     suffix = os.path.splitext(merged_file)[1]
     if suffix == "":
         suffix = "tif"
         merged_file = merged_file + "." + suffix
-    cur_path = os.path.dirname(merged_file)
-    if not os.path.exists(os.path.join(cur_path, "tmp")):
-        os.makedirs(os.path.join(cur_path, "tmp"))
-    temp_file = os.path.join(cur_path, "tmp", name + "_temp" + "." + suffix)    # 没有纠偏的临时文件
 
     start = time.time()
 
     log.info("创建输出文件...")
-    out_ds = create_merge_file(merged_file, tilewidth, tileheight, tilesize)
+    out_ds = create_merge_file(merged_file, tilewidth, tileheight, tilesize, gdal_pixel_type)
 
     if out_ds is None:
         log.error("输出文件创建失败!")
@@ -132,7 +153,7 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
                         icount += 1
 
                         if len(tasks) >= 5000:
-                            tasks.append(asyncio.ensure_future(merge_one_tile(input_file, out_ds, tilesize, x, y, min_col, min_row)))
+                            tasks.append(asyncio.ensure_future(merge_one_tile(input_file, out_ds, gdal_pixel_type, tilesize, x, y, min_col, min_row)))
                             loop.run_until_complete(asyncio.wait(tasks))
 
                             tasks = []
@@ -140,7 +161,7 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
                             log.debug("{:.0%}".format(icount / total_count))
                             continue
                         else:
-                            tasks.append(asyncio.ensure_future(merge_one_tile(input_file, out_ds, tilesize, x, y, min_col, min_row)))
+                            tasks.append(asyncio.ensure_future(merge_one_tile(input_file, out_ds, gdal_pixel_type, tilesize, x, y, min_col, min_row)))
 
         if len(tasks) > 0:
             loop.run_until_complete(asyncio.wait(tasks))
@@ -169,10 +190,10 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, merged_file):
     log.info("合并瓦片任务完成! 总共耗时{}秒. 影像存储至{}.\n".format("{:.2f}".format(end - start), merged_file))
 
 
-async def merge_one_tile(input_file, out_ds, tilesize, x, y, min_col, min_row):
+async def merge_one_tile(input_file, out_ds, gdal_pixel_type, tilesize, x, y, min_col, min_row):
     ds = gdal.Open(input_file)
 
-    r, g, b = await read_raster(ds, 0, 0, tilesize, tilesize, gdal.GDT_Int16)
+    r, g, b = await read_raster(ds, 0, 0, tilesize, tilesize, gdal_pixel_type)
 
     await write_raster(out_ds, x, y, min_col, min_row, tilesize, tilesize, r, g, b)
     # out_r.WriteRaster((x - min_col) * tilesize, (y - min_row) * tilesize, tilesize, tilesize, r, tilesize, tilesize)
@@ -212,11 +233,11 @@ def progress_callback(complete, message, unknown):
     return 1
 
 
-def create_merge_file(temp_file, tilewidth, tileheight, tilesize):
+def create_merge_file(temp_file, tilewidth, tileheight, tilesize, gdal_pixel_type):
     try:
         # log.info('开始创建merged_file...')
         dr = gdal.GetDriverByName("GTiff")
-        out_ds = dr.Create(temp_file, tilewidth * tilesize, tileheight * tilesize, 3, gdal.GDT_Int16, options=["BIGTIFF=YES", "TILED=YES", "INTERLEAVE=PIXEL"])
+        out_ds = dr.Create(temp_file, tilewidth * tilesize, tileheight * tilesize, 3, gdal_pixel_type, options=["BIGTIFF=YES", "TILED=YES", "INTERLEAVE=PIXEL"])
         # log.info('创建成功.')
         return out_ds
     except:

@@ -4,7 +4,7 @@ import time
 from PyQt5.QtCore import QRect, Qt, QPersistentModelIndex, QItemSelectionModel, QModelIndex, QThread
 from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
 from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, QDialogButtonBox, QStyleFactory, \
-    QAbstractItemView, QHeaderView, QComboBox, QAbstractButton, QFileDialog
+    QAbstractItemView, QHeaderView, QComboBox, QAbstractButton, QFileDialog, QLineEdit
 from PyQt5 import QtWidgets, QtGui, QtCore
 from UI.UITileMap import Ui_Dialog
 import sys
@@ -21,6 +21,16 @@ Slot = QtCore.pyqtSlot
 
 log = Log(__name__)
 
+pixelType_dict = {
+    'U8': '无符号8位整型',
+    'S8': '符号8位整型',
+    'U16': '无符号16位整型',
+    'S16': '符号16位整型',
+    'U32': '无符号32位整型',
+    'S32': '符号32位整型',
+    'F32': '32位浮点型',
+    'F64': '64位浮点型'
+}
 
 class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self, parent=None):
@@ -96,9 +106,25 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.crawlTilesThread.merge.connect(self.crawlTilesThread.mergeTiles)
 
         self.bInit = True  # 第一次初始化窗口
+        self.init_cmb_pixelType() # 初始化pixel type下拉框
+        self.cmb_pixelType.currentIndexChanged.connect(self.cmb_pixelType_changed)
+
+    def init_cmb_pixelType(self):
+        for value in pixelType_dict.values():
+            self.cmb_pixelType.addItem(value)
+        self.update_para_value("pixelType", self.cmb_pixelType)
+
+    def cmb_pixelType_changed(self, i):
+        self.update_para_value("pixelType", self.cmb_pixelType)
 
     def update_para_value(self, key, editor, bSel=True):
-        value = editor.text()
+        if isinstance(editor, QLineEdit):
+            value = editor.text()
+        elif isinstance(editor, QComboBox):
+            value = list(filter(lambda k: pixelType_dict[k] == editor.currentText(), pixelType_dict.keys()))[0]
+        else:
+            return
+
         if bSel and self.selIndex.row() < 0:
             return
         if self.rbtn_onlyHandle.isChecked():
@@ -119,7 +145,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             if url in self.paras:
                 if level in self.paras[url]['paras']:
                     self.paras[url]['paras'][level][key] = value
-        editor.home(False)
+
+        if isinstance(editor, QLineEdit):
+            editor.home(False)
 
     def update_all_paras_value(self, oldValue, newValue, url, level):
         print(oldValue)
@@ -210,6 +238,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 fileName, fileType = QFileDialog.getSaveFileName(self, "请选择保存的参数文件", os.getcwd(),
                                                                  "json file(*.json)")
                 # rows = range(0, self.tbl_address.model().rowCount())
+                if fileName == "":
+                    return
+
                 for v in self.paras.values():
                     v['exports'] = []
 
@@ -242,6 +273,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 fileName, fileType = QFileDialog.getSaveFileName(self, "请选择保存的参数文件", os.getcwd(),
                                                                  "json file(*.json)")
 
+                if fileName == "":
+                    return
+
                 keys = []
                 for row in rows:
                     tileFolder = datas[row][0]
@@ -250,13 +284,13 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
                     keys.append(key)
 
-                    if key in self.paras:
-                        self.paras[key]['tileFolder'] = tileFolder
-                        self.paras[key]['imageFile'] = imageFile
-                    else:
-                        self.paras[key] = self.update_para_dict()
-                        self.paras[key]['tileFolder'] = tileFolder
-                        self.paras[key]['imageFile'] = imageFile
+                    # if key in self.paras:
+                    #     self.paras[key]['tileFolder'] = tileFolder
+                    #     self.paras[key]['imageFile'] = imageFile
+                    # else:
+                    self.paras[key] = self.update_para_dict()
+                    self.paras[key]['tileFolder'] = tileFolder
+                    self.paras[key]['imageFile'] = imageFile
 
                 for k in list(self.paras.keys()):
                     if k not in keys:
@@ -316,7 +350,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 self.crawlTilesThread.crawlAndMerge.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
                                                          float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
                                                          float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']),
-                                                         tileFolder, imgFile)
+                                                         str(paras['pixelType']), tileFolder, imgFile)
             elif self.rbtn_onlySpider.isChecked():
                 if url not in self.paras:
                     log.error("{}地址错误".format(url))
@@ -352,7 +386,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
                 self.crawlTilesThread.merge.emit(url, int(paras['origin_x']), int(paras['origin_y']),
                                                  float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
-                                                 float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']), imgFile)
+                                                 float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']), str(paras['pixelType']), imgFile)
 
     def check_paras(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
@@ -719,7 +753,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         levels = []
         resolutions = []
         lods = []
-        origin_x = origin_y = xmin = xmax = ymin = ymax = resolution = tilesize = level = ""
+        origin_x = origin_y = xmin = xmax = ymin = ymax = resolution = tilesize = level = pixelType = ""
 
         if 'tileInfo' in getInfo.keys():
             if 'origin' in getInfo['tileInfo'].keys():
@@ -744,6 +778,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             if 'rows' in getInfo['tileInfo']:
                 tilesize = getInfo['tileInfo']['rows']
 
+        if 'pixelType' in getInfo.keys():
+            pixelType = getInfo['pixelType']
+
         paras = {}
         for lod in lods:
             if 'level' in lod.keys():
@@ -762,7 +799,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     'ymin': ymin,
                     'ymax': ymax,
                     'tilesize': tilesize,
-                    'resolution': resolution
+                    'resolution': resolution,
+                    'pixelType': pixelType
                 }
 
         url_encodeStr = urlEncodeToFileName(url)
@@ -773,6 +811,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         }
 
     def update_para_dict(self):
+        pixelType_key = list(filter(lambda k: pixelType_dict[k] == self.cmb_pixelType.currentText(), pixelType_dict.keys()))[0]
+
         dict = {
             "origin_x": self.txt_originX.text(),
             "origin_y": self.txt_originY.text(),
@@ -781,7 +821,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             "ymin": self.txt_ymin.text(),
             "ymax": self.txt_ymax.text(),
             "tilesize": self.txt_tilesize.text(),
-            "resolution": self.txt_resolution.text()
+            "resolution": self.txt_resolution.text(),
+            "pixelType": pixelType_key
         }
         return dict
 
@@ -845,6 +886,14 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             if 'resolution' in getInfo:
                 self.txt_resolution.setText(str(getInfo['resolution']))
                 self.txt_resolution.home(False)
+            if 'pixelType' in getInfo:
+                if isinstance(getInfo['pixelType'], list):
+                    k = getInfo['pixelType'][0]
+                else:
+                    k = getInfo['pixelType']
+                if k in pixelType_dict:
+                    self.cmb_pixelType.setCurrentText(pixelType_dict[k])
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
