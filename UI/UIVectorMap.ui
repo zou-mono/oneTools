@@ -59,8 +59,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>615</width>
-          <height>669</height>
+          <width>589</width>
+          <height>674</height>
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -79,6 +79,7 @@
                <property name="font">
                 <font>
                  <family>微软雅黑</family>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="text">
@@ -93,6 +94,7 @@
                  <property name="font">
                   <font>
                    <family>微软雅黑</family>
+                   <pointsize>9</pointsize>
                   </font>
                  </property>
                 </widget>
@@ -341,6 +343,7 @@
                <property name="font">
                 <font>
                  <family>微软雅黑</family>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="text">
@@ -404,6 +407,7 @@
                <property name="font">
                 <font>
                  <family>微软雅黑</family>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="text">
@@ -775,6 +779,7 @@
        <property name="font">
         <font>
          <family>微软雅黑</family>
+         <pointsize>9</pointsize>
         </font>
        </property>
        <property name="standardButtons">
