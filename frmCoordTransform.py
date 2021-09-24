@@ -82,6 +82,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.rbtn_filedb.clicked.connect(self.rbtn_toggled)
         self.rbtn_table.clicked.connect(self.rbtn_toggled)
 
+        self.splitter.setupUi()
         self.bInit = True
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:

@@ -96,6 +96,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         log.setLogViewer(parent=self, logViewer=self.txt_log)
         self.txt_log.setReadOnly(True)
 
+        self.splitter.setupUi()
+
+        # self.txt_log_width = self.txt_log.width()
+
         # #  最后运算过程放至到另一个线程避免GUI卡住
         # self.thread = QThread(self)
         # self.crawlTilesThread = crawlTilesWorker()
@@ -106,7 +110,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         # self.crawlTilesThread.merge.connect(self.crawlTilesThread.mergeTiles)
 
         self.bInit = True  # 第一次初始化窗口
-        self.init_cmb_pixelType() # 初始化pixel type下拉框
+        self.init_cmb_pixelType()  # 初始化pixel type下拉框
         self.cmb_pixelType.currentIndexChanged.connect(self.cmb_pixelType_changed)
 
         # self.cb_compression.stateChanged.connect(self.cb_compression_changed)
@@ -470,8 +474,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         if self.bInit:
             self.rbtn_spiderAndHandle.click()
             self.bInit = False
-
-        print('show')
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
         self.table_layout()

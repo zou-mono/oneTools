@@ -58,7 +58,8 @@ class CollapsibleSplitter(QSplitter):
         self.widgetToHide = value
 
     def showEvent(self, a0: QShowEvent) -> None:
-        self.setupUi()
+        # self.setupUi()
+        pass
 
     def setupUi(self):
         self.handlePos = self.sizes()

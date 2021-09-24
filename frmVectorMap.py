@@ -66,6 +66,8 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.tbl_address.clicked.connect(self.table_index_clicked)
         self.tbl_address.verticalHeader().sectionClicked.connect(self.table_section_clicked)
 
+        self.splitter.setupUi()
+
     def showEvent(self, a0: QShowEvent) -> None:
         log.setLogViewer(parent=self, logViewer=self.txt_log)
         self.table_layout()
