@@ -96,20 +96,32 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         log.setLogViewer(parent=self, logViewer=self.txt_log)
         self.txt_log.setReadOnly(True)
 
-        #  最后运算过程放至到另一个线程避免GUI卡住
-        self.thread = QThread(self)
-        self.crawlTilesThread = crawlTilesWorker()
-        self.crawlTilesThread.moveToThread(self.thread)
-        self.crawlTilesThread.crawl.connect(self.crawlTilesThread.crawlTiles)
-        self.crawlTilesThread.crawlAndMerge.connect(self.crawlTilesThread.crawlAndMergeTiles)
-        self.crawlTilesThread.finished.connect(self.threadStop)
-        self.crawlTilesThread.merge.connect(self.crawlTilesThread.mergeTiles)
+        # #  最后运算过程放至到另一个线程避免GUI卡住
+        # self.thread = QThread(self)
+        # self.crawlTilesThread = crawlTilesWorker()
+        # self.crawlTilesThread.moveToThread(self.thread)
+        # self.crawlTilesThread.crawl.connect(self.crawlTilesThread.crawlTiles)
+        # self.crawlTilesThread.crawlAndMerge.connect(self.crawlTilesThread.crawlAndMergeTiles)
+        # self.crawlTilesThread.finished.connect(self.threadStop)
+        # self.crawlTilesThread.merge.connect(self.crawlTilesThread.mergeTiles)
 
         self.bInit = True  # 第一次初始化窗口
         self.init_cmb_pixelType() # 初始化pixel type下拉框
         self.cmb_pixelType.currentIndexChanged.connect(self.cmb_pixelType_changed)
 
         # self.cb_compression.stateChanged.connect(self.cb_compression_changed)
+
+    def threadStop(self):
+        try:
+            if self.thread.isRunning():
+                self.thread.terminate()
+                self.thread.wait()
+                del self.thread
+            else:
+                self.thread.quit()
+                self.thread.wait()
+        except:
+            return
 
     def init_cmb_pixelType(self):
         for value in pixelType_dict.values():
@@ -310,12 +322,19 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             if not self.check_paras():
                 return
 
+            #  最后运算过程放至到另一个线程避免GUI卡住
+            self.thread = QThread()
+            self.crawlTilesThread = crawlTilesWorker()
+            self.crawlTilesThread.moveToThread(self.thread)
+            self.crawlTilesThread.crawl.connect(self.crawlTilesThread.crawlTiles)
+            self.crawlTilesThread.crawlAndMerge.connect(self.crawlTilesThread.crawlAndMergeTiles)
+            self.crawlTilesThread.finished.connect(self.threadStop)
+            self.crawlTilesThread.merge.connect(self.crawlTilesThread.mergeTiles)
+
             self.thread.start()
             self.run_process()
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
-            if self.thread.isRunning():
-                self.thread.terminate()
-                self.thread.wait()
+            self.threadStop()
             self.close()
 
     def run_process(self):
@@ -329,7 +348,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             #     pass
             # else:
             url_index, level_index, url, level = self.return_url_and_level(row)
-
 
             if self.rbtn_spiderAndHandle.isChecked():
                 if url not in self.paras:
@@ -416,14 +434,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     return False
         return True
 
-
-    def threadStop(self):
-        if self.thread.isRunning():
-            self.thread.terminate()
-            self.thread.wait()
-        else:
-            self.thread.quit()
-
     def table_init(self):
         self.tbl_address.setStyle(mTableStyle())
 
@@ -460,6 +470,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         if self.bInit:
             self.rbtn_spiderAndHandle.click()
             self.bInit = False
+
+        print('show')
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
         self.table_layout()

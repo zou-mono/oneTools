@@ -82,13 +82,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.rbtn_filedb.clicked.connect(self.rbtn_toggled)
         self.rbtn_table.clicked.connect(self.rbtn_toggled)
 
-        self.thread = QThread(self)
-        self.coordTransformThread = coordTransformWorker()
-        self.coordTransformThread.moveToThread(self.thread)
-        self.coordTransformThread.transform.connect(self.coordTransformThread.coordTransform)
-        self.coordTransformThread.transform_tbl.connect(self.coordTransformThread.tableTransform)
-        self.coordTransformThread.finished.connect(self.threadStop)
-
         self.bInit = True
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
@@ -104,11 +97,16 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     def threadStop(self):
         def threadStop(self):
-            if self.thread.isRunning():
-                self.thread.terminate()
-                self.thread.wait()
-            else:
-                self.thread.quit()
+            try:
+                if self.thread.isRunning():
+                    self.thread.terminate()
+                    self.thread.wait()
+                    del self.thread
+                else:
+                    self.thread.quit()
+                    self.thread.wait()
+            except:
+                return
 
     def splitterMoved(self):
         self.table_layout()
@@ -413,12 +411,17 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             if not self.check_paras():
                 return
 
+            self.thread = QThread(self)
+            self.coordTransformThread = coordTransformWorker()
+            self.coordTransformThread.moveToThread(self.thread)
+            self.coordTransformThread.transform.connect(self.coordTransformThread.coordTransform)
+            self.coordTransformThread.transform_tbl.connect(self.coordTransformThread.tableTransform)
+            self.coordTransformThread.finished.connect(self.threadStop)
+
             self.thread.start()
             self.run_process()
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
-            if self.thread.isRunning():
-                self.thread.terminate()
-                self.thread.wait()
+            self.threadStop()
             self.close()
 
     def check_paras(self):

@@ -1,5 +1,5 @@
 from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QThread
 from UICore.suplicmap_tilemap import crawl_tilemap
 from UICore.merge_tiles2 import merge_tiles
 from UICore.log4p import Log
