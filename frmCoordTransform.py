@@ -97,17 +97,16 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.table_layout()
 
     def threadStop(self):
-        def threadStop(self):
-            try:
-                if self.thread.isRunning():
-                    self.thread.terminate()
-                    self.thread.wait()
-                    del self.thread
-                else:
-                    self.thread.quit()
-                    self.thread.wait()
-            except:
-                return
+        try:
+            if self.thread.isRunning():
+                self.thread.terminate()
+                self.thread.wait()
+                del self.thread
+            else:
+                self.thread.quit()
+                self.thread.wait()
+        except:
+            return
 
     def splitterMoved(self):
         self.table_layout()

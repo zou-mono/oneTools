@@ -71,6 +71,8 @@ def transform_dwg(input, type, output):
             # tmatrix = cgcs2000_to_szlocal_mat()
         # mat = Matrix44_to_pmat(tmatrix)
             mat = pcs_2000_to_sz_local_mat
+        elif type == transform_type.hk_grid80_to_cgcs2000_pcs.value:
+            mat = hk_grid80_to_pcs_2000_mat
 
         if mat is None:
             log.error("不存在对应的转换矩阵!")
@@ -165,7 +167,10 @@ def transform_dwg(input, type, output):
 class transform_type(Enum):
     szlocal_to_cgcs2000_pcs = 1
     cgcs2000_pcs_to_szlocal = 2
+    hk_grid80_to_cgcs2000_pcs = 3
 
+
+# 4 * 4 matrix
 
 sz_local_to_pcs_2000_mat = [
     [0.999851891277719, -0.017059492344403574, 0.0, 391090.578943],
@@ -179,6 +184,14 @@ pcs_2000_to_sz_local_mat = [
     [-0.01705958052929288, 0.9998570597684675, 0.0, -2465635.316383],
     [0.0, 0.0, 1.000002584625, 0.0],
     [0.0, 0.0, 0.0, 1.0]]
+
+
+hk_grid80_to_pcs_2000_mat = [
+    [1.0000023004513843, -0.0011881216170696867, 0.0, -317071.960254],
+    [0.0011881216170696867, 1.0000023004513843, 0.0, 1648139.631877],
+    [0.0, 0.0, 1.000003006266, 0.0],
+    [0.0, 0.0, 0.0, 1.0]
+]
 
 
 if __name__ == '__main__':

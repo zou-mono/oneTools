@@ -189,6 +189,8 @@ class Transformer(object):
                 res = transform_dwg(self.in_path, 1, self.out_path)
             elif srcSRS == SpatialReference.pcs_2000 and dstSRS == SpatialReference.sz_Local:
                 res = transform_dwg(self.in_path, 2, self.out_path)
+            elif srcSRS == SpatialReference.pcs_hk80 and dstSRS == SpatialReference.pcs_2000:
+                res = transform_dwg(self.in_path, 3, self.out_path)
             else:
                 log.error("不支持从{}到{}的转换!".format(srs_dict[srcSRS], srs_dict[dstSRS]))
                 return False

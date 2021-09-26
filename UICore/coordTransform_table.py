@@ -14,7 +14,6 @@ from UICore.DataFactory import workspaceFactory, get_row_from_excel
 from UICore.Gv import DataType, DataType_dict, srs_dict
 from UICore.common import launderName, overwrite_cpg_file, is_already_opened_in_write_mode, \
     helmert_para_dict, get_suffix, is_number, text_line_count
-from UICore.coordTransform_dwg import transform_dwg
 from UICore.coordTransform_web import gcj02_to_wgs84_acc, wgs84_to_gcj02, bd09_to_wgs84_acc, wgs84_to_bd09, \
     gcj02_to_wgs84_acc_list, wgs84_to_gcj02_list, bd09_to_wgs84_acc_list, wgs84_to_bd09_list
 from UICore.log4p import Log
