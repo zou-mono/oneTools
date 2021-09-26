@@ -271,7 +271,7 @@ class Transformer(object):
                 out_path = os.path.dirname(self.out_path)
                 out_file, suffix = os.path.splitext(os.path.basename(self.out_path))
 
-                overwrite_cpg_file(out_path, out_file, 'UTF-8')
+                overwrite_cpg_file(out_path, out_file, 'GB2312')
 
             log.info("坐标转换完成! 共耗时{}秒. 输出数据源:{},输出图层名:{}.\n"
                      .format("{:.2f}".format(end-start), res[0], res[1]))
