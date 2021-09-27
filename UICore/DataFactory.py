@@ -113,17 +113,22 @@ class workspaceFactory(object):
             srs.ImportFromEPSG(out_srs)
 
             if out_format == DataType.shapefile:
-                str = in_layer.GetMetadataItem("SOURCE_ENCODING", "SHAPEFILE")
+                encode_name = in_layer.GetMetadataItem("SOURCE_ENCODING", "SHAPEFILE")
+                if encode_name is None:
+                    encode_name = in_layer.GetMetadataItem("ENCODING_FROM_LDID", "SHAPEFILE")
+                    if encode_name is None:
+                        encode_name = in_layer.GetMetadataItem("ENCODING_FROM_CPG", "SHAPEFILE")
 
-                if str is not None:
+                if encode_name is not None:
                     out_layer = out_DS.CreateLayer(out_layer_name, srs=srs, geom_type=in_layer.GetGeomType(),
-                                                  options=['ENCODING={}'.format(str)])
+                                                  options=['ENCODING={}'.format(encode_name)])
             elif out_format == DataType.fileGDB or out_format == DataType.geojson:
                 out_layer = out_DS.CreateLayer(out_layer_name, srs=srs, geom_type=in_layer.GetGeomType())
 
             if out_layer is None:
                 raise Exception("创建图层失败.")
 
+            # out_layer.CreateField(in_defn)
             for i in range(in_defn.GetFieldCount()):
                 fieldName = in_defn.GetFieldDefn(i).GetName()
                 fieldTypeCode = in_defn.GetFieldDefn(i).GetType()
