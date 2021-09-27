@@ -267,11 +267,11 @@ class Transformer(object):
         end = time.time()
 
         if res is not None:
-            if self.out_format == DataType.shapefile:
-                out_path = os.path.dirname(self.out_path)
-                out_file, suffix = os.path.splitext(os.path.basename(self.out_path))
-
-                overwrite_cpg_file(out_path, out_file, 'GB2312')
+            # if self.out_format == DataType.shapefile:
+            #     out_path = os.path.dirname(self.out_path)
+            #     out_file, suffix = os.path.splitext(os.path.basename(self.out_path))
+            #
+            #     overwrite_cpg_file(out_path, out_file, 'GB2312')
 
             log.info("坐标转换完成! 共耗时{}秒. 输出数据源:{},输出图层名:{}.\n"
                      .format("{:.2f}".format(end-start), res[0], res[1]))
@@ -591,6 +591,8 @@ class Transformer(object):
         self.in_wks.openFromFile(inpath)
         in_layer = self.in_wks.openLayer(inlayername)
 
+        # print(in_layer.GetMetadataItem("SOURCE_ENCODING", "SHAPEFILE"))
+
         # out_DS = out_wks.openFromFile(self.out_path)
         out_wks = workspaceFactory().get_factory(outformat)
         out_path, out_layername = out_wks.cloneLayer(in_layer, outpath,
@@ -600,6 +602,7 @@ class Transformer(object):
             outDS = out_wks.openFromFile(out_path, 1)
             out_layer = outDS.GetLayer(out_layername)
             res = self.transform_pointwise(in_layer, out_layer, transform_func)
+            out_layer = None
 
         if res:
             return out_path, out_layername

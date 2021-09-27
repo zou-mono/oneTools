@@ -113,8 +113,11 @@ class workspaceFactory(object):
             srs.ImportFromEPSG(out_srs)
 
             if out_format == DataType.shapefile:
-                out_layer = out_DS.CreateLayer(out_layer_name, srs=srs, geom_type=in_layer.GetGeomType(),
-                                              options=['ENCODING=GBK'])
+                str = in_layer.GetMetadataItem("SOURCE_ENCODING", "SHAPEFILE")
+
+                if str is not None:
+                    out_layer = out_DS.CreateLayer(out_layer_name, srs=srs, geom_type=in_layer.GetGeomType(),
+                                                  options=['ENCODING={}'.format(str)])
             elif out_format == DataType.fileGDB or out_format == DataType.geojson:
                 out_layer = out_DS.CreateLayer(out_layer_name, srs=srs, geom_type=in_layer.GetGeomType())
 
