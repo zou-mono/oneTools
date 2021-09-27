@@ -11,7 +11,8 @@ from UICore.Gv import DataType, DataType_dict, srs_dict
 from UICore.common import launderName, overwrite_cpg_file, is_already_opened_in_write_mode, \
     helmert_para_dict, get_suffix
 from UICore.coordTransform_dwg import transform_dwg
-from UICore.coordTransform_web import gcj02_to_wgs84_acc, wgs84_to_gcj02, bd09_to_wgs84_acc, wgs84_to_bd09
+from UICore.coordTransform_web import gcj02_to_wgs84_acc, wgs84_to_gcj02, bd09_to_wgs84_acc, wgs84_to_bd09, \
+    wgs84_to_gcj02_list, gcj02_to_wgs84_acc_list, bd09_to_wgs84_acc_list, wgs84_to_bd09_list
 from UICore.log4p import Log
 from UICore.Gv import SpatialReference
 
@@ -526,16 +527,16 @@ class Transformer(object):
         return [out_path, out_layername] if out_path is not None and out_layername is not None else None
 
     def gcj02_to_wgs84(self):
-        return self.run_transform_pointwise(SpatialReference.wgs84, gcj02_to_wgs84_acc)
+        return self.run_transform_pointwise(SpatialReference.wgs84, gcj02_to_wgs84_acc_list)
 
     def wgs84_gcj02(self):
-        return self.run_transform_pointwise(SpatialReference.wgs84, wgs84_to_gcj02)
+        return self.run_transform_pointwise(SpatialReference.wgs84, wgs84_to_gcj02_list)
 
     def bd09_to_wgs84(self):
-        return self.run_transform_pointwise(SpatialReference.wgs84, bd09_to_wgs84_acc)
+        return self.run_transform_pointwise(SpatialReference.wgs84, bd09_to_wgs84_acc_list)
 
     def wgs84_to_bd09(self):
-        return self.run_transform_pointwise(SpatialReference.wgs84, wgs84_to_bd09)
+        return self.run_transform_pointwise(SpatialReference.wgs84, wgs84_to_bd09_list)
 
     def gcj02_to_sz_local(self):
         tmp_outpath = os.path.join(os.path.dirname(self.out_path), "temp_layer_4326.geojson")
@@ -615,67 +616,94 @@ class Transformer(object):
         res = False
 
         total_count = in_Layer.GetFeatureCount()
+        poSrcFDefn = in_Layer.GetLayerDefn()
+        poDstFDefn = out_layer.GetLayerDefn()
+        nSrcFieldCount = poSrcFDefn.GetFieldCount()
+        panMap = [-1] * nSrcFieldCount
 
-        for feature in in_Layer:
-            geom = feature.GetGeometryRef()
+        for iField in range(poSrcFDefn.GetFieldCount()):
+            poSrcFieldDefn = poSrcFDefn.GetFieldDefn(iField)
+            iDstField = poDstFDefn.GetFieldIndex(poSrcFieldDefn.GetNameRef())
+            if iDstField >= 0:
+                panMap[iField] = iDstField
+
+        for poSrcFeature in in_Layer:
+            geom = poSrcFeature.GetGeometryRef()
 
             if geom is None:
                 continue
 
             if geom.GetGeometryName() == "POINT":
-                lng, lat = transform_func(geom.GetPoint(0)[0], geom.GetPoint(0)[1])
+                lng, lat = transform_func([geom.GetPoint(0)[0], geom.GetPoint(0)[1]])
                 point = ogr.Geometry(ogr.wkbPoint)
                 point.AddPoint(lng, lat)
-                res = self.addFeature(feature, point, in_Layer, out_layer, icount)
+                res = self.addFeature(poSrcFeature, point, in_Layer, out_layer, panMap, icount)
 
             elif geom.GetGeometryName() == "MULTIPOINT":
                 new_multipoint = ogr.Geometry(ogr.wkbMultiPoint)
                 for part in geom:
-                    lng, lat = transform_func(part.GetX(), part.GetY())
+                    lng, lat = transform_func([part.GetX(), part.GetY()])
                     new_point = ogr.Geometry(ogr.wkbPoint)
                     new_point.AddPoint(lng, lat)
                     new_multipoint.AddGeometry(new_point)
-                res = self.addFeature(feature, new_multipoint, in_Layer, out_layer, icount)
+                res = self.addFeature(poSrcFeature, new_multipoint, in_Layer, out_layer, panMap, icount)
 
             elif geom.GetGeometryName() == "POLYGON":
                 new_polygon = ogr.Geometry(ogr.wkbPolygon)
+                # points = []
                 for ring in geom:
                     new_ring = ogr.Geometry(ogr.wkbLinearRing)
-                    for i in range(0, ring.GetPointCount()):
-                        lng, lat = transform_func(ring.GetPoint(i)[0], ring.GetPoint(i)[1])
-                        new_ring.AddPoint(lng, lat)
+                    points = ring.GetPoints()
+                    points = list(map(transform_func, points))
+                    for point in points:
+                        new_ring.AddPoint(point[0], point[1])
                     new_polygon.AddGeometry(new_ring)
-                res = self.addFeature(feature, new_polygon, in_Layer, out_layer, icount)
+                res = self.addFeature(poSrcFeature, new_polygon, in_Layer, out_layer, panMap, icount)
 
             elif geom.GetGeometryName() == "MULTIPOLYGON":
                 new_multiPolygon = ogr.Geometry(ogr.wkbMultiPolygon)
                 for part in geom:
+                    # points = []
                     new_polygon = ogr.Geometry(ogr.wkbPolygon)
+
                     for ring in part:
                         new_ring = ogr.Geometry(ogr.wkbLinearRing)
-                        for i in range(0, ring.GetPointCount()):
-                            lng, lat = transform_func(ring.GetPoint(i)[0], ring.GetPoint(i)[1])
-                            new_ring.AddPoint(lng, lat)
+                        points = ring.GetPoints()
+                        # for i in range(0, ring.GetPointCount()):
+                            # points.append(ring.GetPoint(i))
+                            # lng, lat = transform_func(ring.GetPoint(i)[0], ring.GetPoint(i)[1])
+                            # new_ring.AddPoint(lng, lat)
+                        points = list(map(transform_func, points))
+                        for point in points:
+                            new_ring.AddPoint(point[0], point[1])
                         new_polygon.AddGeometry(new_ring)
                     new_multiPolygon.AddGeometry(new_polygon)
-                res = self.addFeature(feature, new_multiPolygon, in_Layer, out_layer, icount)
+                res = self.addFeature(poSrcFeature, new_multiPolygon, in_Layer, out_layer, panMap, icount)
 
             elif geom.GetGeometryName() == "LINESTRING":
                 new_polyline = ogr.Geometry(ogr.wkbLineString)
-                for i in range(0, geom.GetPointCount()):
-                    lng, lat = transform_func(geom.GetPoint(i)[0], geom.GetPoint(i)[1])
-                    new_polyline.AddPoint(lng, lat)
-                res = self.addFeature(feature, new_polyline, in_Layer, out_layer, icount)
+                points = geom.GetPoints()
+                points = list(map(transform_func, points))
+                for point in points:
+                    new_polyline.AddPoint(point[0], point[1])
+                # for i in range(0, geom.GetPointCount()):
+                #     lng, lat = transform_func(geom.GetPoint(i)[0], geom.GetPoint(i)[1])
+                #     new_polyline.AddPoint(lng, lat)
+                res = self.addFeature(poSrcFeature, new_polyline, in_Layer, out_layer, panMap, icount)
 
             elif geom.GetGeometryName() == "MULTILINESTRING":
                 new_multiPolyline = ogr.Geometry(ogr.wkbMultiLineString)
                 for part in geom:
                     new_polyline = ogr.Geometry(ogr.wkbLineString)
-                    for i in range(0, part.GetPointCount()):
-                        lng, lat = transform_func(part.GetPoint(i)[0], part.GetPoint(i)[1])
-                        new_polyline.AddPoint(lng, lat)
+                    points = part.GetPoints()
+                    points = list(map(transform_func, points))
+                    for point in points:
+                        new_polyline.AddPoint(point[0], point[1])
+                    # for i in range(0, part.GetPointCount()):
+                    #     lng, lat = transform_func(part.GetPoint(i)[0], part.GetPoint(i)[1])
+                    #     new_polyline.AddPoint(lng, lat)
                     new_multiPolyline.AddGeometry(new_polyline)
-                res = self.addFeature(feature, new_multiPolyline, in_Layer, out_layer, icount)
+                res = self.addFeature(poSrcFeature, new_multiPolyline, in_Layer, out_layer, panMap, icount)
 
             if res < 0:
                 return False
@@ -685,21 +713,26 @@ class Transformer(object):
                 log.debug("{:.0%}".format(icount / total_count))
                 iprop += 1
 
+            # poSrcFeature = in_Layer.GetNextFeature()
         return True
 
-    def addFeature(self, in_feature, geometry, in_layer, out_layer, icount):
+    def addFeature(self, in_feature, geometry, in_layer, out_layer, panMap, icount):
         try:
-            defn = in_layer.GetLayerDefn()
-            ofeature = ogr.Feature(in_layer.GetLayerDefn())
-            ofeature.SetGeometry(geometry)
+            # defn = in_layer.GetLayerDefn()
+            out_Feature = ogr.Feature(in_layer.GetLayerDefn())
+            # poDstFeature.SetGeometry(geometry)
 
-            for i in range(defn.GetFieldCount()):
-                fieldName = defn.GetFieldDefn(i).GetName()
-                # print(in_feature.GetField(i))
-                ofeature.SetField(fieldName, in_feature.GetField(i))
+            # for i in range(defn.GetFieldCount()):
+            #     fieldName = defn.GetFieldDefn(i).GetName()
+            #     # print(in_feature.GetField(i))
+            #     ofeature.SetField(fieldName, in_feature.GetField(i))
+            out_Feature.SetFID(in_feature.GetFID())
+            out_Feature.SetFromWithMap(in_feature, 1, panMap)
+            # poDstGeometry = poDstFeature.GetGeometryRef()
+            out_Feature.SetGeometryDirectly(geometry)
 
-            out_layer.CreateFeature(ofeature)
-            ofeature.Destroy()
+            out_layer.CreateFeature(out_Feature)
+            out_Feature.Destroy()
             return 1
         except UnicodeEncodeError:
             log.error("错误发生在第{}个要素.\n{}".format(icount, "字符编码无法转换，请检查输入文件的字段!"))

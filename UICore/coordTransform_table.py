@@ -347,7 +347,6 @@ class Transformer(object):
 
         return True
 
-
     def proj_transform(self, srcSRS, dstSRS, points):
         sourceSRS = osr.SpatialReference()
         sourceSRS.ImportFromEPSG(srcSRS)
