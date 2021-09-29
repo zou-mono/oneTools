@@ -134,7 +134,10 @@ class Ui_Window(QDialog, Ui_Dialog):
                 service = self.paras[key]['service']
                 service_name = self.paras[key]['service_name']
                 layername = self.paras[key]['new_layername']
-                res_url = url + "/" + str(service)
+                if url[-1] == r"/":
+                    res_url = url + str(service)
+                else:
+                    res_url = url + "/" + str(service)
 
                 if self.paras[key]['output'] != "":
                     output = self.paras[key]['output']

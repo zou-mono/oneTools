@@ -28,6 +28,7 @@ lock = asyncio.Lock()
 epsg = 2435
 dateLst = []
 OID_NAME = "OBJECTID"  # FID字段名称
+m_fields = []
 
 # 定义请求头
 reqheaders = {
@@ -115,6 +116,7 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, lo
             line1 = looplst[i]
             line2 = looplst[i + 1]
             query_clause = f'{OID_NAME} >= {line1} and {OID_NAME} < {line2}'
+            # query_clause = f'{OID_NAME} >= 0'
 
             if len(tasks) >= concurrence_num:
                 tasks.append(asyncio.ensure_future(output_data_async(query_url, query_clause, out_layer, line1, line2)))
@@ -320,6 +322,8 @@ def createFileGDB(output_path, layer_name, url_json, service_name, layer_order):
         out_layer = gdb.CreateLayer(layer_name, srs=srs, geom_type=GeoType,
                                     options=[f'FEATURE_DATASET={service_name}', f'LAYER_ALIAS={layer_alias_name}'])
         # LayerDefn = out_layer.GetLayerDefn()
+        global m_fields
+        m_fields = []
         fields = geoObjs['fields']
 
         i = 0
@@ -327,10 +331,13 @@ def createFileGDB(output_path, layer_name, url_json, service_name, layer_order):
             # fieldDefn = out_layerDefn.GetFieldDefn(i)
             if field['type'] == "esriFieldTypeOID":
                 # OID_NAME = check_layer_name(field['name'])
+                m_fields.append(field)
                 OID = field['name']
                 continue
             if field['type'] == "esriFieldTypeGeometry":
                 continue
+
+            m_fields.append(field)
 
             OFTtype = parseTypeField(field['type'])
             new_field = ogr.FieldDefn(check_layer_name(field['name']), OFTtype)
@@ -389,7 +396,7 @@ async def get_json_by_query_async(url, query_clause):
     body_value = {'where': query_clause,
                   'outFields': '*',
                   'outSR': str(epsg),
-                  'f': 'geojson'}
+                  'f': 'json'}
 
     async with aiohttp.ClientSession() as session:
         try:
@@ -431,9 +438,14 @@ def get_json_by_query(url, query_clause):
 async def output_data_async(url, query_clause, out_layer, startID, endID):
     try:
         respData = await get_json_by_query_async(url, query_clause)
-        esri_json = ogr.GetDriverByName('GeoJSON')
         if respData is not None:
-            respData = str(respData, encoding='utf-8')
+            respData = respData.decode('utf-8')
+            respData = json.loads(respData)
+            if 'fields' not in respData:
+                respData['fields'] = m_fields
+            esri_json = ogr.GetDriverByName('ESRIJSON')
+            # respData = str(respData, encoding='utf-8')
+            respData = json.dumps(respData, ensure_ascii=False)
             # if not isinstance(respData, str):
             #     raise Exception("返回数据类型不是str！")
         else:
@@ -458,6 +470,9 @@ async def output_data_async(url, query_clause, out_layer, startID, endID):
 def output_data(url, query_clause, out_layer):
     try:
         respData = get_json_by_query(url, query_clause)
+        respData = respData.decode('utf-8')
+        if 'fields' not in respData:
+            respData['fields'] = m_fields
         esri_json = ogr.GetDriverByName('ESRIJSON')
         geoObjs = esri_json.Open(respData, 0)
         if geoObjs is not None:
