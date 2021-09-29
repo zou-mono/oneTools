@@ -32,7 +32,7 @@ async def send_http(session, method, url, *,
                     respond_Type='content',
                     interval=1,
                     backoff=1,
-                    read_timeout=10,
+                    read_timeout=30,
                     http_status_codes_to_retry=HTTP_STATUS_CODES_TO_RETRY,
                     **kwargs):
     """
@@ -75,7 +75,7 @@ async def send_http(session, method, url, *,
         # log.info('向服务器发送{} {}, 参数为{}'.format(method.upper(), url, kwargs))
         try:
             # with aiohttp.ClientTimeout(total=read_timeout) as timeout:
-            timeout = aiohttp.ClientTimeout(total=10)
+            timeout = aiohttp.ClientTimeout(total=read_timeout)
             async with getattr(session, method)(url, timeout=timeout, **kwargs) as response:
                 if response.status == 200:
                     # try:

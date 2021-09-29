@@ -215,7 +215,7 @@ def output_img2(url, output_path, i, j):
 async def get_tile_async(url, output_path, i, j):
     async with aiohttp.ClientSession() as session:
         try:
-            respData = await send_http(session, method="get", respond_Type="content", url=url, retries=0)
+            respData = await send_http(session, method="get", respond_Type="content", read_timeout=10, url=url, retries=0)
             # response = await session.post(url, data=data, headers=reqheaders)
             if len(respData) > 0:
                 return respData, url, output_path, i, j

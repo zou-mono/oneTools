@@ -401,7 +401,7 @@ async def get_json_by_query_async(url, query_clause):
     async with aiohttp.ClientSession() as session:
         try:
             respData = await send_http(session, method="post", respond_Type="content", headers=reqheaders,
-                                       data=body_value, url=url, retries=0)
+                                       data=body_value, read_timeout=60, url=url, retries=0)
             return respData
         except:
             log.error('url:{} data:{} error:{}'.format(url, query_clause, traceback.format_exc()))
@@ -464,13 +464,14 @@ async def output_data_async(url, query_clause, out_layer, startID, endID):
         await lock.acquire()
         failed_urls.append([url, query_clause, startID, endID])
         lock.release()
-        log.error('url:{} data:{} error:{}'.format(url, query_clause, err))
+        # log.error('url:{} data:{} error:{}'.format(url, query_clause, err))
 
 
 def output_data(url, query_clause, out_layer):
     try:
         respData = get_json_by_query(url, query_clause)
         respData = respData.decode('utf-8')
+        respData = json.loads(respData)
         if 'fields' not in respData:
             respData['fields'] = m_fields
         esri_json = ogr.GetDriverByName('ESRIJSON')
