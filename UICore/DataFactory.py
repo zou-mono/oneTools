@@ -90,7 +90,7 @@ class workspaceFactory(object):
             in_defn = in_layer.GetLayerDefn()
 
             if os.path.exists(output_path):
-                log.info("datasource已存在，在已有datasource基础上创建图层.")
+                # log.info("datasource已存在，在已有datasource基础上创建图层.")
 
                 if out_format == DataType.shapefile or out_format == DataType.geojson:
                     self.driver.DeleteDataSource(output_path)

@@ -180,6 +180,7 @@ class Transformer(object):
         self.in_wks = workspaceFactory().get_factory(self.in_format)
 
     def transform(self, srcSRS, dstSRS):
+        self.srcSRS = srcSRS
         log.info("\n启动从{}到{}的转换...".format(self.in_path, self.out_path))
 
         start = time.time()
@@ -293,17 +294,20 @@ class Transformer(object):
         if outformat is None: outformat = self.out_format
         if layerCreationOptions is None: layerCreationOptions = self.lco
 
+        log.info("开始从{}到{}的转换...".format(srs_dict[srcSRS], srs_dict[dstSRS]))
+
         out_format = DataType_dict[outformat]
 
         if outformat == DataType.geojson:
             translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=in_srs, dstSRS=out_srs,
                                                            coordinateOperation=helmert_para,
-                                                           layerName=outlayername)
+                                                           layerName=outlayername, callback=progress_callback)
         else:
             translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=in_srs, dstSRS=out_srs,
                                                            coordinateOperation=helmert_para,
                                                            accessMode="overwrite", layerName=outlayername,
-                                                           layerCreationOptions=layerCreationOptions)
+                                                           layerCreationOptions=layerCreationOptions,
+                                                           callback=progress_callback)
 
         if gdal.VectorTranslate(outpath, inpath, options=translateOptions):
             return [outpath, outlayername]
@@ -542,7 +546,7 @@ class Transformer(object):
         tmp_outpath = os.path.join(os.path.dirname(self.out_path), "temp_layer_4326.geojson")
         tmp_path, tmp_layername = self.run_transform_pointwise(outpath=tmp_outpath, outlayername="temp_layer_4326.geojson",
                                      outSRS=SpatialReference.wgs84, outformat=DataType.geojson,
-                                     transform_func=gcj02_to_wgs84_acc)
+                                     transform_func=gcj02_to_wgs84_acc_list)
         res = self.wgs84_to_sz_local(inpath=tmp_path, outpath=self.out_path,
                                      outlayername=self.out_layername, outformat=self.out_format)
 
@@ -552,7 +556,7 @@ class Transformer(object):
         tmp_outpath = os.path.join(os.path.dirname(self.out_path), "temp_layer_4326.geojson")
         tmp_path, tmp_layername = self.run_transform_pointwise(outpath=tmp_outpath, outlayername="temp_layer_4326.geojson",
                                                                outSRS=SpatialReference.wgs84, outformat=DataType.geojson,
-                                                               transform_func=bd09_to_wgs84_acc)
+                                                               transform_func=bd09_to_wgs84_acc_list)
         res = self.wgs84_to_sz_local(inpath=tmp_path, outpath=self.out_path,
                                      outlayername=self.out_layername, outformat=self.out_format)
 
@@ -562,7 +566,7 @@ class Transformer(object):
         tmp_outpath = os.path.join(os.path.dirname(self.out_path), "temp_layer_4326.geojson")
         tmp_path, tmp_layername = self.run_transform_pointwise(outpath=tmp_outpath, outlayername="temp_layer_4326.geojson",
                                                                outSRS=SpatialReference.wgs84, outformat=DataType.geojson,
-                                                               transform_func=gcj02_to_wgs84_acc)
+                                                               transform_func=gcj02_to_wgs84_acc_list)
         res = self.wgs84_to_pcs_2000(inpath=tmp_path, outpath=self.out_path, outlayername=self.out_layername,
                                      outformat=self.out_format)
 
@@ -572,7 +576,7 @@ class Transformer(object):
         tmp_outpath = os.path.join(os.path.dirname(self.out_path), "temp_layer_4326.geojson")
         tmp_path, tmp_layername = self.run_transform_pointwise(outpath=tmp_outpath, outlayername="temp_layer_4326.geojson",
                                                                outSRS=SpatialReference.wgs84, outformat=DataType.geojson,
-                                                               transform_func=bd09_to_wgs84_acc)
+                                                               transform_func=bd09_to_wgs84_acc_list)
         res = self.wgs84_to_pcs_2000(inpath=tmp_path, outpath=self.out_path, outlayername=self.out_layername,
                                      outformat=self.out_format)
 
@@ -592,6 +596,8 @@ class Transformer(object):
         self.in_wks.openFromFile(inpath)
         in_layer = self.in_wks.openLayer(inlayername)
 
+        log.info("开始从{}到{}的逐点转换...".format(srs_dict[self.srcSRS], srs_dict[outSRS]))
+
         # print(in_layer.GetMetadataItem("SOURCE_ENCODING", "SHAPEFILE"))
 
         # out_DS = out_wks.openFromFile(self.out_path)
@@ -604,6 +610,7 @@ class Transformer(object):
             out_layer = outDS.GetLayer(out_layername)
             res = self.transform_pointwise(in_layer, out_layer, transform_func)
             out_layer = None
+            outDS = None
 
         if res:
             return out_path, out_layername
@@ -623,7 +630,7 @@ class Transformer(object):
 
         for iField in range(poSrcFDefn.GetFieldCount()):
             poSrcFieldDefn = poSrcFDefn.GetFieldDefn(iField)
-            iDstField = poDstFDefn.GetFieldIndex(poSrcFieldDefn.GetNameRef())
+            iDstField = poSrcFDefn.GetFieldIndex(poSrcFieldDefn.GetNameRef())
             if iDstField >= 0:
                 panMap[iField] = iDstField
 
@@ -634,17 +641,21 @@ class Transformer(object):
                 continue
 
             if geom.GetGeometryName() == "POINT":
-                lng, lat = transform_func([geom.GetPoint(0)[0], geom.GetPoint(0)[1]])
+                points = list(map(transform_func, [geom.GetPoint(0)]))
+                # lng, lat = transform_func([geom.GetPoint(0)[0], geom.GetPoint(0)[1]])
                 point = ogr.Geometry(ogr.wkbPoint)
-                point.AddPoint(lng, lat)
+                point.AddPoint(points[0][0], points[0][1])
                 res = self.addFeature(poSrcFeature, point, in_Layer, out_layer, panMap, icount)
 
             elif geom.GetGeometryName() == "MULTIPOINT":
                 new_multipoint = ogr.Geometry(ogr.wkbMultiPoint)
                 for part in geom:
-                    lng, lat = transform_func([part.GetX(), part.GetY()])
+                    points = part.GetPoints()
+                    points = list(map(transform_func, points))
+                    # lng, lat = transform_func([part.GetX(), part.GetY()])
                     new_point = ogr.Geometry(ogr.wkbPoint)
-                    new_point.AddPoint(lng, lat)
+                    for point in points:
+                        new_point.AddPoint(point[0], point[1])
                     new_multipoint.AddGeometry(new_point)
                 res = self.addFeature(poSrcFeature, new_multipoint, in_Layer, out_layer, panMap, icount)
 
@@ -743,6 +754,13 @@ class Transformer(object):
         except:
             log.error("错误发生在第{}个要素.\n{}".format(icount, traceback.format_exc()))
             return -10000
+
+def progress_callback(complete, message, unknown):
+    # Calculate percent by integer values (1, 2, ..., 100)
+    if int(complete * 100) % 20 == 0:
+        percent = int(complete * 100)
+        log.debug("{}%".format(percent))
+    return 1
 
 
 def launderLayerName(path):
