@@ -115,7 +115,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         # self.cb_compression.stateChanged.connect(self.cb_compression_changed)
 
-    def threadStop(self):
+    def threadTerminate(self):
         try:
             if self.thread.isRunning():
                 self.thread.terminate()
@@ -126,6 +126,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 self.thread.wait()
         except:
             return
+
+    def threadStop(self):
+        self.thread.quit()
 
     def init_cmb_pixelType(self):
         for value in pixelType_dict.values():
@@ -338,7 +341,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.thread.start()
             self.run_process()
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
-            self.threadStop()
+            self.threadTerminate()
             self.close()
 
     def run_process(self):

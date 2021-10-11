@@ -96,7 +96,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
         self.table_layout()
 
-    def threadStop(self):
+    def threadTerminate(self):
         try:
             if self.thread.isRunning():
                 self.thread.terminate()
@@ -107,6 +107,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 self.thread.wait()
         except:
             return
+
+    def threadStop(self):
+        self.thread.quit()
 
     def splitterMoved(self):
         self.table_layout()
@@ -421,7 +424,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.thread.start()
             self.run_process()
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
-            self.threadStop()
+            self.threadTerminate()
             self.close()
 
     def check_paras(self):

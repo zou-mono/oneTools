@@ -87,7 +87,7 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.tbl_address.setColumnWidth(2, self.tbl_address.width() * 0.2)
         self.tbl_address.setColumnWidth(3, self.tbl_address.width() * 0.2)
 
-    def threadStop(self):
+    def threadTerminate(self):
         try:
             if self.thread.isRunning():
                 self.thread.terminate()
@@ -98,6 +98,9 @@ class Ui_Window(QDialog, Ui_Dialog):
                 self.thread.wait()
         except:
             return
+
+    def threadStop(self):
+        self.thread.quit()
 
     @Slot(QAbstractButton)
     def buttonBox_clicked(self, button: QAbstractButton):
@@ -116,7 +119,7 @@ class Ui_Window(QDialog, Ui_Dialog):
             self.thread.start()
             self.run_process()
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
-            self.threadStop()
+            self.threadTerminate()
             self.close()
 
     def run_process(self):
