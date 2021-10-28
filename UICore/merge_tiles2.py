@@ -185,13 +185,6 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, pixeltype, co
     else:
         log.info('拼接完成.')
 
-    log.info("开始构建影像金字塔...")
-    out_ds = gdal.OpenEx(merged_file, gdal.OF_RASTER | gdal.OF_READONLY)
-    gdal.SetConfigOption('COMPRESS_OVERVIEW', 'LZW')
-    out_ds.BuildOverviews("nearest", range(2, 16, 2), callback=progress_callback)  # 第二个参数表示建立多少级金字塔, QGIS里面默认是2,4,8,16
-    out_ds=None
-    log.info("影像金字塔构建成功.")
-
     if compression:
         log.info("开始压缩...")
         filename = os.path.splitext(merged_file)[0]
@@ -201,6 +194,13 @@ def merge_tiles(input_folder, scope, origin, resolution, tilesize, pixeltype, co
         gdal.Translate(compression_file, merged_file, options=translateOptions)
         log.info("压缩完成...")
         merged_file = compression_file
+
+    log.info("开始构建影像金字塔...")
+    out_ds = gdal.OpenEx(merged_file, gdal.OF_RASTER | gdal.OF_READONLY)
+    gdal.SetConfigOption('COMPRESS_OVERVIEW', 'LZW')
+    out_ds.BuildOverviews("nearest", range(2, 16, 2), callback=progress_callback)  # 第二个参数表示建立多少级金字塔, QGIS里面默认是2,4,8,16
+    out_ds=None
+    log.info("影像金字塔构建成功.")
 
     end = time.time()
     log.info("合并瓦片任务完成! 总共耗时{}秒. 影像存储至{}.\n".format("{:.2f}".format(end - start), merged_file))

@@ -805,15 +805,15 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             if 'lods' in getInfo['tileInfo'].keys():
                 lods = getInfo['tileInfo']['lods']
 
-        if 'extent' in getInfo.keys():
-            if 'xmin' in getInfo['extent']:
-                xmin = getInfo['extent']['xmin']
-            if 'xmax' in getInfo['extent']:
-                xmax = getInfo['extent']['xmax']
-            if 'ymin' in getInfo['extent']:
-                ymin = getInfo['extent']['ymin']
-            if 'ymax' in getInfo['extent']:
-                ymax = getInfo['extent']['ymax']
+        if 'fullExtent' in getInfo.keys():
+            if 'xmin' in getInfo['fullExtent']:
+                xmin = getInfo['fullExtent']['xmin']
+            if 'xmax' in getInfo['fullExtent']:
+                xmax = getInfo['fullExtent']['xmax']
+            if 'ymin' in getInfo['fullExtent']:
+                ymin = getInfo['fullExtent']['ymin']
+            if 'ymax' in getInfo['fullExtent']:
+                ymax = getInfo['fullExtent']['ymax']
 
         if 'tileInfo' in getInfo.keys():
             if 'rows' in getInfo['tileInfo']:
