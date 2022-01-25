@@ -171,7 +171,7 @@ class Transformer(object):
         self.lco = []
 
         if out_format == DataType.shapefile:
-            self.lco = ["ENCODING=UTF-8"]
+            self.lco = ["ENCODING=UTF-8", "2GB_LIMIT=NO"]
             self.out = outpath
         elif out_format == DataType.fileGDB:
             self.lco = ["FID=FID"]
