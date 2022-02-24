@@ -241,7 +241,10 @@ def read_first_line(file, format, sheet=None, encoding=None):
             header = next(reader)  # gets the first line
     elif format == DataType.xlsx:
         wb = load_workbook(file, read_only=True)
-        ws = wb.active
+        if sheet is None:
+            ws = wb.active
+        else:
+            ws = wb[sheet]
         # ws = wb.get_sheet_by_name(sheet)
         columns = ws.max_column
         header = []
@@ -249,5 +252,10 @@ def read_first_line(file, format, sheet=None, encoding=None):
             cell_value = ws.cell(row=1, column=i).value
             header.append(str(cell_value))
         wb.close()
+    elif format == DataType.memory:
+        for line in file.splitlines():
+            l_arr = line.split('\t')
+            header = l_arr
+            break
 
     return header

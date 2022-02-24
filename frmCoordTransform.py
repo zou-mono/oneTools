@@ -9,7 +9,6 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 from openpyxl import load_workbook
 from osgeo import osr, gdal
 
-import UI.UICoordTransform
 import UI.listview_dialog
 import UICore.coordTransform_table
 import sys

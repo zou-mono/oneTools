@@ -10,6 +10,7 @@ import sys
 import frmVectorMap
 import frmTileMap
 import frmCoordTransform
+import frmLandUseTypeConvert
 from UICore.log4p import Log
 
 Slot = QtCore.pyqtSlot
@@ -27,6 +28,7 @@ class Ui_Window(QMainWindow, UI.UIMain.Ui_MainWindow):
         self.btn_coordTransform.setStyleSheet("text-align:left;")
         self.btn_imageCrawler.setStyleSheet("text-align:left;")
         self.btn_vectorCrawler.setStyleSheet("text-align:left;")
+        self.btn_landUseTypeConvert.setStyleSheet("text-align:left;")
 
         self.bFirstHint = True
 
@@ -116,12 +118,17 @@ if __name__ == '__main__':
     frmTileMap.setWindowFlags(Qt.Window)
     frmCoordTransform.setWindowFlags(Qt.Window)  # Window WindowMinMaxButtonsHint
     frmVectorMap.setWindowFlags(Qt.Window)
+
+    frmLandUseTypeConvert = frmLandUseTypeConvert.Ui_Window(frmMain)
+    frmLandUseTypeConvert.setWindowFlags(Qt.Window)  # Window WindowMinMaxButtonsHint
+
     #
     # frmVectorMap.setWindowFlags(Qt.Window)
 
     frmMain.btn_vectorCrawler.clicked.connect(frmVectorMap.show)
     frmMain.btn_imageCrawler.clicked.connect(frmTileMap.show)
     frmMain.btn_coordTransform.clicked.connect(frmCoordTransform.show)
+    frmMain.btn_landUseTypeConvert.clicked.connect(frmLandUseTypeConvert.show)
 
     frmMain.show()
 

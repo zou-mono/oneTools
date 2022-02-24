@@ -209,7 +209,7 @@ class Log:
     def warning(self, message, parent=None, dialog=False):
         self.__console('warning', message)
         if dialog:
-            QMessageBox.Information(parent, "警告", message, QMessageBox.Close)
+            QMessageBox.information(parent, "警告", message, QMessageBox.Close)
 
     def error(self, message, parent=None, dialog=False):
         self.__console('error', message)

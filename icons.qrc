@@ -15,5 +15,7 @@
     <file>icons/EditingAdjustmentModifyLink16.png</file>
     <file>icons/EditingAdjustmentModifyLink32.png</file>
     <file>icons/GeoprocessingToolbox48.png</file>
+    <file>icons/GeodatabaseDistributedSchemaCompare32.png</file>
+    <file>icons/GeodatabaseDistributedSchemaCompare16.png</file>
   </qresource>
 </RCC>

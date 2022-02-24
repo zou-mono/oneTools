@@ -46,6 +46,7 @@ class DataType(Enum):
     csv = 4
     xlsx = 5
     dbf = 6
+    memory = 7
 
 
 DataType_dict = {

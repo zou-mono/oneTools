@@ -173,7 +173,7 @@ class dwgWorkspaceFactory(workspaceFactory):
         self.driver = ogr.GetDriverByName(self.driverName)
 
 
-def read_table_header(file, format, sheet=None):
+def read_table_header(file, format, supplyment=True, sheet=None):
     if format == DataType.csv:
         encoding = check_encoding(file)
 
@@ -182,14 +182,14 @@ def read_table_header(file, format, sheet=None):
         #     header = next(reader)  # gets the first line
         header = read_first_line(file, format, encoding=encoding)
         bheader = is_header(header)
-        if not bheader:
+        if not bheader and supplyment:
             header_list = []
             for i in range(len(header)):
                 header_list.append("F{}".format(i))
             return header_list, encoding, bheader
         else:
             for i in range(len(header)):
-                if header[i] == "":
+                if header[i] == "" and supplyment:
                     header[i] = "F{}".format(i)
             return header, encoding, bheader
     elif format == DataType.dbf:
@@ -211,17 +211,21 @@ def read_table_header(file, format, sheet=None):
     elif format == DataType.xlsx:
         header = read_first_line(file, format, sheet=sheet)
         bheader = is_header(header)
-        if not bheader:
+        if not bheader and supplyment:
             header_list = []
             for i in range(len(header)):
                 header_list.append("F{}".format(i))
             return header_list, bheader
         else:
             for i in range(len(header)):
-                if header[i] == "":
+                if header[i] == "" and supplyment:
                     header[i] = "F{}".format(i)
-            return header, bheader
 
+            return header, bheader
+    elif format == DataType.memory:
+        header = read_first_line(file, format, sheet=sheet)
+        bheader = is_header(header)
+        return header, bheader
 
 def get_row_from_excel(ws, logicRow, columns):
     row = []
