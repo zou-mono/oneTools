@@ -71,6 +71,8 @@ class Ui_Window(QDialog, Ui_Dialog):
     def showEvent(self, a0: QShowEvent) -> None:
         log.setLogViewer(parent=self, logViewer=self.txt_log)
         self.table_layout()
+        desktop = QApplication.desktop()
+        self.move(int((desktop.width() - self.width())/2), int((desktop.height() - self.height())/2))
 
     def resizeEvent(self, a0: QResizeEvent) -> None:
         self.table_layout()

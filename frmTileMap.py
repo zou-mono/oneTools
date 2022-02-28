@@ -483,6 +483,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.rbtn_spiderAndHandle.click()
             self.bInit = False
 
+        desktop = QApplication.desktop()
+        self.move(int((desktop.width() - self.width())/2), int((desktop.height() - self.height())/2))
+
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
         self.table_layout()
 

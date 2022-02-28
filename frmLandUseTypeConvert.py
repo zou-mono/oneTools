@@ -87,6 +87,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.dialog_width = self.width()
             self.dialog_height = self.height()
 
+        desktop = QApplication.desktop()
+        self.move(int((desktop.width() - self.width())/2), int((desktop.height() - self.height())/2))
+
     def threadTerminate(self):
         try:
             if self.thread.isRunning():
@@ -115,6 +118,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.tableWidget.setRowCount(0)
         self.tableWidget.setColumnCount(0)
         self.resize(self.dialog_width, self.dialog_height)
+        desktop = QApplication.desktop()
+        self.move(int((desktop.width() - self.width())/2), int((desktop.height() - self.height())/2))
 
     @Slot(QAbstractButton)
     def buttonBox_clicked(self, button: QAbstractButton):

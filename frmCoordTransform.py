@@ -90,6 +90,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.rbtn_file.click()
             self.bInit = False
 
+        desktop = QApplication.desktop()
+        self.move(int((desktop.width() - self.width())/2), int((desktop.height() - self.height())/2))
         # self.table_layout()
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
