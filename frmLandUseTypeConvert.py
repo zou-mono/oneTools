@@ -15,7 +15,7 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 
 from UICore.DataFactory import workspaceFactory, read_table_header
 from UICore.Gv import SplitterState, Dock, DataType
-from UICore.common import get_suffix
+from UICore.common import get_suffix, is_already_opened_in_write_mode
 from UICore.log4p import Log
 import UI.listview_dialog
 from UICore.workerThread import updateAttributeValueWorker
@@ -66,6 +66,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.buttonBox.clicked.connect(self.buttonBox_clicked)
         self.btn_addressLayerFile.clicked.connect(self.btn_addressLayerFile_clicked)
         self.btn_addressConfigFile.clicked.connect(self.btn_addressConfigFile_clicked)
+        self.rbtn_file.clicked.connect(self.rbtn_toggled)
+        self.rbtn_filedb.clicked.connect(self.rbtn_toggled)
         # self.tableWidget.viewport().installEventFilter(self)
         self.tableWidget.installEventFilter(self)
         # self.splitter.splitterMoved.connect(self.splitterMoved)
@@ -73,6 +75,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         self.splitter.setupUi()
         self.bInit = True
+        self.dialog_width = 0
+        self.dialog_height = 0
         # self.rel_tables = []
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
@@ -80,6 +84,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         if self.bInit:
             self.rbtn_file.click()
             self.bInit = False
+            self.dialog_width = self.width()
+            self.dialog_height = self.height()
 
     def threadTerminate(self):
         try:
@@ -95,6 +101,20 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     def threadStop(self):
         self.thread.quit()
+
+
+    @Slot()
+    def rbtn_toggled(self):
+        if not self.bInit:
+            self.dialog_init()
+
+    def dialog_init(self):
+        self.txt_addressLayerFile.setText("")
+        self.txt_addressConfigFile.setText("")
+        self.tableWidget.clear()
+        self.tableWidget.setRowCount(0)
+        self.tableWidget.setColumnCount(0)
+        self.resize(self.dialog_width, self.dialog_height)
 
     @Slot(QAbstractButton)
     def buttonBox_clicked(self, button: QAbstractButton):
@@ -175,6 +195,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 if len(fileName) == 0:
                     return
 
+                if is_already_opened_in_write_mode(fileName):
+                    log.error("矢量图层正在被占用，请先关闭其他应用程序！", dialog=True)
+                    return
+
                 fileType = get_suffix(fileName)
 
                 if fileType == DataType.shapefile:
@@ -191,6 +215,11 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             elif self.rbtn_filedb.isChecked():
                 fileName = QtWidgets.QFileDialog.getExistingDirectory(self, "选择需要转换的GDB数据库",
                                                                       os.getcwd(), QFileDialog.ShowDirsOnly)
+
+                if is_already_opened_in_write_mode(fileName):
+                    log.error("矢量图层正在被占用，请先关闭其他应用程序！", dialog=True)
+                    return
+
                 wks = workspaceFactory().get_factory(DataType.fileGDB)
                 datasource = wks.openFromFile(fileName)
 
