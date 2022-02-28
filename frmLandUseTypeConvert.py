@@ -77,6 +77,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.bInit = True
         self.dialog_width = 0
         self.dialog_height = 0
+        self.splitter_width = self.splitter.width()
+        self.splitter_height = self.splitter.height()
         # self.rel_tables = []
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
@@ -117,7 +119,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.tableWidget.clear()
         self.tableWidget.setRowCount(0)
         self.tableWidget.setColumnCount(0)
-        self.resize(self.dialog_width, self.dialog_height)
+        self.splitter.handleSplitterButton(self.splitter.splitterState)
         desktop = QApplication.desktop()
         self.move(int((desktop.width() - self.width())/2), int((desktop.height() - self.height())/2))
 
