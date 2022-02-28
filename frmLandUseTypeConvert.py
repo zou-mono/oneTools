@@ -1,22 +1,24 @@
 import csv
 import os
 import sys
+import traceback
 
 import pyperclip
 from PyQt5.QtWidgets import QDialogButtonBox, QAbstractButton, QMessageBox, QApplication, QStyleFactory, QFileDialog, \
     QAbstractItemView, QTableWidget, QHeaderView, QTableWidgetItem
 from openpyxl import load_workbook
+from osgeo import ogr
 
 from UI.UILandUseTypeConvert import Ui_Dialog
-from PyQt5.QtCore import Qt, QModelIndex, QEvent
+from PyQt5.QtCore import Qt, QEvent, QThread
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 from UICore.DataFactory import workspaceFactory, read_table_header
 from UICore.Gv import SplitterState, Dock, DataType
 from UICore.common import get_suffix
 from UICore.log4p import Log
-from widgets.FileDialog import FileDialog
 import UI.listview_dialog
+from UICore.workerThread import updateAttributeValueWorker
 
 Slot = QtCore.pyqtSlot
 
@@ -48,6 +50,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.splitter.setProperty("WidgetToHide", self.txt_log)
         self.splitter.setProperty("ExpandParentForm", True)
 
+        log.setLogViewer(parent=self, logViewer=self.txt_log)
+        self.txt_log.setReadOnly(True)
+
         self.splitter.setSizes([600, self.splitter.width() - 590])
         self.resize(self.splitter.width(), self.splitter.height())
 
@@ -68,6 +73,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         self.splitter.setupUi()
         self.bInit = True
+        # self.rel_tables = []
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
         log.setLogViewer(parent=self, logViewer=self.txt_log)
@@ -75,59 +81,140 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             self.rbtn_file.click()
             self.bInit = False
 
+    def threadTerminate(self):
+        try:
+            if self.thread.isRunning():
+                self.thread.terminate()
+                self.thread.wait()
+                del self.thread
+            else:
+                self.thread.quit()
+                self.thread.wait()
+        except:
+            return
+
+    def threadStop(self):
+        self.thread.quit()
+
     @Slot(QAbstractButton)
     def buttonBox_clicked(self, button: QAbstractButton):
-        QMessageBox.information(self, "测试", "测试", QMessageBox.Ok)
+        if button == self.buttonBox.button(QDialogButtonBox.Ok):
+            DLBM_index = -1
+            all_data = []
+            layer = None
+            header = []
+
+            if self.txt_addressLayerFile.text() == '' or self.txt_addressLayerFile.text() == '':
+                return
+
+            self.thread = QThread(self)
+            self.updateThread = updateAttributeValueWorker()
+            self.updateThread.moveToThread(self.thread)
+            self.updateThread.update.connect(self.updateThread.updateAttribute)
+            self.updateThread.finished.connect(self.threadStop)
+
+            for icol in range(self.tableWidget.columnCount()):
+                header_txt = self.tableWidget.horizontalHeaderItem(icol).text()
+                # print(self.tableWidget.horizontalHeaderItem(icol).text())
+                if header_txt.upper() == 'DLBM':
+                    DLBM_index = icol
+                header.append(self.tableWidget.horizontalHeaderItem(icol).text())
+
+            all_data.append(header)
+
+            for irow in range(self.tableWidget.rowCount()):
+                row = []
+                for icol in range(self.tableWidget.columnCount()):
+                    row.append(self.tableWidget.item(irow, icol).text())
+                all_data.append(row)
+
+            rel_tables = self.generate_config_rel(DLBM_index, all_data)
+
+            fileName = self.txt_addressLayerFile.text()
+            fileName_arr = fileName.split(os.sep)
+            in_path = os.sep.join(fileName_arr[:-1])
+            layer_name = fileName_arr[-1]
+
+            file_type = None
+            if self.rbtn_file.isChecked():
+                wks = workspaceFactory().get_factory(DataType.shapefile)
+                datasource = wks.openFromFile(fileName, 1)
+                layer = datasource.GetLayer(0)
+                file_type = DataType.shapefile
+                in_path = fileName
+            elif self.rbtn_filedb.isChecked():
+                wks = workspaceFactory().get_factory(DataType.fileGDB)
+                datasource = wks.openFromFile(in_path, 1)
+                layer = datasource.GetLayerByName(layer_name)
+                file_type = DataType.fileGDB
+
+            datasource = None
+
+            if layer is not None:
+                self.thread.start()
+                self.updateThread.update.emit(file_type, in_path, layer_name, header, rel_tables)
+            else:
+                log.error("无法读取矢量数据！请检查路径和数据完整性", dialog=True)
+            print("OK")
+        elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
+            self.threadTerminate()
+            self.close()
 
     @Slot()
     def btn_addressLayerFile_clicked(self):
         # _f_dlg = FileDialog()
         # _f_dlg.exec_()
-        if self.rbtn_file.isChecked():
-            fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(
-                self, "选择待转换矢量图层文件", os.getcwd(),
-                "ESRI Shapefile(*.shp)")
+        datasource = None
+        layer = None
+        try:
+            if self.rbtn_file.isChecked():
+                fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(
+                    self, "选择待转换矢量图层文件", os.getcwd(),
+                    "ESRI Shapefile(*.shp)")
 
-            if len(fileName) == 0:
-                return
+                if len(fileName) == 0:
+                    return
 
-            fileType = get_suffix(fileName)
+                fileType = get_suffix(fileName)
 
-            if fileType == DataType.shapefile:
-                wks = workspaceFactory().get_factory(DataType.shapefile)
+                if fileType == DataType.shapefile:
+                    wks = workspaceFactory().get_factory(DataType.shapefile)
+                    datasource = wks.openFromFile(fileName)
+                    self.txt_addressLayerFile.setText(fileName)
+                else:
+                    log.error("不识别的图形文件格式！", dialog=True)
+
+                if datasource is not None:
+                    layer = datasource.GetLayer(0)
+                else:
+                    log.error("无法读取shp文件！{}".format(fileName), dialog=True)
+            elif self.rbtn_filedb.isChecked():
+                fileName = QtWidgets.QFileDialog.getExistingDirectory(self, "选择需要转换的GDB数据库",
+                                                                      os.getcwd(), QFileDialog.ShowDirsOnly)
+                wks = workspaceFactory().get_factory(DataType.fileGDB)
                 datasource = wks.openFromFile(fileName)
-            else:
-                log.error("不识别的图形文件格式!", dialog=True)
-                return None
 
-            if datasource is None:
-                # layer_name = wks.getLayerNames()[0]
-                # in_layer = datasource.GetLayer()
-
-                # datasource.Release()
-                # datasource = None
-                # in_layer = None
-                log.error("无法读取shp文件!{}".format(fileName), dialog=True)
-                return None
-        elif self.rbtn_filedb.isChecked():
-            fileName = QtWidgets.QFileDialog.getExistingDirectory(self, "选择需要转换的GDB数据库",
-                                                                  os.getcwd(), QFileDialog.ShowDirsOnly)
-            wks = workspaceFactory().get_factory(DataType.fileGDB)
-            datasource = wks.openFromFile(fileName)
-
-            if datasource is not None:
-                lst_names = wks.getLayerNames()
                 selected_name = None
-                if len(lst_names) > 1:
-                    selected_name = nameListDialog().openListDialog("请选择要转换的图层", lst_names)
-                elif len(lst_names) == 1:
-                    selected_name = [lst_names[0]]
+                if datasource is not None:
+                    lst_names = wks.getLayerNames()
+                    if len(lst_names) > 1:
+                        selected_name = nameListDialog().openListDialog("请选择要转换的图层", lst_names)
+                    elif len(lst_names) == 1:
+                        selected_name = [lst_names[0]]
 
-                # layer = wks.openLayer(selected_name[0])
-                log.warning(selected_name[0], dialog=True)
-            else:
-                log.error("无法读取文件数据库!{}".format(fileName), dialog=True)
-                return None
+                    layerName = selected_name[0]
+                    self.txt_addressLayerFile.setText(os.path.join(fileName, layerName))
+                    layer = datasource.GetLayerByName(layerName)
+                else:
+                    log.error("无法读取文件数据库！{}".format(fileName), dialog=True)
+
+            if layer is not None:
+                self.check_field(layer)
+        except:
+            log.error("无法读取矢量数据图层.\n" + traceback.format_exc())
+        finally:
+            datasource = None
+            layer = None
 
     @Slot()
     def btn_addressConfigFile_clicked(self):
@@ -141,7 +228,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         fileType = get_suffix(fileName)
 
         if fileType != DataType.xlsx and fileType != DataType.csv:
-            log.error("不识别的图形文件格式!", dialog=True)
+            log.error("不识别的图形文件格式！", dialog=True)
             return None
 
         header, DLBM_values, all_data = self.read_config_table(fileName, fileType)
@@ -150,7 +237,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         if DLBM_index > -1:
             if self.check_field_DLBM(DLBM_values):
                 self.add_all_data_to_tablewidget(DLBM_index, all_data)
-                rel_tables = self.generate_config_rel(DLBM_index, all_data)
+                self.txt_addressConfigFile.setText(fileName)
+                # self.rel_tables = self.generate_config_rel(DLBM_index, all_data)
 
     def eventFilter(self, source: 'QObject', event: 'QEvent') -> bool:
         if source is self.tableWidget and event.type() == QEvent.KeyPress:
@@ -163,16 +251,11 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     if DLBM_index > -1:
                         if self.check_field_DLBM(DLBM_values):
                             self.add_all_data_to_tablewidget(DLBM_index, all_data)
-                            rel_tables = self.generate_config_rel(DLBM_index, all_data)
+                            # self.rel_tables = self.generate_config_rel(DLBM_index, all_data)
         # if source is self.tableWidget.viewport():
         #     print(event.type())
         # # if source is self.tableWidget.viewport() and event.type() == QEvent.MouseButtonPress:
         # #     print(event.type())
-        # if source is self.tableWidget.viewport() and event.type() == QtCore.QEvent.KeyPress:
-        #     print(event.type())
-        #     if event.modifiers() == Qt.ControlModifier:
-        #         print(event.text())
-
         return super().eventFilter(source, event)
 
     #  在表格控件中显示读取的规则配置表数据
@@ -183,7 +266,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.tableWidget.setColumnCount(col_num)
         self.tableWidget.setRowCount(row_num - 1)
         self.tableWidget.setHorizontalHeaderLabels(all_data[0])
-        self.tableWidget.horizontalHeader().setSectionsMovable(False)
+        self.tableWidget.horizontalHeader().setSectionsMovable(False)  # 表头顺序不允许调整
 
         # 按行加载数据
         irow = 0
@@ -195,12 +278,13 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             for icol in range(len(row_value)):
                 newItem = QTableWidgetItem(row_value[icol])
                 if icol == DLBM_index:
-                    newItem.setFlags(QtCore.Qt.ItemIsEnabled)
+                    newItem.setFlags(QtCore.Qt.ItemIsEnabled)  # DLBM字段设置为不可编辑
                 self.tableWidget.setItem(irow - 1, icol, newItem)
 
             irow += 1
 
-        self.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents) # 首先根据resizetocontents自动计算合适的列宽
+        # 首先根据resizetocontents自动计算合适的列宽
+        self.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
         # 首先根据resizetocontents自动计算合适的列宽，然后自动调整窗口大小，最后将列宽设置为可调整
         resize_width = 0
@@ -304,6 +388,20 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
             return header, DLBM_values, all_data
 
+    def check_field(self, layer):
+        bexist = False
+        layerDefn = layer.GetLayerDefn()
+        for i in range(layerDefn.GetFieldCount()):
+            fieldName = layerDefn.GetFieldDefn(i).GetName()
+            if fieldName.upper() == "DLBM":
+                bexist = True
+                break
+        if not bexist:
+            log.error('矢量图层数据缺失必要字段"DLMB"，请补全！', dialog=True)
+            return False
+
+        return True
+
     # 检查表头和数据的合法性
     def check_header(self, header):
         DLBM_index = -1
@@ -318,16 +416,16 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 break
 
         if DLBM_index == -1:
-            log.error("规则表不存在必要字段DLBM，请检查!", dialog=True)
+            log.error("规则表不存在必要字段DLBM，请检查！", dialog=True)
         if len(not_none) <= DLBM_index:
-            log.error("DLBM列右边缺少需要匹配的列，请检查!", dialog=True)
+            log.error("DLBM列右边缺少需要匹配的列，请检查！", dialog=True)
 
         return DLBM_index
 
     def check_field_DLBM(self, DLBM):
         set_headers = set(DLBM)
         if len(set_headers) != len(DLBM):
-            log.error("规则表DLBM字段不允许出现重复值，请检查!", dialog=True)
+            log.error("规则表DLBM字段不允许出现重复值，请检查！", dialog=True)
             return False
         return True
 

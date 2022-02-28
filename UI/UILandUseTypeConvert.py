@@ -135,12 +135,11 @@ class Ui_Dialog(object):
         self.tableWidget.setColumnCount(0)
         self.tableWidget.setRowCount(0)
         self.verticalLayout_2.addWidget(self.tableWidget)
-        self.verticalLayout.addLayout(self.verticalLayout_2)
         self.buttonBox = QtWidgets.QDialogButtonBox(self.verticalLayoutWidget)
-        self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
-        self.verticalLayout.addWidget(self.buttonBox)
+        self.verticalLayout_2.addWidget(self.buttonBox)
+        self.verticalLayout.addLayout(self.verticalLayout_2)
         self.txt_log = QtWidgets.QPlainTextEdit(self.splitter)
         font = QtGui.QFont()
         font.setFamily("微软雅黑")
@@ -149,8 +148,6 @@ class Ui_Dialog(object):
         self.txt_log.setObjectName("txt_log")
 
         self.retranslateUi(Dialog)
-        self.buttonBox.accepted.connect(Dialog.accept)
-        self.buttonBox.rejected.connect(Dialog.reject)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def retranslateUi(self, Dialog):

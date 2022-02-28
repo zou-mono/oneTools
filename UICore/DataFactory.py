@@ -161,8 +161,8 @@ class geojsonWorkspaceFactory(workspaceFactory):
 class filegdbWorkspaceFactory(workspaceFactory):
     def __init__(self):
         super().__init__()
-        # self.driverName = "FileGDB"
-        self.driverName = "OpenFileGDB"
+        self.driverName = "FileGDB"
+        # self.driverName = "OpenFileGDB"
         self.driver = ogr.GetDriverByName(self.driverName)
 
 
