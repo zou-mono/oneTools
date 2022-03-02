@@ -270,7 +270,7 @@ def addField(feature, defn, OID_NAME, out_layer):
             ofeature.SetField(dateField, otherStyleTime)
 
         out_layer.CreateFeature(ofeature)
-        ofeature.Destroy()
+        del ofeature
     except:
         log.error("错误发生在FID=" + str(FID) + "\n" + traceback.format_exc())
 

@@ -743,7 +743,7 @@ class Transformer(object):
             out_Feature.SetGeometryDirectly(geometry)
 
             out_layer.CreateFeature(out_Feature)
-            out_Feature.Destroy()
+            del out_Feature
             return 1
         except UnicodeEncodeError:
             log.error("错误发生在第{}个要素.\n{}".format(icount, "字符编码无法转换，请检查输入文件的字段!"))

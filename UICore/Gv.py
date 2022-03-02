@@ -47,6 +47,7 @@ class DataType(Enum):
     xlsx = 5
     dbf = 6
     memory = 7
+    openFileGDB = 8
 
 
 DataType_dict = {

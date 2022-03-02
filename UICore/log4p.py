@@ -43,6 +43,7 @@ class Handler(QObject, logging.Handler):
         logging.Handler.__init__(self)
         self.parent = parent
         self.stringList = []
+        self.setLevel(logging.INFO)  # logviewer不显示info以下级别的日志
         formatter = logging.Formatter(
             '[%(asctime)s] [%(filename)s:%(lineno)d] [%(levelname)s]- %(message)s')
         self.setFormatter(formatter)
@@ -167,7 +168,7 @@ class Log:
         # 创建一个FileHandler，用于写到本地
         fh = RotatingFileHandler(filename=self.logName, mode='a', maxBytes=1024 * 1024 * 5, backupCount=5,
                                  encoding='utf-8')  # 使用RotatingFileHandler类，滚动备份日志
-        fh.setLevel(logging.INFO)
+        fh.setLevel(logging.DEBUG)
         fh.setFormatter(formatter)
         self.logger.addHandler(fh)
 

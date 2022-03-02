@@ -29,6 +29,8 @@ class workspaceFactory(object):
             wks = filegdbWorkspaceFactory()
         elif factory == DataType.cad_dwg:
             wks = dwgWorkspaceFactory()
+        elif factory == DataType.openFileGDB:
+            wks = filegdbWorkspaceFactory2()
 
         if wks is None:
             log.error("不支持的空间数据格式!")
@@ -165,6 +167,12 @@ class filegdbWorkspaceFactory(workspaceFactory):
         # self.driverName = "OpenFileGDB"
         self.driver = ogr.GetDriverByName(self.driverName)
 
+class filegdbWorkspaceFactory2(workspaceFactory):
+    def __init__(self):
+        super().__init__()
+        self.driverName = "OpenFileGDB"
+        # self.driverName = "OpenFileGDB"
+        self.driver = ogr.GetDriverByName(self.driverName)
 
 class dwgWorkspaceFactory(workspaceFactory):
     def __init__(self):

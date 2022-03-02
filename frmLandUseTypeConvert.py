@@ -2,6 +2,7 @@ import csv
 import os
 import sys
 import traceback
+import time
 
 import pyperclip
 from PyQt5.QtWidgets import QDialogButtonBox, QAbstractButton, QMessageBox, QApplication, QStyleFactory, QFileDialog, \
@@ -119,70 +120,115 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.tableWidget.clear()
         self.tableWidget.setRowCount(0)
         self.tableWidget.setColumnCount(0)
-        self.splitter.handleSplitterButton(self.splitter.splitterState)
+        if self.splitter.splitterState == SplitterState.collapsed:
+            self.splitter.setSizes([1, 0])
+        # else:
+        #     self.splitter.handleSplitterButton(SplitterState.expanded)
         desktop = QApplication.desktop()
         self.move(int((desktop.width() - self.width())/2), int((desktop.height() - self.height())/2))
 
     @Slot(QAbstractButton)
     def buttonBox_clicked(self, button: QAbstractButton):
         if button == self.buttonBox.button(QDialogButtonBox.Ok):
-            DLBM_index = -1
-            all_data = []
-            layer = None
-            header = []
+            try:
+                DLBM_index = -1
+                all_data = []
+                layer = None
+                header = []
 
-            if self.txt_addressLayerFile.text() == '' or self.txt_addressLayerFile.text() == '':
+                if self.txt_addressLayerFile.text() == '' or self.txt_addressLayerFile.text() == '':
+                    return
+
+                self.thread = QThread(self)
+                self.updateThread = updateAttributeValueWorker()
+                self.updateThread.moveToThread(self.thread)
+                self.updateThread.update.connect(self.updateThread.updateAttribute)
+                self.updateThread.finished.connect(self.threadStop)
+
+                for icol in range(self.tableWidget.columnCount()):
+                    header_txt = self.tableWidget.horizontalHeaderItem(icol).text()
+                    # print(self.tableWidget.horizontalHeaderItem(icol).text())
+                    if header_txt.upper() == 'DLBM':
+                        DLBM_index = icol
+                    header.append(self.tableWidget.horizontalHeaderItem(icol).text())
+
+                all_data.append(header)
+
+                DLBM_values = [] # 规则表DLBM列的所有值
+                for irow in range(self.tableWidget.rowCount()):
+                    row = []
+                    for icol in range(self.tableWidget.columnCount()):
+                        row.append(self.tableWidget.item(irow, icol).text())
+                    DLBM_values.append(self.tableWidget.item(irow, DLBM_index).text())
+                    all_data.append(row)
+
+                rel_tables = self.generate_config_rel(DLBM_index, all_data)
+
+                fileName = self.txt_addressLayerFile.text()
+                fileName_arr = fileName.split(os.sep)
+                in_path = os.sep.join(fileName_arr[:-1])
+                layer_name = fileName_arr[-1]
+
+                file_type = None
+                if self.rbtn_file.isChecked():
+                    wks = workspaceFactory().get_factory(DataType.shapefile)
+                    dataSource = wks.openFromFile(fileName, 0)
+                    layer = dataSource.GetLayer(0)
+                    file_type = DataType.shapefile
+                    in_path = fileName
+                elif self.rbtn_filedb.isChecked():
+                    wks = workspaceFactory().get_factory(DataType.openFileGDB)
+                    dataSource = wks.openFromFile(in_path, 0)
+                    layer = dataSource.GetLayerByName(layer_name)
+                    file_type = DataType.fileGDB
+                    # driver = ogr.GetDriverByName("openFileGDB")
+                    # dataSource = driver.Open(in_path, 0)
+                    # layer = dataSource.GetLayer(0)
+                    # layerDefn = layer.GetLayerDefn()
+
+                # if dataSource is not None:
+                #     dataSource.Destroy()
+
+                # if is_already_opened_in_write_mode(in_path):
+                #     print("矢量图层正在被占用，无法创建新的字段，请先关闭其他应用程序！1")
+
+                right_header = []  # 只处理DLBM右边的字段
+                bDLBM = False
+                for i in range(len(header)):
+                    if bDLBM:
+                        right_header.append(header[i])
+
+                    if header[i].upper() == 'DLBM':
+                        bDLBM = True
+
+                # if is_already_opened_in_write_mode(in_path):
+                #     print("矢量图层正在被占用，无法创建新的字段，请先关闭其他应用程序！2")
+
+                field_names = []
+                layerDefn = layer.GetLayerDefn()
+                for i in range(layerDefn.GetFieldCount()):
+                    fieldName = layerDefn.GetFieldDefn(i).GetName()
+                    field_names.append(fieldName)
+
+                del layer
+                del wks
+                del dataSource
+
+                # if is_already_opened_in_write_mode(in_path):
+                #     print("矢量图层正在被占用，无法创建新的字段，请先关闭其他应用程序！3")
+
+                for header_value in right_header:
+                    if header_value not in field_names:
+                        if is_already_opened_in_write_mode(in_path):
+                            log.error("矢量图层正在被占用，无法创建新的字段，请先关闭其他应用程序！", dialog=True)
+                            return
+            except:
+                # log.error("无法读取矢量图层数据，请检查数据的完整性和正确性！", dialog=True)
+                print(traceback.format_exc())
                 return
 
-            self.thread = QThread(self)
-            self.updateThread = updateAttributeValueWorker()
-            self.updateThread.moveToThread(self.thread)
-            self.updateThread.update.connect(self.updateThread.updateAttribute)
-            self.updateThread.finished.connect(self.threadStop)
-
-            for icol in range(self.tableWidget.columnCount()):
-                header_txt = self.tableWidget.horizontalHeaderItem(icol).text()
-                # print(self.tableWidget.horizontalHeaderItem(icol).text())
-                if header_txt.upper() == 'DLBM':
-                    DLBM_index = icol
-                header.append(self.tableWidget.horizontalHeaderItem(icol).text())
-
-            all_data.append(header)
-
-            for irow in range(self.tableWidget.rowCount()):
-                row = []
-                for icol in range(self.tableWidget.columnCount()):
-                    row.append(self.tableWidget.item(irow, icol).text())
-                all_data.append(row)
-
-            rel_tables = self.generate_config_rel(DLBM_index, all_data)
-
-            fileName = self.txt_addressLayerFile.text()
-            fileName_arr = fileName.split(os.sep)
-            in_path = os.sep.join(fileName_arr[:-1])
-            layer_name = fileName_arr[-1]
-
-            file_type = None
-            if self.rbtn_file.isChecked():
-                wks = workspaceFactory().get_factory(DataType.shapefile)
-                datasource = wks.openFromFile(fileName, 1)
-                layer = datasource.GetLayer(0)
-                file_type = DataType.shapefile
-                in_path = fileName
-            elif self.rbtn_filedb.isChecked():
-                wks = workspaceFactory().get_factory(DataType.fileGDB)
-                datasource = wks.openFromFile(in_path, 1)
-                layer = datasource.GetLayerByName(layer_name)
-                file_type = DataType.fileGDB
-
-            datasource = None
-
-            if layer is not None:
-                self.thread.start()
-                self.updateThread.update.emit(file_type, in_path, layer_name, header, rel_tables)
-            else:
-                log.error("无法读取矢量数据！请检查路径和数据完整性", dialog=True)
-            print("OK")
+            self.thread.start()
+            self.updateThread.update.emit(file_type, in_path, layer_name, right_header, rel_tables, DLBM_values)
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
             self.threadTerminate()
             self.close()
@@ -193,6 +239,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         # _f_dlg.exec_()
         datasource = None
         layer = None
+        wks = None
         try:
             if self.rbtn_file.isChecked():
                 fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(
@@ -200,10 +247,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     "ESRI Shapefile(*.shp)")
 
                 if len(fileName) == 0:
-                    return
-
-                if is_already_opened_in_write_mode(fileName):
-                    log.error("矢量图层正在被占用，请先关闭其他应用程序！", dialog=True)
                     return
 
                 fileType = get_suffix(fileName)
@@ -223,12 +266,16 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 fileName = QtWidgets.QFileDialog.getExistingDirectory(self, "选择需要转换的GDB数据库",
                                                                       os.getcwd(), QFileDialog.ShowDirsOnly)
 
-                if is_already_opened_in_write_mode(fileName):
-                    log.error("矢量图层正在被占用，请先关闭其他应用程序！", dialog=True)
+                if fileName == "":
                     return
 
-                wks = workspaceFactory().get_factory(DataType.fileGDB)
-                datasource = wks.openFromFile(fileName)
+                # if is_already_opened_in_write_mode(fileName):
+                #     log.error("文件数据库正在被占用，请先从其他应用程序中释放！", dialog=True)
+                #     return
+
+                wks = workspaceFactory().get_factory(DataType.openFileGDB)
+                datasource = wks.openFromFile(fileName, 0)
+
 
                 selected_name = None
                 if datasource is not None:
@@ -249,8 +296,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         except:
             log.error("无法读取矢量数据图层.\n" + traceback.format_exc())
         finally:
-            datasource = None
-            layer = None
+            del datasource
+            del layer
+            del wks
 
     @Slot()
     def btn_addressConfigFile_clicked(self):
@@ -512,6 +560,8 @@ class nameListDialog(QtWidgets.QDialog, UI.listview_dialog.Ui_Dialog):
 
 
 if __name__ == '__main__':
+    ogr.UseExceptions()
+
     app = QApplication(sys.argv)
     style = QStyleFactory.create("windows")
     app.setStyle(style)
