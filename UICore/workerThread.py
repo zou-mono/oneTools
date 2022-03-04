@@ -83,12 +83,12 @@ class coordTransformWorker(QtCore.QObject):
 
 
 class updateAttributeValueWorker(QtCore.QObject):
-    update = pyqtSignal(object, str, str, object, object, object)
+    update = pyqtSignal(object, str, str, object, object, object, object, str)
     finished = pyqtSignal()
 
     def __init__(self):
         super(updateAttributeValueWorker, self).__init__()
 
-    def updateAttribute(self, file_type, in_path, layer_name, header, rel_tables, DLBM_values):
-        flag = UICore.updateAttribute.update_attribute_value(file_type, in_path, layer_name, header, rel_tables, DLBM_values)
+    def updateAttribute(self, file_type, in_path, layer_name, header, rel_tables, MC_tables, DLBM_values, report_file_name):
+        flag = UICore.updateAttribute.update_attribute_value(file_type, in_path, layer_name, header, rel_tables, MC_tables, DLBM_values, report_file_name)
         self.finished.emit()

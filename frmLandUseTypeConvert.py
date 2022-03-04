@@ -132,6 +132,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         if button == self.buttonBox.button(QDialogButtonBox.Ok):
             try:
                 DLBM_index = -1
+                MC_index = -1  # 名称字段
+                DLMC_index = -1 # 地类名称字段
                 all_data = []
                 layer = None
                 header = []
@@ -150,6 +152,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     # print(self.tableWidget.horizontalHeaderItem(icol).text())
                     if header_txt.upper() == 'DLBM':
                         DLBM_index = icol
+                    if header_txt == "名称":
+                        MC_index = icol
+                    if header_txt.upper() == "DLMC":
+                        DLMC_index = icol
                     header.append(self.tableWidget.horizontalHeaderItem(icol).text())
 
                 all_data.append(header)
@@ -162,35 +168,26 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     DLBM_values.append(self.tableWidget.item(irow, DLBM_index).text())
                     all_data.append(row)
 
-                rel_tables = self.generate_config_rel(DLBM_index, all_data)
+                rel_tables, MC_tables = self.generate_config_rel(DLBM_index, MC_index, DLMC_index, all_data)
 
                 fileName = self.txt_addressLayerFile.text()
                 fileName_arr = fileName.split(os.sep)
                 in_path = os.sep.join(fileName_arr[:-1])
-                layer_name = fileName_arr[-1]
 
                 file_type = None
                 if self.rbtn_file.isChecked():
                     wks = workspaceFactory().get_factory(DataType.shapefile)
                     dataSource = wks.openFromFile(fileName, 0)
                     layer = dataSource.GetLayer(0)
+                    layer_name = layer.GetName()
                     file_type = DataType.shapefile
                     in_path = fileName
                 elif self.rbtn_filedb.isChecked():
                     wks = workspaceFactory().get_factory(DataType.openFileGDB)
                     dataSource = wks.openFromFile(in_path, 0)
+                    layer_name = fileName_arr[-1]
                     layer = dataSource.GetLayerByName(layer_name)
                     file_type = DataType.fileGDB
-                    # driver = ogr.GetDriverByName("openFileGDB")
-                    # dataSource = driver.Open(in_path, 0)
-                    # layer = dataSource.GetLayer(0)
-                    # layerDefn = layer.GetLayerDefn()
-
-                # if dataSource is not None:
-                #     dataSource.Destroy()
-
-                # if is_already_opened_in_write_mode(in_path):
-                #     print("矢量图层正在被占用，无法创建新的字段，请先关闭其他应用程序！1")
 
                 right_header = []  # 只处理DLBM右边的字段
                 bDLBM = False
@@ -200,9 +197,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
                     if header[i].upper() == 'DLBM':
                         bDLBM = True
-
-                # if is_already_opened_in_write_mode(in_path):
-                #     print("矢量图层正在被占用，无法创建新的字段，请先关闭其他应用程序！2")
 
                 field_names = []
                 layerDefn = layer.GetLayerDefn()
@@ -214,21 +208,33 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 del wks
                 del dataSource
 
-                # if is_already_opened_in_write_mode(in_path):
-                #     print("矢量图层正在被占用，无法创建新的字段，请先关闭其他应用程序！3")
+                # right_header.append("ZLDWDM_1")
+                # if self.rbtn_filedb.isChecked():
+                #     for header_value in right_header:
+                #         if header_value not in field_names:
+                #             #  如果字段不存在需要重新创建新字段，那么不允许文件数据库处于被占用的状态
+                #             if is_already_opened_in_write_mode(in_path):
+                #                 log.error("矢量图层正在被占用，无法创建新的字段，请先关闭其他应用程序！", dialog=True)
+                #                 return
 
-                for header_value in right_header:
-                    if header_value not in field_names:
-                        if is_already_opened_in_write_mode(in_path):
-                            log.error("矢量图层正在被占用，无法创建新的字段，请先关闭其他应用程序！", dialog=True)
-                            return
             except:
                 # log.error("无法读取矢量图层数据，请检查数据的完整性和正确性！", dialog=True)
-                print(traceback.format_exc())
+                log.error(traceback.format_exc())
+                return
+
+            # 报表存放路径
+            cur_path, filename = os.path.split(os.path.abspath(sys.argv[0]))
+            res_path = os.path.join(cur_path, 'res')
+            if not os.path.exists(res_path):
+                os.mkdir(res_path)
+            report_file_name = os.path.join(res_path, "统计报表_{}.xlsx".format(time.strftime('%Y-%m-%d-%H-%M-%S')))
+
+            if is_already_opened_in_write_mode(report_file_name):
+                log.error("报表文件{}被占用，请先关闭!".format(report_file_name))
                 return
 
             self.thread.start()
-            self.updateThread.update.emit(file_type, in_path, layer_name, right_header, rel_tables, DLBM_values)
+            self.updateThread.update.emit(file_type, in_path, layer_name, right_header, rel_tables, MC_tables, DLBM_values, report_file_name)
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
             self.threadTerminate()
             self.close()
@@ -269,9 +275,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 if fileName == "":
                     return
 
-                # if is_already_opened_in_write_mode(fileName):
-                #     log.error("文件数据库正在被占用，请先从其他应用程序中释放！", dialog=True)
-                #     return
+                if is_already_opened_in_write_mode(fileName):
+                    log.error("文件数据库正在被占用，请先从其他应用程序中释放！", dialog=True)
+                    return
 
                 wks = workspaceFactory().get_factory(DataType.openFileGDB)
                 datasource = wks.openFromFile(fileName, 0)
@@ -317,10 +323,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         header, DLBM_values, all_data = self.read_config_table(fileName, fileType)
 
-        DLBM_index = self.check_header(header)
+        DLBM_index, MC_index = self.check_header(header)
         if DLBM_index > -1:
             if self.check_field_DLBM(DLBM_values):
-                self.add_all_data_to_tablewidget(DLBM_index, all_data)
+                self.add_all_data_to_tablewidget(DLBM_index, MC_index, all_data)
                 self.txt_addressConfigFile.setText(fileName)
                 # self.rel_tables = self.generate_config_rel(DLBM_index, all_data)
 
@@ -331,10 +337,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     file = pyperclip.paste()
                     header, DLBM_values, all_data = self.read_config_table(file, fileType=DataType.memory)
 
-                    DLBM_index = self.check_header(header)
+                    DLBM_index, MC_index = self.check_header(header)
                     if DLBM_index > -1:
                         if self.check_field_DLBM(DLBM_values):
-                            self.add_all_data_to_tablewidget(DLBM_index, all_data)
+                            self.add_all_data_to_tablewidget(DLBM_index, MC_index, all_data)
                             # self.rel_tables = self.generate_config_rel(DLBM_index, all_data)
         # if source is self.tableWidget.viewport():
         #     print(event.type())
@@ -343,7 +349,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         return super().eventFilter(source, event)
 
     #  在表格控件中显示读取的规则配置表数据
-    def add_all_data_to_tablewidget(self, DLBM_index, all_data):
+    def add_all_data_to_tablewidget(self, DLBM_index, MC_index, all_data):
         col_num = len(all_data[0])
         row_num = len(all_data)
 
@@ -363,6 +369,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 newItem = QTableWidgetItem(row_value[icol])
                 if icol == DLBM_index:
                     newItem.setFlags(QtCore.Qt.ItemIsEnabled)  # DLBM字段设置为不可编辑
+                if icol == MC_index:
+                    newItem.setFlags(QtCore.Qt.ItemIsEnabled)  # 名称字段设置为不可编辑
                 self.tableWidget.setItem(irow - 1, icol, newItem)
 
             irow += 1
@@ -489,22 +497,33 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     # 检查表头和数据的合法性
     def check_header(self, header):
         DLBM_index = -1
+        MC_index = -1
+        DLMC_index = -1
         not_none = []
         for i in header:
             if i != '':
                 not_none.append(i)
 
         for i in range(len(not_none)):
+            if DLBM_index > -1 and MC_index > -1:
+                break
             if not_none[i].upper() == 'DLBM':
                 DLBM_index = i
-                break
+            elif not_none[i] == '名称':
+                MC_index = i
+            # elif not_none[i].upper() == 'DLMC':
+            #     DLMC_index = i
 
         if DLBM_index == -1:
             log.error("规则表不存在必要字段DLBM，请检查！", dialog=True)
         if len(not_none) <= DLBM_index:
             log.error("DLBM列右边缺少需要匹配的列，请检查！", dialog=True)
+        # if MC_index == -1:
+        #     log.warning("由于缺少'名称'字段，输出的报表会缺失这部分数据！")
+        # if DLMC_index == -1:
+        #     log.warning("由于缺少'DLMC'字段，输出的报表会缺失这部分数据！")
 
-        return DLBM_index
+        return DLBM_index, MC_index
 
     def check_field_DLBM(self, DLBM):
         set_headers = set(DLBM)
@@ -514,23 +533,65 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         return True
 
     # 生成对应规则字典, DLBM列是唯一KEY,右边的列都是VALUE
-    def generate_config_rel(self, DLBM_INDEX, all_data):
+    def generate_config_rel(self, DLBM_INDEX, MC_index, DLMC_index, all_data):
         header = all_data[0]
         rel_tables = []  # 存储所有的规则关系字典
+        MC_tables = {} # 存放名称和DLBM的一对多关系表
+
+        rel = []
+        bheader = True
+        last_key = ""
+        irow = 0
+        ifirst = False
+        for row_value in all_data:
+            if bheader:
+                irow += 1
+                bheader = False
+                continue
+
+            if row_value[MC_index] != "" and not ifirst:
+                last_key = row_value[MC_index]
+                ifirst = True
+
+            if row_value[MC_index] != "":
+                if row_value[MC_index] == last_key:
+                    rel.append({
+                        'DLBM': row_value[DLBM_INDEX],
+                        'DLMC': row_value[DLMC_index]
+                    })
+                    # key = row_value[MC_index]
+                else:
+                    MC_tables[last_key] = rel
+                    last_key = row_value[MC_index]
+                    rel = [{
+                        'DLBM': row_value[DLBM_INDEX],
+                        'DLMC': row_value[DLMC_index]
+                    }]
+            else:
+                # rel.append(row_value[DLBM_INDEX])
+                rel.append({
+                    'DLBM': row_value[DLBM_INDEX],
+                    'DLMC': row_value[DLMC_index]
+                })
+
+            if irow == len(all_data) - 1:
+                MC_tables[last_key] = rel
+
+            irow += 1
 
         for icol in range(DLBM_INDEX + 1, len(header)):
-            iFirst = 0
+            bheader = True
             rel = {}
 
             for row_value in all_data:
-                if iFirst == 0:
-                    iFirst += 1
+                if bheader:
+                    bheader = False
                     continue
                 rel[row_value[DLBM_INDEX]] = row_value[icol]
 
             rel_tables.append(rel)
 
-        return rel_tables
+        return rel_tables, MC_tables
 
 
 class nameListDialog(QtWidgets.QDialog, UI.listview_dialog.Ui_Dialog):
