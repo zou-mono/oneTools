@@ -282,7 +282,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 wks = workspaceFactory().get_factory(DataType.openFileGDB)
                 datasource = wks.openFromFile(fileName, 0)
 
-
                 selected_name = None
                 if datasource is not None:
                     lst_names = wks.getLayerNames()

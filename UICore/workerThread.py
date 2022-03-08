@@ -90,5 +90,5 @@ class updateAttributeValueWorker(QtCore.QObject):
         super(updateAttributeValueWorker, self).__init__()
 
     def updateAttribute(self, file_type, in_path, layer_name, header, rel_tables, MC_tables, DLBM_values, report_file_name):
-        flag = UICore.updateAttribute.update_attribute_value(file_type, in_path, layer_name, header, rel_tables, MC_tables, DLBM_values, report_file_name)
+        flag = UICore.updateAttribute.update_and_stat(file_type, in_path, layer_name, header, rel_tables, MC_tables, DLBM_values, report_file_name)
         self.finished.emit()

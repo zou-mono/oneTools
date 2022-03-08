@@ -17,11 +17,12 @@ log = Log(__name__)
 report_need_fields = ['DLMC', 'XZFLSDL', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2', 'GHFLSDL', 'GHJGFLDM', 'GHJGFLMC', 'SFJSYD', 'ZLDWDM_1', 'ZLDWMC', 'TBMJ', 'KCMJ']
 
 
-def update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables, MC_tables, DLBM_values, report_file_name):
+def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC_tables, DLBM_values, report_file_name):
     # if file_type == DataType.shapefile:
-    #     update_attribute_value_by_shapefile(in_path, layer_name, right_header, rel_tables)
+    #     update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
     # elif file_type == DataType.fileGDB:
     #     update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tables, DLBM_values)
+    # update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables, DLBM_values)
 
     wb = Workbook()
     output_stat_report1(wb, in_path, layer_name, MC_tables)
@@ -29,15 +30,20 @@ def update_attribute_value(file_type, in_path, layer_name, right_header, rel_tab
     print("over")
 
 
-def update_attribute_value_by_shapefile(in_path, layer_name, right_header, rel_tables):
+def update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables, DLBM_values):
     # layer = dataSource.GetLayer(0)
     layer = None
     dataSource = None
-
+    wks = None
     try:
         start = time.time()
 
-        wks = workspaceFactory().get_factory(DataType.shapefile)
+        if file_type == DataType.shapefile:
+            wks = workspaceFactory().get_factory(DataType.shapefile)
+        elif file_type == DataType.fileGDB:
+            wks = workspaceFactory().get_factory(DataType.fileGDB)
+
+        # wks = workspaceFactory().get_factory(DataType.shapefile)
         dataSource = wks.openFromFile(in_path, 1)
         layer = dataSource.GetLayer(0)
 
@@ -149,7 +155,7 @@ def update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tab
                 layer.CreateField(new_field, True)
                 del new_field
 
-        log.info("第2步: 对矢量图层{}的DLBM字段创建索引...".format(layer_name))
+        log.info("第2步: 对矢量图层{}的字段创建索引...".format(layer_name))
         exec_str = r"CREATE INDEX DLBM_index ON {} (DLBM)".format(layer_name)
         dataSource.ExecuteSQL(exec_str)
 
@@ -223,14 +229,23 @@ def update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tab
         del feature
         del wks
 
+
 # 报表1 各区现状面积汇总表
 def output_stat_report1(wb, in_path, layer_name, MC_tables):
-    layer_name = 'DLTB_2'
     wks = workspaceFactory().get_factory(DataType.fileGDB)
-    dataSource = wks.openFromFile(r'D:\Codes\oneTools\data\2020年国土变更调查年末库.gdb', 1)
+    dataSource = wks.openFromFile(in_path, 1)
     layer = dataSource.GetLayerByName(layer_name)
 
     all_field_names = check_field(dataSource, layer)
+
+    exec_str = r"UPDATE {} SET ZLDWDM_1=ZLDWDM".format(layer_name)
+    dataSource.ExecuteSQL(exec_str)
+    exec_str = r"UPDATE {} SET ZLDWDM_1='4403120000000000000' WHERE ZLDWDM LIKE '440307%' AND " \
+               r"ZLDWMC <> '宝龙街道' AND ZLDWMC <> '布吉街道' AND ZLDWMC <> '龙城街道' AND " \
+               r"ZLDWMC <> '龙岗街道' AND ZLDWMC <> '平湖街道' AND ZLDWMC <> '坪地街道' AND " \
+               r"ZLDWMC <> '园山街道' AND ZLDWMC <> '南湾街道' AND ZLDWMC <> '坂田街道' AND " \
+               r"ZLDWMC <> '吉华街道' AND ZLDWMC <> '横岗街道'".format(layer_name)
+    dataSource.ExecuteSQL(exec_str)
 
     if all_field_names is None:
         return
@@ -241,7 +256,6 @@ def output_stat_report1(wb, in_path, layer_name, MC_tables):
     dataSource.ExecuteSQL(exec_str)
     exec_str = r"CREATE INDEX XZFLSDL_index ON {} (XZFLSDL)".format(layer_name)
     dataSource.ExecuteSQL(exec_str)
-
 
     header_font = Font(bold=True, size=11)
     header_font2 = Font(bold=True, size=9)
@@ -444,6 +458,7 @@ def readSpatialData(file_type, in_path, layer_name):
 
 def check_field(dataSource, layer):
     all_field_names = []
+    # layer = dataSource.GetLayerByName(layer_name)
     layer_name = layer.GetName()
 
     berror = False
@@ -466,7 +481,10 @@ def check_field(dataSource, layer):
             log.warning('缺失输出报表得必要字段"{}"，无法执行输出报表操作，请补全！'.format(need_field))
             berror = True
 
-    exec_str = r"UPDATE {} SET ZLDWDM_1=ZLDWDM WHERE 1=1".format(layer_name)
+    # 这里有BUG，需要先给一个值，让新字段不为空，然后才能复制其他字段的值
+    exec_str = r"UPDATE {} SET ZLDWDM_1=''".format(layer_name)
+    dataSource.ExecuteSQL(exec_str)
+    exec_str = r"UPDATE {} SET ZLDWDM_1=ZLDWDM".format(layer_name)
     dataSource.ExecuteSQL(exec_str)
     exec_str = r"UPDATE {} SET ZLDWDM_1='4403120000000000000' WHERE ZLDWDM LIKE '440307%' AND " \
                r"ZLDWMC <> '宝龙街道' AND ZLDWMC <> '布吉街道' AND ZLDWMC <> '龙城街道' AND " \
