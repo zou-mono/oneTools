@@ -601,6 +601,7 @@ class nameListDialog(QtWidgets.QDialog, UI.listview_dialog.Ui_Dialog):
         super(nameListDialog, self).__init__()
         self.setupUi(self)
         self.pushButton.clicked.connect(self.pushButton_clicked)
+        self.lv_name.itemDoubleClicked.connect(self.lv_name_double_clicked)
         self.select_names = []
 
     def openListDialog(self, title, lst_names, selectMode=QAbstractItemView.SingleSelection):
@@ -614,6 +615,9 @@ class nameListDialog(QtWidgets.QDialog, UI.listview_dialog.Ui_Dialog):
 
         if result == 1:
             return self.select_names
+
+    def lv_name_double_clicked(self):
+        self.pushButton_clicked()
 
     def pushButton_clicked(self):
         sel_items = self.lv_name.selectedItems()
