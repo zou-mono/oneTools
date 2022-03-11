@@ -365,7 +365,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 continue
 
             for icol in range(len(row_value)):
-                newItem = QTableWidgetItem(row_value[icol])
+                if row_value[icol] is not None:
+                    newItem = QTableWidgetItem(str(row_value[icol]))
+                else:
+                    newItem = QTableWidgetItem(None)
                 if icol == DLBM_index:
                     newItem.setFlags(QtCore.Qt.ItemIsEnabled)  # DLBM字段设置为不可编辑
                 if icol == MC_index:
