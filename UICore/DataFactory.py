@@ -30,7 +30,9 @@ class workspaceFactory(object):
         elif factory == DataType.cad_dwg:
             wks = dwgWorkspaceFactory()
         elif factory == DataType.openFileGDB:
-            wks = filegdbWorkspaceFactory2()
+            wks = openfilegdbWorkspaceFactory()
+        elif factory == DataType.sqlite:
+            wks = sqliteWorkspaceFactory()
 
         if wks is None:
             log.error("不支持的空间数据格式!")
@@ -164,20 +166,27 @@ class filegdbWorkspaceFactory(workspaceFactory):
     def __init__(self):
         super().__init__()
         self.driverName = "FileGDB"
-        # self.driverName = "OpenFileGDB"
         self.driver = ogr.GetDriverByName(self.driverName)
 
-class filegdbWorkspaceFactory2(workspaceFactory):
+
+class openfilegdbWorkspaceFactory(workspaceFactory):
     def __init__(self):
         super().__init__()
         self.driverName = "OpenFileGDB"
-        # self.driverName = "OpenFileGDB"
         self.driver = ogr.GetDriverByName(self.driverName)
+
 
 class dwgWorkspaceFactory(workspaceFactory):
     def __init__(self):
         super().__init__()
         self.driverName = "CAD"
+        self.driver = ogr.GetDriverByName(self.driverName)
+
+
+class sqliteWorkspaceFactory(workspaceFactory):
+    def __init__(self):
+        super().__init__()
+        self.driverName = "SQLite"
         self.driver = ogr.GetDriverByName(self.driverName)
 
 

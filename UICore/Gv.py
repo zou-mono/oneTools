@@ -48,6 +48,7 @@ class DataType(Enum):
     dbf = 6
     memory = 7
     openFileGDB = 8
+    sqlite = 9
 
 
 DataType_dict = {

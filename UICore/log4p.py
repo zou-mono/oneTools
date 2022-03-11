@@ -44,8 +44,10 @@ class Handler(QObject, logging.Handler):
         self.parent = parent
         self.stringList = []
         self.setLevel(logging.INFO)  # logviewer不显示info以下级别的日志
+        # formatter = logging.Formatter(
+        #     '[%(asctime)s] [%(filename)s:%(lineno)d] [%(levelname)s]- %(message)s')
         formatter = logging.Formatter(
-            '[%(asctime)s] [%(filename)s:%(lineno)d] [%(levelname)s]- %(message)s')
+            '[%(asctime)s] [%(levelname)s]- %(message)s')
         self.setFormatter(formatter)
         parent.splitter.handle(1).handleClicked.connect(self.handleClicked)
 
