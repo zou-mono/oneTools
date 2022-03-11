@@ -108,7 +108,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def threadStop(self):
         self.thread.quit()
 
-
     @Slot()
     def rbtn_toggled(self):
         if not self.bInit:
@@ -246,6 +245,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         datasource = None
         layer = None
         wks = None
+        address_txt = ""
+
         try:
             if self.rbtn_file.isChecked():
                 fileName, fileType = QtWidgets.QFileDialog.getOpenFileName(
@@ -260,7 +261,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 if fileType == DataType.shapefile:
                     wks = workspaceFactory().get_factory(DataType.shapefile)
                     datasource = wks.openFromFile(fileName)
-                    self.txt_addressLayerFile.setText(fileName)
+                    address_txt = fileName
+                    # self.txt_addressLayerFile.setText(fileName)
                 else:
                     log.error("不识别的图形文件格式！", dialog=True)
 
@@ -291,13 +293,14 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                         selected_name = [lst_names[0]]
 
                     layerName = selected_name[0]
-                    self.txt_addressLayerFile.setText(os.path.join(fileName, layerName))
                     layer = datasource.GetLayerByName(layerName)
+                    address_txt = os.path.join(fileName, layerName)
                 else:
                     log.error("无法读取文件数据库！{}".format(fileName), dialog=True)
 
             if layer is not None:
-                self.check_field(layer)
+                if self.check_field(layer):
+                    self.txt_addressLayerFile.setText(address_txt)
         except:
             log.error("无法读取矢量数据图层.\n" + traceback.format_exc())
         finally:
