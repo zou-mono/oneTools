@@ -3,7 +3,7 @@ import time
 import traceback
 
 from openpyxl import Workbook
-from openpyxl.styles import Alignment, Font, Side, Border, NamedStyle
+from openpyxl.styles import Alignment, Font, Side, Border, NamedStyle, PatternFill
 from openpyxl.worksheet.cell_range import CellRange
 from osgeo import ogr, gdal
 
@@ -18,12 +18,14 @@ import os
 
 log = Log(__name__)
 
-need_indexes = ["DLBM_index", "CZCSXM_index"]
+need_indexes = ["DLBM_index", "CZCSXM_index", "GHFLDM_index"]
 
 header_font = Font(bold=True, size=11)
 header_font2 = Font(bold=True, size=9)
 header_font3 = Font(bold=False, size=11)
 cell_font = Font(bold=False, size=9)
+cell_font2 = Font(bold=False, size=11)
+
 border_thin = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'),
                      bottom=Side(style='thin'))
 alignment_center = Alignment(horizontal="center", vertical="center", wrapText=True)
@@ -40,6 +42,13 @@ header_style2 = NamedStyle(name="header_style2")
 header_style2.border = border_thin
 header_style2.alignment = alignment_center
 header_style2.font = header_font2
+
+# 灰色背景表头
+header_style3 = NamedStyle(name="header_style3")
+header_style3.border = border_thin
+header_style3.alignment = alignment_center
+header_style3.font = header_font
+header_style3.fill = PatternFill("solid", fgColor="D9D9D9")
 
 # 数据单元格居中样式
 cell_center_style = NamedStyle(name="cell_center_style")
@@ -62,6 +71,18 @@ cell_right_thick_style.alignment = alignment_right
 cell_right_thick_style.font = header_font2
 cell_right_thick_style.number_format = "0.00"
 
+# 报表2，3，4的非表头文字单元格格式
+cell_common_style = NamedStyle(name="cell_common_style")
+cell_common_style.border = border_thin
+cell_common_style.alignment = alignment_center
+cell_common_style.font = cell_font2
+
+# 报表2，3，4的数字单元格格式
+cell_number_style = NamedStyle(name="cell_number_style")
+cell_number_style.border = border_thin
+cell_number_style.alignment = alignment_center
+cell_number_style.font = cell_font2
+cell_number_style.number_format = "0.00"
 
 def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC_tables, DLBM_values, report_file_name):
     dataSource = None
@@ -114,19 +135,20 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
         if dataSource is not None:
             wb = Workbook()
 
-            start = time.time()
-            log.info('开始统计"各区现状分类面积汇总表..."')
-            bflag = output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables)
-            if not bflag:
-                return
-
-            end = time.time()
-            log.info('"各区现状分类汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
-            wb.save(report_file_name)
-            log.info("所有报表都已统计完成，结果保存至路径{}".format(report_file_name))
+            # start = time.time()
+            # log.info('开始统计"各区现状分类面积汇总表..."')
+            # bflag = output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables)
+            # if not bflag:
+            #     return
+            #
+            # end = time.time()
+            # log.info('"各区现状分类汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+            # wb.save(report_file_name)
 
             start = time.time()
             log.info('开始统计"规划分类面积汇总表..."')
+            if file_type == DataType.fileGDB:
+                drop_index(in_path, layer_name, need_indexes)
             output_stat_report2(file_type, wb, dataSource, layer_name, rel_tables, right_header)
             # if not bflag:
             #     raise Exception(error_msg)
@@ -138,7 +160,7 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
             log.info("所有报表都已统计完成，结果保存至路径{}".format(report_file_name))
 
     except:
-        # log.error(traceback.format_exc())
+        log.error(traceback.format_exc())
         return
     finally:
         del wks
@@ -504,14 +526,14 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
         log.info("第4步：统计各区分类面积...")
         i = 0
         start_row = 9
-        xiji_arr = []
+        xiaoji_rows = []
         for mc, DLMCs in MC_tables.items():
             ws.cell(start_row, 1).value = "{}\n({})".format(mc, str(i).zfill(2))
             ws.cell(start_row, 1).style = header_style2
 
             ws.cell(start_row, 2).value = "小计\n({})".format(str(i).zfill(2))
             ws.cell(start_row, 2).style = header_style2
-            xiji_arr.append(start_row)
+            xiaoji_rows.append(start_row)
 
             for j in range(len(DLMCs)):
                 ws.cell(start_row + j + 1, 2).value = "{}\n({})".format(DLMCs[j]["DLMC"], DLMCs[j]["DLBM"])
@@ -523,7 +545,7 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
 
                 DLBM_key = DLMCs[j]["DLBM"]
                 if DLBM_key == '1203':  # 田坎的面积单独计算
-                    exec_str = r"SELECT SUBSTR(ZLDWDM_1, 1, 6), SUM(KCMJ) FROM {} WHERE DLBM='{}' GROUP BY SUBSTR(ZLDWDM_1, 1, 6)".format(
+                    exec_str = r"SELECT SUBSTR(ZLDWDM_1, 1, 6), SUM(KCMJ) FROM {} GROUP BY SUBSTR(ZLDWDM_1, 1, 6)".format(
                         layer_name, DLBM_key)
                 else:
                     exec_str = r"SELECT SUBSTR(ZLDWDM_1, 1, 6), SUM(TBMJ) FROM {} WHERE DLBM='{}' GROUP BY SUBSTR(ZLDWDM_1, 1, 6)".format(
@@ -574,7 +596,7 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
                 if ws.cell(i, iRange).value is not None:
                     sum = sum + float(ws.cell(i, iRange).value)
             ws.cell(i, 3).value = float('%.2f' % sum)
-            if i in xiji_arr:
+            if i in xiaoji_rows:
                 ws.cell(i, 3).style = cell_right_thick_style
             else:
                 ws.cell(i, 3).style = cell_right_style
@@ -596,43 +618,411 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
         del layer
 
 
-# 报表2 规划分类面积汇总表
+# 报表2 规划分类面积汇总表 格式写死
 def output_stat_report2(file_type, wb, dataSource, layer_name, rel_tables, right_header):
-    report_need_fields = ['TBMJ', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2']
-    for i in range(len(rel_tables)):
-        rel = rel_tables[i]
-        field_name = right_header[i]
+    report_need_fields = ['TBMJ', 'KCMJ', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2']
 
-    layer = dataSource.GetLayerByName(layer_name)
+    col_count = 5
 
-    log.info("第1步：必要性字段检查...")
-    all_field_names = check_field(file_type, dataSource, layer, report_need_fields, report=2)
+    try:
+        layer = dataSource.GetLayerByName(layer_name)
 
-    if all_field_names is None:
-        return
+        log.info("第1步：必要性字段检查...")
+        all_field_names = check_field(file_type, dataSource, layer, report_need_fields, report=2)
 
-    if file_type == DataType.shapefile:
-        layer_name = "[{}]".format(layer_name)
+        if all_field_names is None:
+            return
 
-    GHFLDM1_index = -1
-    GHFLMC1_index = -1
-    GHFLDM2_index = -1
-    GHFLMC2_index = -1
-    for i in range(len(rel_tables)):
-        field_name = right_header[i]
-        if field_name.upper() == 'GHFLDM1':
-            GHFLDM1_index = i
-        elif field_name.upper() == 'GHFLMC1':
-            GHFLMC1_index = i
-        elif field_name.upper() == 'GHFLDM2':
-            GHFLDM2_index = i
-        elif field_name.upper() == 'GHFLMC2':
-            GHFLMC2_index = i
+        ws = wb.create_sheet('规划分类面积汇总表')
 
-    MC_tables = {}  # 存放一级规划分类代码（GHFLDM1）和GHFLMC1，GHFLDM2，GHFLMC2之间的关系表
-    for i in range(len(rel_tables[GHFLDM1_index])):
-        line = rel_tables[GHFLDM1_index][i].items[1]
-        GHFLMC1 = rel_tables[GHFLMC1_index][i].items[1]
+        if file_type == DataType.shapefile:
+            layer_name = "[{}]".format(layer_name)
+
+        log.info("第2步：创建表头...")
+        # 注意： 要先设置样式再合并，否则边框会出问题，这是openpyxl的Bug， 相关讨论见https://foss.heptapod.net/openpyxl/openpyxl/-/issues/365
+        ws.cell(1, 1).value = "表2 各区现状分类面积汇总表"
+        ws.cell(1, 1).style = header_style
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=col_count)
+
+        ws.cell(2, col_count).value = "单位：公顷"
+        ws.cell(2, col_count).font = header_font3
+
+        ws.cell(3, 1).value = "GHFLDM1"
+        ws.cell(3, 2).value = "GHFLMC1"
+        ws.cell(3, 3).value = "GHFLDM2"
+        ws.cell(3, 4).value = "GHFLMC2"
+        ws.cell(3, 5).value = "GHFLMJ"
+        for i in range(1, 6):
+            ws.cell(3, i).style = header_style3
+
+        ws.cell(4, 1).value = "01"
+        ws.cell(4, 2).value = "耕地"
+        ws.cell(5, 1).value = "02"
+        ws.cell(5, 2).value = "园地"
+        ws.cell(6, 1).value = "03"
+        ws.cell(6, 2).value = "林地"
+        ws.cell(7, 1).value = "04"
+        ws.cell(7, 2).value = "草地"
+        ws.cell(8, 1).value = "05"
+        ws.cell(8, 2).value = "湿地"
+        ws.cell(9, 1).value = "06"
+        ws.cell(9, 2).value = "农业设施建设用地"
+        for i in range(4, 10):
+            for j in range(1, 5):
+                ws.cell(i, j).style = cell_common_style
+
+        ws.cell(10, 1).value = "07"
+        ws.cell(10, 1).style = cell_common_style
+        ws.merge_cells(start_row=10, end_row=12, start_column=1, end_column=1)
+        ws.cell(10, 2).value = "居住用地"
+        ws.cell(10, 2).style = cell_common_style
+        ws.merge_cells(start_row=10, end_row=12, start_column=2, end_column=2)
+        ws.cell(10, 3).value = "0701"
+        ws.cell(10, 3).style = cell_common_style
+        ws.cell(10, 4).value = "城镇住宅用地"
+        ws.cell(10, 4).style = cell_common_style
+        ws.cell(11, 3).value = "0703"
+        ws.cell(11, 3).style = cell_common_style
+        ws.cell(11, 4).value = "农村宅基地"
+        ws.cell(11, 4).style = cell_common_style
+        ws.cell(12, 3).value = "小计"
+        ws.cell(12, 3).style = cell_common_style
+        ws.merge_cells(start_row=12, end_row=12, start_column=3, end_column=4)
+
+        ws.cell(13, 1).value = "08"
+        ws.cell(13, 1).style = cell_common_style
+        ws.cell(13, 2).value = "公共管理与公共服务用地"
+        ws.cell(13, 2).style = cell_common_style
+        ws.cell(13, 3).style = cell_common_style
+        ws.cell(13, 4).style = cell_common_style
+
+        ws.cell(14, 1).value = "09"
+        ws.cell(14, 1).style = cell_common_style
+        ws.cell(14, 2).value = "商业服务业用地"
+        ws.cell(14, 2).style = cell_common_style
+        ws.cell(14, 3).style = cell_common_style
+        ws.cell(14, 4).style = cell_common_style
+
+        ws.cell(15, 1).value = "10"
+        ws.cell(15, 1).style = cell_common_style
+        ws.merge_cells(start_row=15, end_row=17, start_column=1, end_column=1)
+        ws.cell(15, 2).value = "工矿用地"
+        ws.cell(15, 2).style = cell_common_style
+        ws.merge_cells(start_row=15, end_row=17, start_column=2, end_column=2)
+        ws.cell(15, 3).value = "1001"
+        ws.cell(15, 3).style = cell_common_style
+        ws.cell(15, 4).value = "工业用地"
+        ws.cell(15, 4).style = cell_common_style
+        ws.cell(16, 3).value = "1002"
+        ws.cell(16, 3).style = cell_common_style
+        ws.cell(16, 4).value = "采矿用地"
+        ws.cell(16, 4).style = cell_common_style
+        ws.cell(17, 3).value = "小计"
+        ws.cell(17, 3).style = cell_common_style
+        ws.merge_cells(start_row=17, end_row=17, start_column=3, end_column=4)
+
+        ws.cell(18, 1).value = "11"
+        ws.cell(18, 1).style = cell_common_style
+        ws.cell(18, 2).value = "仓储用地"
+        ws.cell(18, 2).style = cell_common_style
+        ws.cell(18, 3).style = cell_common_style
+        ws.cell(18, 4).style = cell_common_style
+
+        ws.cell(19, 1).value = "12"
+        ws.cell(19, 1).style = cell_common_style
+        ws.merge_cells(start_row=19, end_row=27, start_column=1, end_column=1)
+        ws.cell(19, 2).value = "交通运输用地"
+        ws.cell(19, 2).style = cell_common_style
+        ws.merge_cells(start_row=19, end_row=27, start_column=2, end_column=2)
+        ws.cell(19, 3).value = "1201"
+        ws.cell(19, 4).value = "铁路用地"
+        ws.cell(20, 3).value = "1202"
+        ws.cell(20, 4).value = "公路用地"
+        ws.cell(20, 3).value = "1202"
+        ws.cell(20, 4).value = "公路用地"
+        ws.cell(21, 3).value = "1203"
+        ws.cell(21, 4).value = "机场用地"
+        ws.cell(22, 3).value = "1204"
+        ws.cell(22, 4).value = "港口码头用地"
+        ws.cell(23, 3).value = "1205"
+        ws.cell(23, 4).value = "管道运输用地"
+        ws.cell(24, 3).value = "1206"
+        ws.cell(24, 4).value = "城市轨道交通用地"
+        ws.cell(25, 3).value = "1207"
+        ws.cell(25, 4).value = "城镇道路用地"
+        ws.cell(26, 3).value = "1208"
+        ws.cell(26, 4).value = "交通场站用地"
+        for i in range(19, 27):
+            for j in range(3, 5):
+                ws.cell(i, j).style = cell_common_style
+        ws.cell(27, 3).value = "小计"
+        ws.cell(27, 3).style = cell_common_style
+        ws.merge_cells(start_row=27, end_row=27, start_column=3, end_column=4)
+
+        ws.cell(28, 1).value = "13"
+        ws.cell(28, 1).style = cell_common_style
+        ws.merge_cells(start_row=28, end_row=30, start_column=1, end_column=1)
+        ws.cell(28, 2).value = "公共设施用地"
+        ws.cell(28, 2).style = cell_common_style
+        ws.merge_cells(start_row=28, end_row=30, start_column=2, end_column=2)
+        ws.cell(28, 3).value = "1312"
+        ws.cell(28, 3).style = cell_common_style
+        ws.cell(28, 4).value = "水工设施用地"
+        ws.cell(28, 4).style = cell_common_style
+        ws.cell(29, 3).value = "-"
+        ws.cell(29, 3).style = cell_common_style
+        ws.cell(29, 4).value = "其他公用设施用地（不含水工设施用地）"
+        ws.cell(29, 4).style = cell_common_style
+        ws.cell(30, 3).value = "小计"
+        ws.cell(30, 3).style = cell_common_style
+        ws.merge_cells(start_row=30, end_row=30, start_column=3, end_column=4)
+
+        ws.cell(31, 1).value = "14"
+        ws.cell(31, 2).value = "绿地与开敞空间用地"
+        ws.cell(32, 1).value = "15"
+        ws.cell(32, 2).value = "特殊用地"
+        ws.cell(33, 1).value = "16"
+        ws.cell(33, 2).value = "留白用地"
+        ws.cell(34, 1).value = "17"
+        ws.cell(34, 2).value = "陆地水域"
+        for i in range(31, 35):
+            for j in range(1, 5):
+                ws.cell(i, j).style = cell_common_style
+
+        ws.cell(35, 1).value = "23"
+        ws.cell(35, 1).style = cell_common_style
+        ws.merge_cells(start_row=35, end_row=38, start_column=1, end_column=1)
+        ws.cell(35, 2).value = "其他土地"
+        ws.cell(35, 2).style = cell_common_style
+        ws.merge_cells(start_row=35, end_row=38, start_column=2, end_column=2)
+        ws.cell(35, 3).value = "2301"
+        ws.cell(35, 3).style = cell_common_style
+        ws.cell(35, 4).value = "空闲地"
+        ws.cell(35, 4).style = cell_common_style
+        ws.cell(36, 3).value = "2302"
+        ws.cell(36, 3).style = cell_common_style
+        ws.cell(36, 4).value = "田坎"
+        ws.cell(36, 4).style = cell_common_style
+        ws.cell(37, 3).value = "-"
+        ws.cell(37, 3).style = cell_common_style
+        ws.cell(37, 4).value = "其他（不含空闲地、田坎）"
+        ws.cell(37, 4).style = cell_common_style
+        ws.cell(38, 3).value = "小计"
+        ws.cell(38, 3).style = cell_common_style
+        ws.merge_cells(start_row=38, end_row=38, start_column=3, end_column=4)
+
+        ws.cell(39, 1).value = "合计"
+        ws.cell(39, 1).style = cell_common_style
+        ws.merge_cells(start_row=39, end_row=39, start_column=1, end_column=4)
+
+        for i in range(4, 40):
+            ws.cell(i, 5).style = cell_number_style
+
+        log.info("第3步: 对矢量图层{}的字段创建索引...".format(layer_name))
+        exec_str = r"CREATE INDEX GHFLDM_index ON {} (GHFLDM1, GHFLDM2)".format(layer_name)
+        exec_res = dataSource.ExecuteSQL(exec_str)
+        dataSource.ReleaseResultSet(exec_res)
+
+        log.info("第4步：统计规划分类面积...")
+
+        total_MJ = 0
+        GHFLDM1_rows = [4, 5, 6, 7, 8, 9, 13, 14, 18, 31, 32, 33, 34]
+        for i in GHFLDM1_rows:
+            GHFLDM1 = ws.cell(i, 1).value
+            exec_str = "SELECT SUM(TBMJ) FROM {} WHERE GHFLDM1='{}'".format(layer_name, GHFLDM1)
+            MJ = stat_mj_by_sql(dataSource, exec_str)
+            ws.cell(i, 5).value = MJ
+            total_MJ = total_MJ + MJ
+
+        GHFLDM2_rows = [10, 11, 15, 16, 19, 20, 21, 22, 23, 24, 25, 26, 28]
+        for i in GHFLDM2_rows:
+            GHFLDM2 = ws.cell(i, 3).value
+            exec_str = "SELECT SUM(TBMJ) FROM {} WHERE GHFLDM2='{}'".format(layer_name, GHFLDM2)
+            MJ = stat_mj_by_sql(dataSource, exec_str)
+            ws.cell(i, 5).value = MJ
+
+        ws.cell(12, 5).value = ws.cell(10, 5).value + ws.cell(11, 5).value
+        ws.cell(17, 5).value = ws.cell(15, 5).value + ws.cell(16, 5).value
+        sum = 0
+        for i in range(19, 27):
+            sum = sum + ws.cell(i, 5).value
+        ws.cell(27, 5).value = sum
+
+        exec_str = "SELECT SUM(TBMJ) FROM {} WHERE GHFLDM1='13' AND GHFLDM2<>'1312'".format(layer_name)
+        MJ = stat_mj_by_sql(dataSource, exec_str)
+        ws.cell(29, 5).value = MJ
+        ws.cell(30, 5).value = ws.cell(28, 5).value + ws.cell(29, 5).value
+
+        exec_str = "SELECT SUM(TBMJ) FROM {} WHERE GHFLDM2=='2301'".format(layer_name)
+        MJ = stat_mj_by_sql(dataSource, exec_str)
+        exec_str = "SELECT SUM(KCMJ) FROM {}".format(layer_name)
+        KCMJ = stat_mj_by_sql(dataSource, exec_str)
+        ws.cell(36, 5).value = KCMJ
+        exec_str = "SELECT SUM(TBMJ) FROM {} WHERE GHFLDM1='23'".format(layer_name)
+        MJ_23 = stat_mj_by_sql(dataSource, exec_str)
+        ws.cell(35, 5).value = MJ - KCMJ
+        ws.cell(37, 5).value = MJ_23 - MJ - KCMJ
+        ws.cell(38, 5).value = MJ_23
+
+        total_MJ = total_MJ + ws.cell(27, 5).value
+        total_MJ = total_MJ + ws.cell(17, 5).value
+        total_MJ = total_MJ + ws.cell(12, 5).value
+        total_MJ = total_MJ + ws.cell(38, 5).value
+        total_MJ = total_MJ + ws.cell(30, 5).value
+
+        ws.cell(39, 5).value = total_MJ
+
+        return True
+    except:
+        log.error(traceback.format_exc())
+        return False
+
+
+# 报表3 规划分类三大类面积汇总表
+def output_stat_report3(file_type, wb, dataSource, layer_name):
+    report_need_fields = ['TBMJ', 'KCMJ', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2']
+
+def stat_mj_by_sql(dataSource, exec_str):
+    MJ = ""
+    exec_layer = dataSource.ExecuteSQL(exec_str, dialect="SQLite")
+    if exec_layer is None:
+        log.warning("{}执行结果为空!".format(exec_str))
+    else:
+        exec_res = exec_layer.GetNextFeature()
+
+        while exec_res:
+            val = exec_res.GetField(0)
+            if val is not None:
+                MJ = '%.2f' % (val / 10000)
+            else:
+                MJ = '%.2f' % 0
+            break
+    dataSource.ReleaseResultSet(exec_layer)
+
+    if MJ == "":
+        return 0
+    else:
+        return float(MJ)
+
+# def output_stat_report2(file_type, wb, dataSource, layer_name, rel_tables, right_header):
+#     report_need_fields = ['TBMJ', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2']
+#
+#     col_count = 5
+#
+#     try:
+#         layer = dataSource.GetLayerByName(layer_name)
+#
+#         log.info("第1步：必要性字段检查...")
+#         all_field_names = check_field(file_type, dataSource, layer, report_need_fields, report=2)
+#
+#         if all_field_names is None:
+#             return
+#
+#         ws = wb.create_sheet('规划分类面积汇总表')
+#
+#         if file_type == DataType.shapefile:
+#             layer_name = "[{}]".format(layer_name)
+#
+#         GHFLDM1_index = -1
+#         GHFLMC1_index = -1
+#         GHFLDM2_index = -1
+#         GHFLMC2_index = -1
+#         for i in range(len(rel_tables)):
+#             field_name = right_header[i]
+#             if field_name.upper() == 'GHFLDM1':
+#                 GHFLDM1_index = i
+#             elif field_name.upper() == 'GHFLMC1':
+#                 GHFLMC1_index = i
+#             elif field_name.upper() == 'GHFLDM2':
+#                 GHFLDM2_index = i
+#             elif field_name.upper() == 'GHFLMC2':
+#                 GHFLMC2_index = i
+#
+#         MC_tables = {}  # 存放一级规划分类代码（GHFLDM1）和GHFLMC1，GHFLDM2，GHFLMC2之间的关系表
+#         # for i in range(len(rel_tables[GHFLDM1_index])):
+#         GHFLDM1_keys = []
+#         for DLBM, GHFLDM1 in rel_tables[GHFLDM1_index].items():
+#             GHFLDM1_keys.append(GHFLDM1)
+#
+#             GHFLMC1 = rel_tables[GHFLMC1_index][DLBM]
+#             GHFLDM2 = rel_tables[GHFLDM2_index][DLBM]
+#             GHFLMC2 = rel_tables[GHFLMC2_index][DLBM]
+#
+#             if GHFLMC1 == '':
+#                 continue
+#
+#             if GHFLDM1 not in MC_tables:
+#                 dm2 = set()
+#                 mc2 = set()
+#                 dm2.add(GHFLDM2)
+#                 mc2.add(GHFLMC2)
+#                 MC_tables[GHFLDM1] = {
+#                     "GHFLMC1": GHFLMC1,
+#                     "GHFLDM2": dm2,
+#                     "GHFLMC2": mc2
+#                 }
+#             else:
+#                 MC_tables[GHFLDM1]["GHFLDM2"].add(GHFLDM2)
+#                 MC_tables[GHFLDM1]["GHFLMC2"].add(GHFLMC2)
+#                 MC_tables[GHFLDM1]["GHFLMC1"] = GHFLMC1
+#
+#
+#         log.info("第2步：创建表头...")
+#         # 注意： 要先设置样式再合并，否则边框会出问题，这是openpyxl的Bug， 相关讨论见https://foss.heptapod.net/openpyxl/openpyxl/-/issues/365
+#         ws.cell(1, 1).value = "表2 各区现状分类面积汇总表"
+#         ws.cell(1, 1).style = header_style
+#         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=col_count)
+#
+#         ws.cell(2, col_count).value = "单位：公顷"
+#         ws.cell(2, col_count).font = header_font3
+#
+#         ws.cell(3, 1).value = "GHFLDM1"
+#         ws.cell(3, 2).value = "GHFLMC1"
+#         ws.cell(3, 3).value = "GHFLDM2"
+#         ws.cell(3, 4).value = "GHFLMC2"
+#         ws.cell(3, 5).value = "GHFLMJ"
+#         for i in range(1, 6):
+#             ws.cell(3, i).style = header_style3
+#
+#         start_row = 4
+#         xiaoji_rows = []  # 记录小计的行号
+#         for GHFLDM1, val in MC_tables.items():
+#             GHFLMC1 = val["GHFLMC1"]
+#             GHFLDM2_lst = list(val["GHFLDM2"])
+#             GHFLMC2_lst = list(val["GHFLMC2"])
+#
+#             GHFLDM1_len = len(GHFLDM2_lst)
+#
+#             ws.cell(start_row, 1).value = GHFLDM1
+#             ws.cell(start_row, 2).value = GHFLMC1
+#
+#             for i in range(len(GHFLDM2_lst)):
+#                 ws.cell(start_row + i, 3).value = GHFLDM2_lst[i]
+#                 ws.cell(start_row + i, 4).value = GHFLMC2_lst[i]
+#
+#             if GHFLDM1_len > 1:
+#                 ws.cell(start_row + GHFLDM1_len, 3). value = "小计"
+#                 ws.merge_cells(start_row=start_row + GHFLDM1_len, end_row=start_row + GHFLDM1_len, start_column=3, end_column=4)
+#
+#                 # "公共设施用地"和"其他用地"特别对待，只保留两行
+#                 if GHFLDM1 == '13':
+#                     GHFLDM1_len = 2
+#                 if GHFLDM1 == '23':
+#                     GHFLDM1_len = 3
+#
+#                 ws.merge_cells(start_row=start_row, end_row=start_row + GHFLDM1_len, start_column=1, end_column=1)
+#                 ws.merge_cells(start_row=start_row, end_row=start_row + GHFLDM1_len, start_column=2, end_column=2)
+#
+#                 start_row = start_row + GHFLDM1_len + 1
+#             elif GHFLDM1_len == 1:
+#                 start_row = start_row + GHFLDM1_len
+#
+#
+#         print("OK")
+#         return True
+#     except:
+#         log.error(traceback.format_exc())
+#         return False
 
 def check_field(file_type, dataSource, layer, report_need_fields, report=1):
     all_field_names = []
