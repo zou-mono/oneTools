@@ -20,6 +20,48 @@ log = Log(__name__)
 
 need_indexes = ["DLBM_index", "CZCSXM_index"]
 
+header_font = Font(bold=True, size=11)
+header_font2 = Font(bold=True, size=9)
+header_font3 = Font(bold=False, size=11)
+cell_font = Font(bold=False, size=9)
+border_thin = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'),
+                     bottom=Side(style='thin'))
+alignment_center = Alignment(horizontal="center", vertical="center", wrapText=True)
+alignment_right = Alignment(horizontal="right", vertical="center", wrapText=True)
+
+# 大表头样式
+header_style = NamedStyle(name="header_style")
+# header_style.border = border_thin
+header_style.alignment = alignment_center
+header_style.font = header_font
+
+# 小表头样式
+header_style2 = NamedStyle(name="header_style2")
+header_style2.border = border_thin
+header_style2.alignment = alignment_center
+header_style2.font = header_font2
+
+# 数据单元格居中样式
+cell_center_style = NamedStyle(name="cell_center_style")
+cell_center_style.border = border_thin
+cell_center_style.alignment = alignment_center
+cell_center_style.font = cell_font
+cell_center_style.number_format = "0.00"
+
+# 数据单元格居右样式
+cell_right_style = NamedStyle(name="cell_right_style")
+cell_right_style.border = border_thin
+cell_right_style.alignment = alignment_right
+cell_right_style.font = cell_font
+cell_right_style.number_format = "0.00"
+
+# 数据单元格居右加粗样式
+cell_right_thick_style = NamedStyle(name="cell_right_thick_style")
+cell_right_thick_style.border = border_thin
+cell_right_thick_style.alignment = alignment_right
+cell_right_thick_style.font = header_font2
+cell_right_thick_style.number_format = "0.00"
+
 
 def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC_tables, DLBM_values, report_file_name):
     dataSource = None
@@ -31,58 +73,72 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
     temp_sqliteDB_path = os.path.join(cur_path, "tmp")
 
     try:
-        log.info("开始更新矢量图层的对应字段...")
-        start = time.time()
+        # log.info("开始更新矢量图层的对应字段...")
+        # start = time.time()
+        #
+        # if file_type == DataType.shapefile:
+        #     bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
+        #     if bflag:
+        #         if not os.path.exists(temp_sqliteDB_path):
+        #             os.mkdir(temp_sqliteDB_path)
+        #         translateOptions = gdal.VectorTranslateOptions(format="SQLite", layerName=layer_name, datasetCreationOptions=["SPATIALITE=YES"])
+        #         hr = gdal.VectorTranslate(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), in_path, options=translateOptions)
+        #         if not hr:
+        #             raise Exception("创建临时sqlite数据库出错!错误原因:\n{}".format(traceback.format_exc()))
+        #         else:
+        #             wks = workspaceFactory().get_factory(DataType.sqlite)
+        #             dataSource = wks.openFromFile(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), 1)
+        #         del hr
+        #     else:
+        #         return
+        #
+        # elif file_type == DataType.fileGDB:
+        #     drop_index(in_path, layer_name, need_indexes)
+        #
+        #     bflag = update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tables,
+        #                                                          DLBM_values)
+        #     if bflag:
+        #         wks = workspaceFactory().get_factory(DataType.fileGDB)
+        #         dataSource = wks.openFromFile(in_path, 1)
+        #     else:
+        #         return
+        #
+        # end = time.time()
+        # log.info('矢量图层对应字段更新完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
 
-        if file_type == DataType.shapefile:
-            bflag, error_msg = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
-            if bflag:
-                if not os.path.exists(temp_sqliteDB_path):
-                    os.mkdir(temp_sqliteDB_path)
-                translateOptions = gdal.VectorTranslateOptions(format="SQLite", layerName=layer_name, datasetCreationOptions=["SPATIALITE=YES"])
-                hr = gdal.VectorTranslate(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), in_path, options=translateOptions)
-                if not hr:
-                    raise Exception("创建临时sqlite数据库出错!错误原因:\n{}".format(traceback.format_exc()))
-                else:
-                    wks = workspaceFactory().get_factory(DataType.sqlite)
-                    dataSource = wks.openFromFile(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), 1)
-                del hr
-            else:
-                raise Exception(error_msg)
-
-        elif file_type == DataType.fileGDB:
-            drop_index(in_path, layer_name, need_indexes)
-
-            bflag, error_msg = update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tables,
-                                                                 DLBM_values)
-            if bflag:
-                wks = workspaceFactory().get_factory(DataType.fileGDB)
-                dataSource = wks.openFromFile(in_path, 1)
-            else:
-                raise Exception(error_msg)
-
-        end = time.time()
-        log.info('矢量图层对应字段更新完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
-
-        # wks = workspaceFactory().get_factory(DataType.fileGDB)
-        # dataSource = wks.openFromFile(in_path, 1)
-        # layer = dataSource.GetLayerByName(layer_name)
+        # 测试用
+        wks = workspaceFactory().get_factory(DataType.fileGDB)
+        dataSource = wks.openFromFile(in_path, 1)
+        layer = dataSource.GetLayerByName(layer_name)
 
         if dataSource is not None:
-            start = time.time()
-
             wb = Workbook()
+
+            start = time.time()
             log.info('开始统计"各区现状分类面积汇总表..."')
-            bflag, error_msg = output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables)
+            bflag = output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables)
             if not bflag:
-                raise Exception(error_msg)
+                return
 
             end = time.time()
             log.info('"各区现状分类汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
             wb.save(report_file_name)
             log.info("所有报表都已统计完成，结果保存至路径{}".format(report_file_name))
-    except Exception as e:
-        log.error(e)
+
+            start = time.time()
+            log.info('开始统计"规划分类面积汇总表..."')
+            output_stat_report2(file_type, wb, dataSource, layer_name, rel_tables, right_header)
+            # if not bflag:
+            #     raise Exception(error_msg)
+
+            end = time.time()
+            log.info('"规划分类面积汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+            wb.save(report_file_name)
+
+            log.info("所有报表都已统计完成，结果保存至路径{}".format(report_file_name))
+
+    except:
+        # log.error(traceback.format_exc())
         return
     finally:
         del wks
@@ -187,10 +243,11 @@ def update_attribute_value(file_type, in_path, layer_name, right_header, rel_tab
 
         # end = time.time()
         # log.info("操作完成, 总共耗时:{}秒.".format("{:.2f}".format(end-start)))
-        return True, ""
+        return True
     except:
-        # log.error("无法更新数据！错误原因:\n{}".format(traceback.format_exc()))
-        return False, "无法更新数据！错误原因:\n{}".format(traceback.format_exc())
+        log.error("无法更新数据！错误原因:\n{}".format(traceback.format_exc()))
+        return False
+        # return False, "无法更新数据！错误原因:\n{}".format(traceback.format_exc())
     finally:
         del dataSource
         del layer
@@ -309,11 +366,11 @@ def update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tab
 
         # end = time.time()
         # log.info("操作完成, 总共耗时:{}秒".format("{:.2f}".format(end-start)))
-        return True, ""
+        return True
     except:
-        return False, "无法更新数据！错误原因:\n{}".format(traceback.format_exc())
-        # log.error("无法更新数据！错误原因:\n{}".format(traceback.format_exc()))
-        # return False
+        # return False, "无法更新数据！错误原因:\n{}".format(traceback.format_exc())
+        log.error("无法更新数据！错误原因:\n{}".format(traceback.format_exc()))
+        return False
     finally:
         del dataSource
         del layer
@@ -342,7 +399,7 @@ def drop_index(in_path, layer_name, indexes):
 def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
     # report_need_fields = ['DLMC', 'XZFLSDL', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2', 'GHFLSDL', 'GHJGFLDM', 'GHJGFLMC', 'SFJSYD', 'ZLDWDM_1', 'ZLDWMC', 'TBMJ', 'KCMJ']
 
-    report_need_fields = ['DLMC', 'DLBM', 'XZFLSDL', 'ZLDWDM', 'ZLDWDM_1', 'ZLDWMC', 'TBMJ']
+    report_need_fields = ['DLMC', 'DLBM', 'XZFLSDL', 'ZLDWDM', 'ZLDWDM_1', 'ZLDWMC', 'TBMJ', 'KCMJ']
     layer = dataSource.GetLayerByName(layer_name)
 
     if file_type == DataType.shapefile:
@@ -360,48 +417,6 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
         # dataSource.ExecuteSQL(exec_str)
         # exec_str = r"CREATE INDEX XZFLSDL_index ON {} (XZFLSDL)".format(layer_name)
         # dataSource.ExecuteSQL(exec_str)
-
-        header_font = Font(bold=True, size=11)
-        header_font2 = Font(bold=True, size=9)
-        header_font3 = Font(bold=False, size=11)
-        cell_font = Font(bold=False, size=9)
-        border_thin = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'),
-                             bottom=Side(style='thin'))
-        alignment_center = Alignment(horizontal="center", vertical="center", wrapText=True)
-        alignment_right = Alignment(horizontal="right", vertical="center", wrapText=True)
-
-        # 大表头样式
-        header_style = NamedStyle(name="header_style")
-        # header_style.border = border_thin
-        header_style.alignment = alignment_center
-        header_style.font = header_font
-
-        # 小表头样式
-        header_style2 = NamedStyle(name="header_style2")
-        header_style2.border = border_thin
-        header_style2.alignment = alignment_center
-        header_style2.font = header_font2
-
-        # 数据单元格居中样式
-        cell_center_style = NamedStyle(name="cell_center_style")
-        cell_center_style.border = border_thin
-        cell_center_style.alignment = alignment_center
-        cell_center_style.font = cell_font
-        cell_center_style.number_format = "0.00"
-
-        # 数据单元格居右样式
-        cell_right_style = NamedStyle(name="cell_right_style")
-        cell_right_style.border = border_thin
-        cell_right_style.alignment = alignment_right
-        cell_right_style.font = cell_font
-        cell_right_style.number_format = "0.00"
-
-        # 数据单元格居右加粗样式
-        cell_right_thick_style = NamedStyle(name="cell_right_thick_style")
-        cell_right_thick_style.border = border_thin
-        cell_right_thick_style.alignment = alignment_right
-        cell_right_thick_style.font = header_font2
-        cell_right_thick_style.number_format = "0.00"
 
         ws = wb.create_sheet('各区现状分类面积汇总表')
 
@@ -507,8 +522,12 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
                     ws.cell(start_row + j + 1, iRegion).style = cell_right_style
 
                 DLBM_key = DLMCs[j]["DLBM"]
-                exec_str = r"SELECT SUBSTR(ZLDWDM_1, 1, 6), SUM(TBMJ) FROM {} WHERE DLBM='{}' GROUP BY SUBSTR(ZLDWDM_1, 1, 6)".format(
-                    layer_name, DLBM_key)
+                if DLBM_key == '1203':  # 田坎的面积单独计算
+                    exec_str = r"SELECT SUBSTR(ZLDWDM_1, 1, 6), SUM(KCMJ) FROM {} WHERE DLBM='{}' GROUP BY SUBSTR(ZLDWDM_1, 1, 6)".format(
+                        layer_name, DLBM_key)
+                else:
+                    exec_str = r"SELECT SUBSTR(ZLDWDM_1, 1, 6), SUM(TBMJ) FROM {} WHERE DLBM='{}' GROUP BY SUBSTR(ZLDWDM_1, 1, 6)".format(
+                        layer_name, DLBM_key)
                 exec_layer = dataSource.ExecuteSQL(exec_str, dialect="SQLite")
 
                 if exec_layer is None:
@@ -568,15 +587,54 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
             ws.cell(5, iRange).value = float(sum)
             ws.cell(5, iRange).style = cell_right_thick_style
 
-        return True, ""
+        return True
     except:
-        # log.error("无法完成报表统计！错误原因:\n{}".format(traceback.format_exc()))
-        return False, "无法完成报表统计！错误原因:\n{}".format(traceback.format_exc())
+        log.error("无法完成报表统计！错误原因:\n{}".format(traceback.format_exc()))
+        return False
+        # return False, "无法完成报表统计！错误原因:\n{}".format(traceback.format_exc())
     finally:
         del layer
 
 
-def check_field(file_type, dataSource, layer, report_need_fields):
+# 报表2 规划分类面积汇总表
+def output_stat_report2(file_type, wb, dataSource, layer_name, rel_tables, right_header):
+    report_need_fields = ['TBMJ', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2']
+    for i in range(len(rel_tables)):
+        rel = rel_tables[i]
+        field_name = right_header[i]
+
+    layer = dataSource.GetLayerByName(layer_name)
+
+    log.info("第1步：必要性字段检查...")
+    all_field_names = check_field(file_type, dataSource, layer, report_need_fields, report=2)
+
+    if all_field_names is None:
+        return
+
+    if file_type == DataType.shapefile:
+        layer_name = "[{}]".format(layer_name)
+
+    GHFLDM1_index = -1
+    GHFLMC1_index = -1
+    GHFLDM2_index = -1
+    GHFLMC2_index = -1
+    for i in range(len(rel_tables)):
+        field_name = right_header[i]
+        if field_name.upper() == 'GHFLDM1':
+            GHFLDM1_index = i
+        elif field_name.upper() == 'GHFLMC1':
+            GHFLMC1_index = i
+        elif field_name.upper() == 'GHFLDM2':
+            GHFLDM2_index = i
+        elif field_name.upper() == 'GHFLMC2':
+            GHFLMC2_index = i
+
+    MC_tables = {}  # 存放一级规划分类代码（GHFLDM1）和GHFLMC1，GHFLDM2，GHFLMC2之间的关系表
+    for i in range(len(rel_tables[GHFLDM1_index])):
+        line = rel_tables[GHFLDM1_index][i].items[1]
+        GHFLMC1 = rel_tables[GHFLMC1_index][i].items[1]
+
+def check_field(file_type, dataSource, layer, report_need_fields, report=1):
     all_field_names = []
     layer_name = layer.GetName()
 
@@ -585,37 +643,40 @@ def check_field(file_type, dataSource, layer, report_need_fields):
 
     berror = False
     layerDefn = layer.GetLayerDefn()
+
     for i in range(layerDefn.GetFieldCount()):
         fieldName = layerDefn.GetFieldDefn(i).GetName()
         if fieldName.upper() == 'ZLDWDM':
             all_field_names.append('ZLDWDM_1')
         all_field_names.append(fieldName.upper())
 
-    if layerDefn.GetFieldIndex('ZLDWDM_1') < 0:
-        new_field = ogr.FieldDefn('ZLDWDM_1', ogr.OFTString)
-        new_field.SetWidth(200)
-        layer.CreateField(new_field, True)
-        del new_field
+    if report == 1:
+        if layerDefn.GetFieldIndex('ZLDWDM_1') < 0:
+            new_field = ogr.FieldDefn('ZLDWDM_1', ogr.OFTString)
+            new_field.SetWidth(200)
+            layer.CreateField(new_field, True)
+            del new_field
 
     for need_field in report_need_fields:
         if need_field not in all_field_names:
             log.warning('缺失输出报表得必要字段"{}"，无法执行输出报表操作，请补全！'.format(need_field))
             berror = True
 
-    # 这里有BUG，需要先给一个值，让新字段不为空，然后才能复制其他字段的值
-    exec_str = r"UPDATE {} SET ZLDWDM_1=''".format(layer_name)
-    exec_res = dataSource.ExecuteSQL(exec_str)
-    dataSource.ReleaseResultSet(exec_res)
-    exec_str = r"UPDATE {} SET ZLDWDM_1=ZLDWDM".format(layer_name)
-    exec_res = dataSource.ExecuteSQL(exec_str)
-    dataSource.ReleaseResultSet(exec_res)
-    exec_str = r"UPDATE {} SET ZLDWDM_1='4403120000000000000' WHERE ZLDWDM LIKE '440307%' AND " \
-               r"ZLDWMC <> '宝龙街道' AND ZLDWMC <> '布吉街道' AND ZLDWMC <> '龙城街道' AND " \
-               r"ZLDWMC <> '龙岗街道' AND ZLDWMC <> '平湖街道' AND ZLDWMC <> '坪地街道' AND " \
-               r"ZLDWMC <> '园山街道' AND ZLDWMC <> '南湾街道' AND ZLDWMC <> '坂田街道' AND " \
-               r"ZLDWMC <> '吉华街道' AND ZLDWMC <> '横岗街道'".format(layer_name)
-    exec_res = dataSource.ExecuteSQL(exec_str)
-    dataSource.ReleaseResultSet(exec_res)
+    if report == 1:
+        # 这里有BUG，需要先给一个值，让新字段不为空，然后才能复制其他字段的值
+        exec_str = r"UPDATE {} SET ZLDWDM_1=''".format(layer_name)
+        exec_res = dataSource.ExecuteSQL(exec_str)
+        dataSource.ReleaseResultSet(exec_res)
+        exec_str = r"UPDATE {} SET ZLDWDM_1=ZLDWDM".format(layer_name)
+        exec_res = dataSource.ExecuteSQL(exec_str)
+        dataSource.ReleaseResultSet(exec_res)
+        exec_str = r"UPDATE {} SET ZLDWDM_1='4403120000000000000' WHERE ZLDWDM LIKE '440307%' AND " \
+                   r"ZLDWMC <> '宝龙街道' AND ZLDWMC <> '布吉街道' AND ZLDWMC <> '龙城街道' AND " \
+                   r"ZLDWMC <> '龙岗街道' AND ZLDWMC <> '平湖街道' AND ZLDWMC <> '坪地街道' AND " \
+                   r"ZLDWMC <> '园山街道' AND ZLDWMC <> '南湾街道' AND ZLDWMC <> '坂田街道' AND " \
+                   r"ZLDWMC <> '吉华街道' AND ZLDWMC <> '横岗街道'".format(layer_name)
+        exec_res = dataSource.ExecuteSQL(exec_str)
+        dataSource.ReleaseResultSet(exec_res)
 
     if berror:
         return None
