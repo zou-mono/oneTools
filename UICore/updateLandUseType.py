@@ -4,6 +4,7 @@ import traceback
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, Side, Border, NamedStyle, PatternFill
+from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.cell_range import CellRange
 from osgeo import ogr, gdal
 
@@ -18,7 +19,7 @@ import os
 
 log = Log(__name__)
 
-need_indexes = ["DLBM_index", "CZCSXM_index", "GHFLDM_index"]
+need_indexes = ["DLBM_index", "CZCSXM_index", "GHFLDM_index", "GHFLSDL_index", "GHJGFLDM_index"]
 
 header_font = Font(bold=True, size=11)
 header_font2 = Font(bold=True, size=9)
@@ -49,6 +50,11 @@ header_style3.border = border_thin
 header_style3.alignment = alignment_center
 header_style3.font = header_font
 header_style3.fill = PatternFill("solid", fgColor="D9D9D9")
+
+# 居右表头
+header_style4 = NamedStyle(name="header_style4")
+header_style4.alignment = alignment_right
+header_style4.font = header_font3
 
 # 数据单元格居中样式
 cell_center_style = NamedStyle(name="cell_center_style")
@@ -94,67 +100,89 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
     temp_sqliteDB_path = os.path.join(cur_path, "tmp")
 
     try:
-        # log.info("开始更新矢量图层的对应字段...")
-        # start = time.time()
-        #
-        # if file_type == DataType.shapefile:
-        #     bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
-        #     if bflag:
-        #         if not os.path.exists(temp_sqliteDB_path):
-        #             os.mkdir(temp_sqliteDB_path)
-        #         translateOptions = gdal.VectorTranslateOptions(format="SQLite", layerName=layer_name, datasetCreationOptions=["SPATIALITE=YES"])
-        #         hr = gdal.VectorTranslate(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), in_path, options=translateOptions)
-        #         if not hr:
-        #             raise Exception("创建临时sqlite数据库出错!错误原因:\n{}".format(traceback.format_exc()))
-        #         else:
-        #             wks = workspaceFactory().get_factory(DataType.sqlite)
-        #             dataSource = wks.openFromFile(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), 1)
-        #         del hr
-        #     else:
-        #         return
-        #
-        # elif file_type == DataType.fileGDB:
-        #     drop_index(in_path, layer_name, need_indexes)
-        #
-        #     bflag = update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tables,
-        #                                                          DLBM_values)
-        #     if bflag:
-        #         wks = workspaceFactory().get_factory(DataType.fileGDB)
-        #         dataSource = wks.openFromFile(in_path, 1)
-        #     else:
-        #         return
-        #
-        # end = time.time()
-        # log.info('矢量图层对应字段更新完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+        log.info("开始更新矢量图层的对应字段...")
+        start = time.time()
 
-        # 测试用
-        wks = workspaceFactory().get_factory(DataType.fileGDB)
-        dataSource = wks.openFromFile(in_path, 1)
-        layer = dataSource.GetLayerByName(layer_name)
+        if file_type == DataType.shapefile:
+            bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
+            if bflag:
+                if not os.path.exists(temp_sqliteDB_path):
+                    os.mkdir(temp_sqliteDB_path)
+                translateOptions = gdal.VectorTranslateOptions(format="SQLite", layerName=layer_name, datasetCreationOptions=["SPATIALITE=YES"])
+                hr = gdal.VectorTranslate(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), in_path, options=translateOptions)
+                if not hr:
+                    raise Exception("创建临时sqlite数据库出错!错误原因:\n{}".format(traceback.format_exc()))
+                else:
+                    wks = workspaceFactory().get_factory(DataType.sqlite)
+                    dataSource = wks.openFromFile(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), 1)
+                del hr
+            else:
+                return
+
+        elif file_type == DataType.fileGDB:
+            drop_index(in_path, layer_name, need_indexes)
+
+            bflag = update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tables,
+                                                                 DLBM_values)
+            if bflag:
+                wks = workspaceFactory().get_factory(DataType.fileGDB)
+                dataSource = wks.openFromFile(in_path, 1)
+            else:
+                return
+
+        end = time.time()
+        log.info('矢量图层对应字段更新完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+
+        # # 测试用
+        # wks = workspaceFactory().get_factory(DataType.fileGDB)
+        # dataSource = wks.openFromFile(in_path, 1)
+        # layer = dataSource.GetLayerByName(layer_name)
 
         if dataSource is not None:
             wb = Workbook()
 
-            # start = time.time()
-            # log.info('开始统计"各区现状分类面积汇总表..."')
-            # bflag = output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables)
-            # if not bflag:
-            #     return
-            #
-            # end = time.time()
-            # log.info('"各区现状分类汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
-            # wb.save(report_file_name)
-
             start = time.time()
-            log.info('开始统计"规划分类面积汇总表..."')
-            if file_type == DataType.fileGDB:
-                drop_index(in_path, layer_name, need_indexes)
-            output_stat_report2(file_type, wb, dataSource, layer_name, rel_tables, right_header)
-            # if not bflag:
-            #     raise Exception(error_msg)
+            log.info('开始统计"各区现状分类面积汇总表"...')
+            bflag = output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables)
+            if not bflag:
+                return
 
             end = time.time()
+            log.info('"各区现状分类汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+            wb.save(report_file_name)
+
+            start = time.time()
+            log.info('开始统计"规划分类面积汇总表"...')
+            if file_type == DataType.fileGDB:
+                drop_index(in_path, layer_name, need_indexes)
+            bflag = output_stat_report2(file_type, wb, dataSource, layer_name)
+            if not bflag:
+                return
+
+            end = time.time()
+            wb.save(report_file_name)
             log.info('"规划分类面积汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+
+            start = time.time()
+            log.info('开始统计"规划分类三大类面积汇总表"...')
+            if file_type == DataType.fileGDB:
+                drop_index(in_path, layer_name, need_indexes)
+            bflag = output_stat_report3(file_type, wb, dataSource, layer_name)
+            if not bflag:
+                return
+            end = time.time()
+            log.info('"规划分类三大类面积汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+            wb.save(report_file_name)
+
+            start = time.time()
+            log.info('开始统计"规划结构分类面积汇总表"...')
+            if file_type == DataType.fileGDB:
+                drop_index(in_path, layer_name, need_indexes)
+            bflag = output_stat_report4(file_type, wb, dataSource, layer_name)
+            if not bflag:
+                return
+            end = time.time()
+            log.info('"规划结构分类面积汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
             wb.save(report_file_name)
 
             log.info("所有报表都已统计完成，结果保存至路径{}".format(report_file_name))
@@ -421,7 +449,7 @@ def drop_index(in_path, layer_name, indexes):
 def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
     # report_need_fields = ['DLMC', 'XZFLSDL', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2', 'GHFLSDL', 'GHJGFLDM', 'GHJGFLMC', 'SFJSYD', 'ZLDWDM_1', 'ZLDWMC', 'TBMJ', 'KCMJ']
 
-    report_need_fields = ['DLMC', 'DLBM', 'XZFLSDL', 'ZLDWDM', 'ZLDWDM_1', 'ZLDWMC', 'TBMJ', 'KCMJ']
+    report_need_fields = ['DLMC', 'DLBM', 'XZFLSDL', 'ZLDWDM', 'ZLDWDM_1', 'ZLDWMC', 'TBDLMJ', 'KCMJ']
     layer = dataSource.GetLayerByName(layer_name)
 
     if file_type == DataType.shapefile:
@@ -440,7 +468,7 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
         # exec_str = r"CREATE INDEX XZFLSDL_index ON {} (XZFLSDL)".format(layer_name)
         # dataSource.ExecuteSQL(exec_str)
 
-        ws = wb.create_sheet('各区现状分类面积汇总表')
+        ws = wb.create_sheet('表2 各区现状分类面积汇总表')
 
         region_names = ['深圳市', '罗湖区', '福田区', '南山区', '宝安区', '龙岗区', '盐田区', '龙华区', '坪山区', '光明区', '大鹏新区']
         region_codes = ['4403', '440303', '440304', '440305', '440306', '440307', '440308', '440309', '440310',
@@ -454,7 +482,7 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=col_count)
 
         ws.cell(2, col_count).value = "单位：公顷"
-        ws.cell(2, col_count).font = header_font3
+        ws.cell(2, col_count).style = header_style4
 
         ws.cell(3, 1).value = "行政区域"
         ws.cell(3, 1).style = header_style2
@@ -498,7 +526,7 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
 
         # 统计三大类面积
         for i in range(0, 3):
-            exec_str = r"SELECT SUBSTR(ZLDWDM_1, 1, 6), SUM(TBMJ) FROM {} WHERE XZFLSDL='{}' GROUP BY SUBSTR(ZLDWDM_1, 1, 6)".format(
+            exec_str = r"SELECT SUBSTR(ZLDWDM_1, 1, 6), SUM(TBDLMJ) FROM {} WHERE XZFLSDL='{}' GROUP BY SUBSTR(ZLDWDM_1, 1, 6)".format(
                 layer_name, ws.cell(6 + i, 2).value)
             exec_layer = dataSource.ExecuteSQL(exec_str, dialect="SQLite")
 
@@ -548,7 +576,7 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
                     exec_str = r"SELECT SUBSTR(ZLDWDM_1, 1, 6), SUM(KCMJ) FROM {} GROUP BY SUBSTR(ZLDWDM_1, 1, 6)".format(
                         layer_name, DLBM_key)
                 else:
-                    exec_str = r"SELECT SUBSTR(ZLDWDM_1, 1, 6), SUM(TBMJ) FROM {} WHERE DLBM='{}' GROUP BY SUBSTR(ZLDWDM_1, 1, 6)".format(
+                    exec_str = r"SELECT SUBSTR(ZLDWDM_1, 1, 6), SUM(TBDLMJ) FROM {} WHERE DLBM='{}' GROUP BY SUBSTR(ZLDWDM_1, 1, 6)".format(
                         layer_name, DLBM_key)
                 exec_layer = dataSource.ExecuteSQL(exec_str, dialect="SQLite")
 
@@ -619,8 +647,8 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
 
 
 # 报表2 规划分类面积汇总表 格式写死
-def output_stat_report2(file_type, wb, dataSource, layer_name, rel_tables, right_header):
-    report_need_fields = ['TBMJ', 'KCMJ', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2']
+def output_stat_report2(file_type, wb, dataSource, layer_name):
+    report_need_fields = ['TBDLMJ', 'KCMJ', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2']
 
     col_count = 5
 
@@ -633,19 +661,19 @@ def output_stat_report2(file_type, wb, dataSource, layer_name, rel_tables, right
         if all_field_names is None:
             return
 
-        ws = wb.create_sheet('规划分类面积汇总表')
+        ws = wb.create_sheet('表3 规划分类面积汇总表')
 
         if file_type == DataType.shapefile:
             layer_name = "[{}]".format(layer_name)
 
         log.info("第2步：创建表头...")
         # 注意： 要先设置样式再合并，否则边框会出问题，这是openpyxl的Bug， 相关讨论见https://foss.heptapod.net/openpyxl/openpyxl/-/issues/365
-        ws.cell(1, 1).value = "表2 各区现状分类面积汇总表"
+        ws.cell(1, 1).value = "表3 各区现状分类面积汇总表"
         ws.cell(1, 1).style = header_style
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=col_count)
 
         ws.cell(2, col_count).value = "单位：公顷"
-        ws.cell(2, col_count).font = header_font3
+        ws.cell(2, col_count).style = header_style4
 
         ws.cell(3, 1).value = "GHFLDM1"
         ws.cell(3, 2).value = "GHFLMC1"
@@ -829,7 +857,7 @@ def output_stat_report2(file_type, wb, dataSource, layer_name, rel_tables, right
         GHFLDM1_rows = [4, 5, 6, 7, 8, 9, 13, 14, 18, 31, 32, 33, 34]
         for i in GHFLDM1_rows:
             GHFLDM1 = ws.cell(i, 1).value
-            exec_str = "SELECT SUM(TBMJ) FROM {} WHERE GHFLDM1='{}'".format(layer_name, GHFLDM1)
+            exec_str = "SELECT SUM(TBDLMJ) FROM {} WHERE GHFLDM1='{}'".format(layer_name, GHFLDM1)
             MJ = stat_mj_by_sql(dataSource, exec_str)
             ws.cell(i, 5).value = MJ
             total_MJ = total_MJ + MJ
@@ -837,7 +865,7 @@ def output_stat_report2(file_type, wb, dataSource, layer_name, rel_tables, right
         GHFLDM2_rows = [10, 11, 15, 16, 19, 20, 21, 22, 23, 24, 25, 26, 28]
         for i in GHFLDM2_rows:
             GHFLDM2 = ws.cell(i, 3).value
-            exec_str = "SELECT SUM(TBMJ) FROM {} WHERE GHFLDM2='{}'".format(layer_name, GHFLDM2)
+            exec_str = "SELECT SUM(TBDLMJ) FROM {} WHERE GHFLDM2='{}'".format(layer_name, GHFLDM2)
             MJ = stat_mj_by_sql(dataSource, exec_str)
             ws.cell(i, 5).value = MJ
 
@@ -848,21 +876,21 @@ def output_stat_report2(file_type, wb, dataSource, layer_name, rel_tables, right
             sum = sum + ws.cell(i, 5).value
         ws.cell(27, 5).value = sum
 
-        exec_str = "SELECT SUM(TBMJ) FROM {} WHERE GHFLDM1='13' AND GHFLDM2<>'1312'".format(layer_name)
+        exec_str = "SELECT SUM(TBDLMJ) FROM {} WHERE GHFLDM1='13' AND GHFLDM2<>'1312'".format(layer_name)
         MJ = stat_mj_by_sql(dataSource, exec_str)
         ws.cell(29, 5).value = MJ
         ws.cell(30, 5).value = ws.cell(28, 5).value + ws.cell(29, 5).value
 
-        exec_str = "SELECT SUM(TBMJ) FROM {} WHERE GHFLDM2=='2301'".format(layer_name)
+        exec_str = "SELECT SUM(TBDLMJ) FROM {} WHERE GHFLDM2=='2301'".format(layer_name)
         MJ = stat_mj_by_sql(dataSource, exec_str)
         exec_str = "SELECT SUM(KCMJ) FROM {}".format(layer_name)
         KCMJ = stat_mj_by_sql(dataSource, exec_str)
         ws.cell(36, 5).value = KCMJ
-        exec_str = "SELECT SUM(TBMJ) FROM {} WHERE GHFLDM1='23'".format(layer_name)
+        exec_str = "SELECT SUM(TBDLMJ) FROM {} WHERE GHFLDM1='23' AND GHFLDM2 <> '2301' AND GHFLDM2 <> '2302'".format(layer_name)
         MJ_23 = stat_mj_by_sql(dataSource, exec_str)
-        ws.cell(35, 5).value = MJ - KCMJ
-        ws.cell(37, 5).value = MJ_23 - MJ - KCMJ
-        ws.cell(38, 5).value = MJ_23
+        ws.cell(35, 5).value = MJ
+        ws.cell(37, 5).value = MJ_23
+        ws.cell(38, 5).value = MJ_23 + MJ + KCMJ
 
         total_MJ = total_MJ + ws.cell(27, 5).value
         total_MJ = total_MJ + ws.cell(17, 5).value
@@ -872,15 +900,159 @@ def output_stat_report2(file_type, wb, dataSource, layer_name, rel_tables, right
 
         ws.cell(39, 5).value = total_MJ
 
+        ws.column_dimensions[get_column_letter(1)].width = 15
+        ws.column_dimensions[get_column_letter(2)].width = 20
+        ws.column_dimensions[get_column_letter(3)].width = 15
+        ws.column_dimensions[get_column_letter(4)].width = 25
+        ws.column_dimensions[get_column_letter(4)].width = 25
+
         return True
     except:
-        log.error(traceback.format_exc())
+        log.error("无法完成报表统计！错误原因:\n{}".format(traceback.format_exc()))
         return False
 
 
 # 报表3 规划分类三大类面积汇总表
 def output_stat_report3(file_type, wb, dataSource, layer_name):
-    report_need_fields = ['TBMJ', 'KCMJ', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2']
+    report_need_fields = ['TBDLMJ', 'GHFLSDL']
+    col_count = 2
+
+    try:
+        layer = dataSource.GetLayerByName(layer_name)
+
+        log.info("第1步：必要性字段检查...")
+        all_field_names = check_field(file_type, dataSource, layer, report_need_fields, report=2)
+
+        if all_field_names is None:
+            return
+
+        ws = wb.create_sheet('表4 规划分类三大类面积汇总表')
+
+        if file_type == DataType.shapefile:
+            layer_name = "[{}]".format(layer_name)
+
+        log.info("第2步：创建表头...")
+        ws.cell(1, 1).value = "表4 规划分类三大类面积汇总表"
+        ws.cell(1, 1).style = header_style
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=col_count)
+
+        ws.cell(2, col_count).value = "单位：公顷"
+        ws.cell(2, col_count).style = header_style4
+
+        ws.cell(3, 1).value = "GHFLSDL"
+        ws.cell(3, 2).value = "GHFLMJ"
+        for i in range(1, 3):
+            ws.cell(3, i).style = header_style3
+
+        ws.cell(4, 1).value = "农用地"
+        ws.cell(5, 1).value = "建设用地"
+        ws.cell(6, 1).value = "未利用地"
+
+        log.info("第3步: 对矢量图层{}的字段创建索引...".format(layer_name))
+        exec_str = r"CREATE INDEX GHFLSDL_index ON {} (GHFLSDL)".format(layer_name)
+        exec_res = dataSource.ExecuteSQL(exec_str)
+        dataSource.ReleaseResultSet(exec_res)
+
+        log.info("第4步：统计规划分类三大类面积...")
+        for i in range(4, 7):
+            ws.cell(i, 1).style = cell_common_style
+            GHFLSDL = ws.cell(i, 1).value
+            exec_str = "SELECT SUM(TBDLMJ) FROM {} WHERE GHFLSDL=='{}'".format(layer_name, GHFLSDL)
+            MJ = stat_mj_by_sql(dataSource, exec_str)
+            ws.cell(i, 2).value = MJ
+            ws.cell(i, 2).style = cell_common_style
+
+        ws.column_dimensions[get_column_letter(1)].width = 15
+        ws.column_dimensions[get_column_letter(2)].width = 25
+
+        return True
+    except:
+        log.error("无法完成报表统计！错误原因:\n{}".format(traceback.format_exc()))
+        return False
+
+
+def output_stat_report4(file_type, wb, dataSource, layer_name):
+    report_need_fields = ['GHJGFLDM', 'TBDLMJ']
+    col_count = 3
+
+    try:
+        layer = dataSource.GetLayerByName(layer_name)
+
+        log.info("第1步：必要性字段检查...")
+        all_field_names = check_field(file_type, dataSource, layer, report_need_fields, report=2)
+
+        if all_field_names is None:
+            return
+
+        ws = wb.create_sheet('表5 规划结构分类面积汇总表')
+
+        if file_type == DataType.shapefile:
+            layer_name = "[{}]".format(layer_name)
+
+        log.info("第2步：创建表头...")
+        ws.cell(1, 1).value = "表5 规划结构分类面积汇总表"
+        ws.cell(1, 1).style = header_style
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=col_count)
+
+        ws.cell(2, col_count).value = "单位：公顷"
+        ws.cell(2, col_count).style = header_style4
+
+        ws.cell(3, 1).value = "GHJGFLDM"
+        ws.cell(3, 2).value = "GHJGFLMC"
+        ws.cell(3, 3).value = "GHJGFLMJ"
+        for i in range(1, 4):
+            ws.cell(3, i).style = header_style3
+
+        ws.cell(4, 1).value = "01"
+        ws.cell(5, 1).value = "02"
+        ws.cell(6, 1).value = "03"
+        ws.cell(7, 1).value = "04"
+        ws.cell(8, 1).value = "05"
+        ws.cell(9, 1).value = "06"
+        ws.cell(10, 1).value = "07"
+        ws.cell(11, 1).value = "08"
+        ws.cell(12, 1).value = "09"
+        ws.cell(13, 1).value = "15"
+        ws.cell(14, 1).value = "16"
+
+        ws.cell(4, 2).value = "耕地"
+        ws.cell(5, 2).value = "园地"
+        ws.cell(6, 2).value = "林地"
+        ws.cell(7, 2).value = "草地"
+        ws.cell(8, 2).value = "湿地"
+        ws.cell(9, 2).value = "农业设施建设用地"
+        ws.cell(10, 2).value = "城乡建设用地"
+        ws.cell(11, 2).value = "区域基础设施用地"
+        ws.cell(12, 2).value = "其他建设用地"
+        ws.cell(13, 2).value = "陆地水域"
+        ws.cell(14, 2).value = "其他土地"
+
+        for i in range(4, 15):
+            for j in range(1, 3):
+                ws.cell(i, j).style = cell_common_style
+
+        log.info("第3步: 对矢量图层{}的字段创建索引...".format(layer_name))
+        exec_str = r"CREATE INDEX GHJGFLDM_index ON {} (GHJGFLDM)".format(layer_name)
+        exec_res = dataSource.ExecuteSQL(exec_str)
+        dataSource.ReleaseResultSet(exec_res)
+
+        log.info("第4步：统计规划结构分类面积...")
+        for i in range(4, 15):
+            ws.cell(i, 1).style = cell_common_style
+            GHJGFLDM = ws.cell(i, 1).value
+            exec_str = "SELECT SUM(TBDLMJ) FROM {} WHERE GHJGFLDM=='{}'".format(layer_name, GHJGFLDM)
+            MJ = stat_mj_by_sql(dataSource, exec_str)
+            ws.cell(i, 3).value = MJ
+            ws.cell(i, 3).style = cell_common_style
+
+        ws.column_dimensions[get_column_letter(1)].width = 20
+        ws.column_dimensions[get_column_letter(2)].width = 20
+        ws.column_dimensions[get_column_letter(3)].width = 20
+
+        return True
+    except:
+        log.error("无法完成报表统计！错误原因:\n{}".format(traceback.format_exc()))
+        return False
 
 def stat_mj_by_sql(dataSource, exec_str):
     MJ = ""
