@@ -6,7 +6,7 @@ from UICore.log4p import Log
 from UICore.suplicmap_vector2 import crawl_vector, crawl_vector_batch
 from UICore.coordTransform import coordTransform
 import UICore.coordTransform_table
-from UICore.updateAttribute import update_attribute_value
+from UICore.updateLandUseType import update_and_stat
 
 log = Log(__name__)
 
@@ -82,13 +82,13 @@ class coordTransformWorker(QtCore.QObject):
         self.finished.emit()
 
 
-class updateAttributeValueWorker(QtCore.QObject):
+class updateLandUseTypeWorker(QtCore.QObject):
     update = pyqtSignal(object, str, str, object, object, object, object, str)
     finished = pyqtSignal()
 
     def __init__(self):
-        super(updateAttributeValueWorker, self).__init__()
+        super(updateLandUseTypeWorker, self).__init__()
 
     def updateAttribute(self, file_type, in_path, layer_name, header, rel_tables, MC_tables, DLBM_values, report_file_name):
-        flag = UICore.updateAttribute.update_and_stat(file_type, in_path, layer_name, header, rel_tables, MC_tables, DLBM_values, report_file_name)
+        flag = update_and_stat(file_type, in_path, layer_name, header, rel_tables, MC_tables, DLBM_values, report_file_name)
         self.finished.emit()

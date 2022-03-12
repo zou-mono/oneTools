@@ -19,7 +19,7 @@ from UICore.Gv import SplitterState, Dock, DataType
 from UICore.common import get_suffix, is_already_opened_in_write_mode
 from UICore.log4p import Log
 import UI.listview_dialog
-from UICore.workerThread import updateAttributeValueWorker
+from UICore.workerThread import updateLandUseTypeWorker
 
 Slot = QtCore.pyqtSlot
 
@@ -136,12 +136,13 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 all_data = []
                 layer = None
                 header = []
+                layer_name = ""
 
                 if self.txt_addressLayerFile.text() == '' or self.txt_addressLayerFile.text() == '':
                     return
 
                 self.thread = QThread(self)
-                self.updateThread = updateAttributeValueWorker()
+                self.updateThread = updateLandUseTypeWorker()
                 self.updateThread.moveToThread(self.thread)
                 self.updateThread.update.connect(self.updateThread.updateAttribute)
                 self.updateThread.finished.connect(self.threadStop)
