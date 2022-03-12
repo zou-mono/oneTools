@@ -103,35 +103,49 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
         log.info("开始更新矢量图层的对应字段...")
         start = time.time()
 
-        if file_type == DataType.shapefile:
-            bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
-            if bflag:
-                if not os.path.exists(temp_sqliteDB_path):
-                    os.mkdir(temp_sqliteDB_path)
-                translateOptions = gdal.VectorTranslateOptions(format="SQLite", layerName=layer_name, datasetCreationOptions=["SPATIALITE=YES"])
-                hr = gdal.VectorTranslate(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), in_path, options=translateOptions)
-                if not hr:
-                    raise Exception("创建临时sqlite数据库出错!错误原因:\n{}".format(traceback.format_exc()))
-                else:
-                    wks = workspaceFactory().get_factory(DataType.sqlite)
-                    dataSource = wks.openFromFile(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), 1)
-                del hr
+        # if file_type == DataType.shapefile:
+        #     bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
+        #     # if bflag:
+        #     #     if not os.path.exists(temp_sqliteDB_path):
+        #     #         os.mkdir(temp_sqliteDB_path)
+        #     #     translateOptions = gdal.VectorTranslateOptions(format="SQLite", layerName=layer_name, datasetCreationOptions=["SPATIALITE=YES"])
+        #     #     hr = gdal.VectorTranslate(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), in_path, options=translateOptions)
+        #     #     if not hr:
+        #     #         raise Exception("创建临时sqlite数据库出错!错误原因:\n{}".format(traceback.format_exc()))
+        #     #     else:
+        #     #         wks = workspaceFactory().get_factory(DataType.sqlite)
+        #     #         dataSource = wks.openFromFile(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), 1)
+        #     #     del hr
+        #     # else:
+        #     #     return
+        #
+        # elif file_type == DataType.fileGDB:
+        #     drop_index(in_path, layer_name, need_indexes)
+        #
+        #     bflag = update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tables,
+        #                                                          DLBM_values)
+        #     # if bflag:
+        #     #     wks = workspaceFactory().get_factory(DataType.fileGDB)
+        #     #     dataSource = wks.openFromFile(in_path, 1)
+        #     # else:
+        #     #     return
+        # end = time.time()
+        # log.info('矢量图层对应字段更新完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+        bflag = True
+        log.info("创建用于统计的临时数据库...")
+        if bflag:
+            if not os.path.exists(temp_sqliteDB_path):
+                os.mkdir(temp_sqliteDB_path)
+            translateOptions = gdal.VectorTranslateOptions(format="SQLite", layerName=layer_name, datasetCreationOptions=["SPATIALITE=YES"])
+            hr = gdal.VectorTranslate(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), in_path, options=translateOptions)
+            if not hr:
+                raise Exception("创建临时数据库出错!错误原因:\n{}".format(traceback.format_exc()))
             else:
-                return
-
-        elif file_type == DataType.fileGDB:
-            drop_index(in_path, layer_name, need_indexes)
-
-            bflag = update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tables,
-                                                                 DLBM_values)
-            if bflag:
-                wks = workspaceFactory().get_factory(DataType.fileGDB)
-                dataSource = wks.openFromFile(in_path, 1)
-            else:
-                return
-
-        end = time.time()
-        log.info('矢量图层对应字段更新完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+                wks = workspaceFactory().get_factory(DataType.sqlite)
+                dataSource = wks.openFromFile(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), 1)
+            del hr
+        else:
+            return
 
         # # 测试用
         # wks = workspaceFactory().get_factory(DataType.fileGDB)
@@ -153,8 +167,8 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
 
             start = time.time()
             log.info('开始统计"规划分类面积汇总表"...')
-            if file_type == DataType.fileGDB:
-                drop_index(in_path, layer_name, need_indexes)
+            # if file_type == DataType.fileGDB:
+            #     drop_index(in_path, layer_name, need_indexes)
             bflag = output_stat_report2(file_type, wb, dataSource, layer_name)
             if not bflag:
                 return
@@ -165,8 +179,8 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
 
             start = time.time()
             log.info('开始统计"规划分类三大类面积汇总表"...')
-            if file_type == DataType.fileGDB:
-                drop_index(in_path, layer_name, need_indexes)
+            # if file_type == DataType.fileGDB:
+            #     drop_index(in_path, layer_name, need_indexes)
             bflag = output_stat_report3(file_type, wb, dataSource, layer_name)
             if not bflag:
                 return
@@ -176,8 +190,8 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
 
             start = time.time()
             log.info('开始统计"规划结构分类面积汇总表"...')
-            if file_type == DataType.fileGDB:
-                drop_index(in_path, layer_name, need_indexes)
+            # if file_type == DataType.fileGDB:
+            #     drop_index(in_path, layer_name, need_indexes)
             bflag = output_stat_report4(file_type, wb, dataSource, layer_name)
             if not bflag:
                 return
@@ -195,8 +209,8 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
         del dataSource
         if file_type == DataType.fileGDB:
             drop_index(in_path, layer_name, need_indexes)
-        elif file_type == DataType.shapefile:
-            remove_temp_sqliteDB(temp_sqliteDB_path, temp_sqliteDB_name)
+        # elif file_type == DataType.shapefile:
+        remove_temp_sqliteDB(temp_sqliteDB_path, temp_sqliteDB_name)
 
 
 def remove_temp_sqliteDB(in_path, db_name):
@@ -248,6 +262,7 @@ def update_attribute_value(file_type, in_path, layer_name, right_header, rel_tab
         log.info("第2步: 根据规则表更新{}图层对应数据...".format(layer_name))
         icount = 0
 
+        lack_BM = set()
         while feature:
             DLBM_value = feature.GetField("DLBM")
             bchecked = False
@@ -257,7 +272,10 @@ def update_attribute_value(file_type, in_path, layer_name, right_header, rel_tab
                 field_name = right_header[i]
                 if DLBM_value not in rel:
                     if not bchecked:
-                        log.warning("第{}个要素的地类编码{}在规则表中不存在！".format(icount, DLBM_value))
+                        if DLBM_value not in lack_BM:
+                            lack_BM.add(DLBM_value)
+                            log.warning("出现了在规则表中不存在的编码：{}".format(DLBM_value))
+                        # log.warning("第{}个要素的地类编码{}在规则表中不存在！".format(icount, DLBM_value))
                         feature.SetField(field_name, None)
                         bchecked = True
                     else:
@@ -452,8 +470,8 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
     report_need_fields = ['DLMC', 'DLBM', 'XZFLSDL', 'ZLDWDM', 'ZLDWDM_1', 'ZLDWMC', 'TBDLMJ', 'KCMJ']
     layer = dataSource.GetLayerByName(layer_name)
 
-    if file_type == DataType.shapefile:
-        layer_name = "[{}]".format(layer_name)
+    # if file_type == DataType.shapefile:
+    layer_name = "[{}]".format(layer_name)
 
     try:
         log.info("第1步：必要性字段检查...")
@@ -663,8 +681,8 @@ def output_stat_report2(file_type, wb, dataSource, layer_name):
 
         ws = wb.create_sheet('表3 规划分类面积汇总表')
 
-        if file_type == DataType.shapefile:
-            layer_name = "[{}]".format(layer_name)
+        # if file_type == DataType.shapefile:
+        layer_name = "[{}]".format(layer_name)
 
         log.info("第2步：创建表头...")
         # 注意： 要先设置样式再合并，否则边框会出问题，这是openpyxl的Bug， 相关讨论见https://foss.heptapod.net/openpyxl/openpyxl/-/issues/365
@@ -850,6 +868,7 @@ def output_stat_report2(file_type, wb, dataSource, layer_name):
         exec_str = r"CREATE INDEX GHFLDM_index ON {} (GHFLDM1, GHFLDM2)".format(layer_name)
         exec_res = dataSource.ExecuteSQL(exec_str)
         dataSource.ReleaseResultSet(exec_res)
+        del exec_res
 
         log.info("第4步：统计规划分类面积...")
 
@@ -903,8 +922,8 @@ def output_stat_report2(file_type, wb, dataSource, layer_name):
         ws.column_dimensions[get_column_letter(1)].width = 15
         ws.column_dimensions[get_column_letter(2)].width = 20
         ws.column_dimensions[get_column_letter(3)].width = 15
-        ws.column_dimensions[get_column_letter(4)].width = 25
-        ws.column_dimensions[get_column_letter(4)].width = 25
+        ws.column_dimensions[get_column_letter(4)].width = 20
+        ws.column_dimensions[get_column_letter(5)].width = 25
 
         return True
     except:
@@ -928,8 +947,8 @@ def output_stat_report3(file_type, wb, dataSource, layer_name):
 
         ws = wb.create_sheet('表4 规划分类三大类面积汇总表')
 
-        if file_type == DataType.shapefile:
-            layer_name = "[{}]".format(layer_name)
+        # if file_type == DataType.shapefile:
+        layer_name = "[{}]".format(layer_name)
 
         log.info("第2步：创建表头...")
         ws.cell(1, 1).value = "表4 规划分类三大类面积汇总表"
@@ -952,6 +971,7 @@ def output_stat_report3(file_type, wb, dataSource, layer_name):
         exec_str = r"CREATE INDEX GHFLSDL_index ON {} (GHFLSDL)".format(layer_name)
         exec_res = dataSource.ExecuteSQL(exec_str)
         dataSource.ReleaseResultSet(exec_res)
+        del exec_res
 
         log.info("第4步：统计规划分类三大类面积...")
         for i in range(4, 7):
@@ -986,8 +1006,8 @@ def output_stat_report4(file_type, wb, dataSource, layer_name):
 
         ws = wb.create_sheet('表5 规划结构分类面积汇总表')
 
-        if file_type == DataType.shapefile:
-            layer_name = "[{}]".format(layer_name)
+        # if file_type == DataType.shapefile:
+        layer_name = "[{}]".format(layer_name)
 
         log.info("第2步：创建表头...")
         ws.cell(1, 1).value = "表5 规划结构分类面积汇总表"
@@ -1035,6 +1055,7 @@ def output_stat_report4(file_type, wb, dataSource, layer_name):
         exec_str = r"CREATE INDEX GHJGFLDM_index ON {} (GHJGFLDM)".format(layer_name)
         exec_res = dataSource.ExecuteSQL(exec_str)
         dataSource.ReleaseResultSet(exec_res)
+        del exec_res
 
         log.info("第4步：统计规划结构分类面积...")
         for i in range(4, 15):
@@ -1070,6 +1091,7 @@ def stat_mj_by_sql(dataSource, exec_str):
                 MJ = '%.2f' % 0
             break
     dataSource.ReleaseResultSet(exec_layer)
+    del exec_layer
 
     if MJ == "":
         return 0
@@ -1200,8 +1222,8 @@ def check_field(file_type, dataSource, layer, report_need_fields, report=1):
     all_field_names = []
     layer_name = layer.GetName()
 
-    if file_type == DataType.shapefile:
-        layer_name = "[{}]".format(layer_name)
+    # if file_type == DataType.shapefile:
+    layer_name = "[{}]".format(layer_name)
 
     berror = False
     layerDefn = layer.GetLayerDefn()
