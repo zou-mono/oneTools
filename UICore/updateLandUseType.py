@@ -103,35 +103,35 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
         log.info("开始更新矢量图层的对应字段...")
         start = time.time()
 
-        # if file_type == DataType.shapefile:
-        #     bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
-        #     # if bflag:
-        #     #     if not os.path.exists(temp_sqliteDB_path):
-        #     #         os.mkdir(temp_sqliteDB_path)
-        #     #     translateOptions = gdal.VectorTranslateOptions(format="SQLite", layerName=layer_name, datasetCreationOptions=["SPATIALITE=YES"])
-        #     #     hr = gdal.VectorTranslate(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), in_path, options=translateOptions)
-        #     #     if not hr:
-        #     #         raise Exception("创建临时sqlite数据库出错!错误原因:\n{}".format(traceback.format_exc()))
-        #     #     else:
-        #     #         wks = workspaceFactory().get_factory(DataType.sqlite)
-        #     #         dataSource = wks.openFromFile(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), 1)
-        #     #     del hr
-        #     # else:
-        #     #     return
-        #
-        # elif file_type == DataType.fileGDB:
-        #     drop_index(in_path, layer_name, need_indexes)
-        #
-        #     bflag = update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tables,
-        #                                                          DLBM_values)
-        #     # if bflag:
-        #     #     wks = workspaceFactory().get_factory(DataType.fileGDB)
-        #     #     dataSource = wks.openFromFile(in_path, 1)
-        #     # else:
-        #     #     return
-        # end = time.time()
-        # log.info('矢量图层对应字段更新完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
-        bflag = True
+        if file_type == DataType.shapefile:
+            bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
+            # if bflag:
+            #     if not os.path.exists(temp_sqliteDB_path):
+            #         os.mkdir(temp_sqliteDB_path)
+            #     translateOptions = gdal.VectorTranslateOptions(format="SQLite", layerName=layer_name, datasetCreationOptions=["SPATIALITE=YES"])
+            #     hr = gdal.VectorTranslate(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), in_path, options=translateOptions)
+            #     if not hr:
+            #         raise Exception("创建临时sqlite数据库出错!错误原因:\n{}".format(traceback.format_exc()))
+            #     else:
+            #         wks = workspaceFactory().get_factory(DataType.sqlite)
+            #         dataSource = wks.openFromFile(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), 1)
+            #     del hr
+            # else:
+            #     return
+
+        elif file_type == DataType.fileGDB:
+            drop_index(in_path, layer_name, need_indexes)
+
+            bflag = update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tables,
+                                                                 DLBM_values)
+            # if bflag:
+            #     wks = workspaceFactory().get_factory(DataType.fileGDB)
+            #     dataSource = wks.openFromFile(in_path, 1)
+            # else:
+            #     return
+        end = time.time()
+        log.info('矢量图层对应字段更新完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+
         log.info("创建用于统计的临时数据库...")
         if bflag:
             if not os.path.exists(temp_sqliteDB_path):
