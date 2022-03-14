@@ -546,7 +546,7 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
         # 统计三大类面积
         for i in range(0, 3):
             exec_str = r"SELECT SUBSTR(ZLDWDM_1, 1, 6), SUM(TBDLMJ) FROM {} WHERE XZFLSDL='{}' GROUP BY SUBSTR(ZLDWDM_1, 1, 6)".format(
-                layer_name, ws.cell(6 + i, 2).value)
+                layer_name, str(ws.cell(6 + i, 2).value).strip())
             exec_layer = dataSource.ExecuteSQL(exec_str, dialect="SQLite")
 
             if exec_layer is None:
@@ -611,6 +611,8 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
                         pos = region_codes.index(ZDDWDM)
                         if pos > -1:
                             ws.cell(start_row + j + 1, pos + 3).value = float(ZDDWDM_MJ)
+                            if DLBM_key == '1203':   # 把田坎面积加入到三大类的农用地面积中
+                                ws.cell(6, pos + 3).value = ws.cell(6, pos + 3).value + float(ZDDWDM_MJ)
                         else:
                             log.warning("没有相应的区域代码{}!".format(ZDDWDM))
                         ws.cell(start_row + j + 1, pos + 3).style = cell_right_style
@@ -876,7 +878,7 @@ def output_stat_report2(file_type, wb, dataSource, layer_name):
         total_MJ = 0
         GHFLDM1_rows = [4, 5, 6, 7, 8, 9, 13, 14, 18, 31, 32, 33, 34]
         for i in GHFLDM1_rows:
-            GHFLDM1 = ws.cell(i, 1).value
+            GHFLDM1 = str(ws.cell(i, 1).value).strip()
             exec_str = "SELECT SUM(TBDLMJ) FROM {} WHERE GHFLDM1='{}'".format(layer_name, GHFLDM1)
             MJ = stat_mj_by_sql(dataSource, exec_str)
             ws.cell(i, 5).value = MJ
@@ -884,7 +886,7 @@ def output_stat_report2(file_type, wb, dataSource, layer_name):
 
         GHFLDM2_rows = [10, 11, 15, 16, 19, 20, 21, 22, 23, 24, 25, 26, 28]
         for i in GHFLDM2_rows:
-            GHFLDM2 = ws.cell(i, 3).value
+            GHFLDM2 = str(ws.cell(i, 3).value).strip()
             exec_str = "SELECT SUM(TBDLMJ) FROM {} WHERE GHFLDM2='{}'".format(layer_name, GHFLDM2)
             MJ = stat_mj_by_sql(dataSource, exec_str)
             ws.cell(i, 5).value = MJ
@@ -977,7 +979,7 @@ def output_stat_report3(file_type, wb, dataSource, layer_name):
         log.info("第4步：统计规划分类三大类面积...")
         for i in range(4, 7):
             ws.cell(i, 1).style = cell_common_style
-            GHFLSDL = ws.cell(i, 1).value
+            GHFLSDL = str(ws.cell(i, 1).value).strip()
             exec_str = "SELECT SUM(TBDLMJ) FROM {} WHERE GHFLSDL=='{}'".format(layer_name, GHFLSDL)
             MJ = stat_mj_by_sql(dataSource, exec_str)
             ws.cell(i, 2).value = MJ
@@ -1061,7 +1063,7 @@ def output_stat_report4(file_type, wb, dataSource, layer_name):
         log.info("第4步：统计规划结构分类面积...")
         for i in range(4, 15):
             ws.cell(i, 1).style = cell_common_style
-            GHJGFLDM = ws.cell(i, 1).value
+            GHJGFLDM = str(ws.cell(i, 1).value).strip()
             exec_str = "SELECT SUM(TBDLMJ) FROM {} WHERE GHJGFLDM=='{}'".format(layer_name, GHJGFLDM)
             MJ = stat_mj_by_sql(dataSource, exec_str)
             ws.cell(i, 3).value = MJ

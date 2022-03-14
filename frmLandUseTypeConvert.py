@@ -370,7 +370,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
             for icol in range(len(row_value)):
                 if row_value[icol] is not None:
-                    newItem = QTableWidgetItem(str(row_value[icol]))
+                    newItem = QTableWidgetItem(str(row_value[icol]).strip())
                 else:
                     newItem = QTableWidgetItem(None)
                 if icol == DLBM_index:
