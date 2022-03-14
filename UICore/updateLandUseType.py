@@ -31,6 +31,7 @@ border_thin = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side
                      bottom=Side(style='thin'))
 alignment_center = Alignment(horizontal="center", vertical="center", wrapText=True)
 alignment_right = Alignment(horizontal="right", vertical="center", wrapText=True)
+alignment_right2 = Alignment(horizontal="right", vertical="center", wrapText=False)
 
 # 大表头样式
 header_style = NamedStyle(name="header_style")
@@ -53,7 +54,7 @@ header_style3.fill = PatternFill("solid", fgColor="D9D9D9")
 
 # 居右表头
 header_style4 = NamedStyle(name="header_style4")
-header_style4.alignment = alignment_right
+header_style4.alignment = alignment_right2
 header_style4.font = header_font3
 
 # 数据单元格居中样式
@@ -357,7 +358,7 @@ def update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tab
         exec_res = dataSource.ExecuteSQL(exec_str)
         dataSource.ReleaseResultSet(exec_res)
 
-        log.info("第3步: 计算矢量图层{}的DLBM字段的唯一值...".format(layer_name))
+        log.info("第3步: 计算矢量图层{}中DLBM字段的唯一值...".format(layer_name))
         exec_str = r"SELECT DISTINCT DLBM FROM {}".format(layer_name)
         exec_res = dataSource.ExecuteSQL(exec_str, dialect="SQLite")
 
