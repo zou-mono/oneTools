@@ -612,7 +612,10 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
                         if pos > -1:
                             ws.cell(start_row + j + 1, pos + 3).value = float(ZDDWDM_MJ)
                             if DLBM_key == '1203':   # 把田坎面积加入到三大类的农用地面积中
-                                ws.cell(6, pos + 3).value = ws.cell(6, pos + 3).value + float(ZDDWDM_MJ)
+                                if ws.cell(6, pos + 3).value == "":
+                                    ws.cell(6, pos + 3).value = float(ZDDWDM_MJ)
+                                else:
+                                    ws.cell(6, pos + 3).value = ws.cell(6, pos + 3).value + float(ZDDWDM_MJ)
                         else:
                             log.warning("没有相应的区域代码{}!".format(ZDDWDM))
                         ws.cell(start_row + j + 1, pos + 3).style = cell_right_style
@@ -650,7 +653,7 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
             else:
                 ws.cell(i, 3).style = cell_right_style
 
-        for iRange in range(3, col_count + 1):
+        for iRange in range(3, col_count + 1):  # 国土调查总面积
             sum = 0
             for i in range(0, 3):
                 if ws.cell(6 + i, iRange).value is not None:
