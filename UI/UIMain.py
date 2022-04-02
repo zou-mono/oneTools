@@ -115,5 +115,5 @@ class Ui_MainWindow(object):
         self.btn_coordTransform.setText(_translate("MainWindow", "坐标转换"))
         self.btn_vectorCrawler.setText(_translate("MainWindow", "抓取多规合一矢量数据"))
         self.btn_imageCrawler.setText(_translate("MainWindow", "抓取多规合一影像数据"))
-        self.btn_landUseTypeConvert.setText(_translate("MainWindow", "土地利用图斑类型转换"))
+        self.btn_landUseTypeConvert.setText(_translate("MainWindow", "国土空间规划基数转换"))
 import icons_rc

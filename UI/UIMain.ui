@@ -169,7 +169,7 @@
      </font>
     </property>
     <property name="text">
-     <string>土地利用图斑类型转换</string>
+     <string>国土空间规划基数转换</string>
     </property>
     <property name="icon">
      <iconset resource="../icons.qrc">

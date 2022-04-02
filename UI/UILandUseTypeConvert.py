@@ -152,7 +152,7 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "土地利用图斑类型转换"))
+        Dialog.setWindowTitle(_translate("Dialog", "国土空间规划基数转换工具"))
         self.rbtn_file.setText(_translate("Dialog", "shp文件"))
         self.rbtn_filedb.setText(_translate("Dialog", "FileGDB"))
         self.label_1.setText(_translate("Dialog", "加载待转换的矢量图层文件"))

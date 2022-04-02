@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>土地利用图斑类型转换</string>
+   <string>国土空间规划基数转换工具</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../icons.qrc">
