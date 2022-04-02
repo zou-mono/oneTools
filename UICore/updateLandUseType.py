@@ -19,7 +19,7 @@ import os
 
 log = Log(__name__)
 
-need_indexes = ["DLBM_index", "CZCSXM_index", "GHFLDM_index", "GHFLSDL_index", "GHJGFLDM_index"]
+need_indexes = ["DLBM_index", "GHFLDM_index", "GHFLSDL_index", "GHJGFLDM_index"]
 
 header_font = Font(bold=True, size=11)
 header_font2 = Font(bold=True, size=9)
@@ -292,15 +292,15 @@ def update_attribute_value(file_type, in_path, layer_name, right_header, rel_tab
                         log.error("第{}个要素的字段{}是无法识别的数据类型. 字段类型只允许是整型、字符型或者浮点型，请调整原始数据!".format(icount, field_name))
                         feature.SetField(field_name, None)
 
-            # 如果是CZCSXM是201或者202则重新赋值
-            CZCSXM_index = feature.GetFieldIndex("CZCSXM")
-            if CZCSXM_index > 0:
-                CZCSXM_value = feature.GetField(CZCSXM_index)
-                if str(CZCSXM_value).strip() == '201' or str(CZCSXM_value).strip() == '202':
-                    feature.SetField("XZFLSDL", "农用地/未利用地")
-                    feature.SetField("GHJGFLDM", "07")
-                    feature.SetField("GHJGFLMC", "城乡建设用地")
-                    feature.SetField("SFJSYD", "是")
+            # # 如果是CZCSXM是201或者202则重新赋值
+            # CZCSXM_index = feature.GetFieldIndex("CZCSXM")
+            # if CZCSXM_index > 0:
+            #     CZCSXM_value = feature.GetField(CZCSXM_index)
+            #     if str(CZCSXM_value).strip() == '201' or str(CZCSXM_value).strip() == '202':
+            #         feature.SetField("XZFLSDL", "农用地/未利用地")
+            #         feature.SetField("GHJGFLDM", "07")
+            #         feature.SetField("GHJGFLMC", "城乡建设用地")
+            #         feature.SetField("SFJSYD", "是")
 
             layer.SetFeature(feature)
             feature = layer.GetNextFeature()
@@ -400,37 +400,37 @@ def update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tab
                 exec_res = dataSource.ExecuteSQL(exec_str)
                 dataSource.ReleaseResultSet(exec_res)
 
-        log.info("第5步: 特别更新字段CZCSXM等于201或202的对应字段值...".format(layer_name, DLBM_key))
-        CZCSXM_index = feature.GetFieldIndex("CZCSXM")
-        if CZCSXM_index > 0:
-            XZFLSDL_index = feature.GetFieldIndex("XZFLSDL")
-            GHJGFLDM_index = feature.GetFieldIndex("GHJGFLDM")
-            GHJGFLMC_index = feature.GetFieldIndex("GHJGFLMC")
-            SFJSYD_index = feature.GetFieldIndex("SFJSYD")
-
-            exec_str = r"CREATE INDEX CZCSXM_index ON {} (CZCSXM)".format(layer_name)
-            exec_res = dataSource.ExecuteSQL(exec_str)
-            dataSource.ReleaseResultSet(exec_res)
-
-            if XZFLSDL_index > -1:
-                exec_str = r"UPDATE {} SET XZFLSDL = '{}' WHERE CZCSXM = '201' or CZCSXM = '202'".format(layer_name,
-                                                                                                         '农用地/未利用地')
-                exec_res = dataSource.ExecuteSQL(exec_str)
-                dataSource.ReleaseResultSet(exec_res)
-            if GHJGFLDM_index > -1:
-                exec_str = r"UPDATE {} SET GHJGFLDM = '{}' WHERE CZCSXM = '201' or CZCSXM = '202'".format(layer_name,
-                                                                                                          '07')
-                exec_res = dataSource.ExecuteSQL(exec_str)
-                dataSource.ReleaseResultSet(exec_res)
-            if GHJGFLMC_index > -1:
-                exec_str = r"UPDATE {} SET GHJGFLMC = '{}' WHERE CZCSXM = '201' or CZCSXM = '202'".format(layer_name,
-                                                                                                          '城乡建设用地')
-                exec_res = dataSource.ExecuteSQL(exec_str)
-                dataSource.ReleaseResultSet(exec_res)
-            if SFJSYD_index > -1:
-                exec_str = r"UPDATE {} SET SFJSYD = '{}' WHERE CZCSXM = '201' or CZCSXM = '202'".format(layer_name, '是')
-                exec_res = dataSource.ExecuteSQL(exec_str)
-                dataSource.ReleaseResultSet(exec_res)
+        # log.info("第5步: 特别更新字段CZCSXM等于201或202的对应字段值...".format(layer_name, DLBM_key))
+        # CZCSXM_index = feature.GetFieldIndex("CZCSXM")
+        # if CZCSXM_index > 0:
+        #     XZFLSDL_index = feature.GetFieldIndex("XZFLSDL")
+        #     GHJGFLDM_index = feature.GetFieldIndex("GHJGFLDM")
+        #     GHJGFLMC_index = feature.GetFieldIndex("GHJGFLMC")
+        #     SFJSYD_index = feature.GetFieldIndex("SFJSYD")
+        #
+        #     exec_str = r"CREATE INDEX CZCSXM_index ON {} (CZCSXM)".format(layer_name)
+        #     exec_res = dataSource.ExecuteSQL(exec_str)
+        #     dataSource.ReleaseResultSet(exec_res)
+        #
+        #     if XZFLSDL_index > -1:
+        #         exec_str = r"UPDATE {} SET XZFLSDL = '{}' WHERE CZCSXM = '201' or CZCSXM = '202'".format(layer_name,
+        #                                                                                                  '农用地/未利用地')
+        #         exec_res = dataSource.ExecuteSQL(exec_str)
+        #         dataSource.ReleaseResultSet(exec_res)
+        #     if GHJGFLDM_index > -1:
+        #         exec_str = r"UPDATE {} SET GHJGFLDM = '{}' WHERE CZCSXM = '201' or CZCSXM = '202'".format(layer_name,
+        #                                                                                                   '07')
+        #         exec_res = dataSource.ExecuteSQL(exec_str)
+        #         dataSource.ReleaseResultSet(exec_res)
+        #     if GHJGFLMC_index > -1:
+        #         exec_str = r"UPDATE {} SET GHJGFLMC = '{}' WHERE CZCSXM = '201' or CZCSXM = '202'".format(layer_name,
+        #                                                                                                   '城乡建设用地')
+        #         exec_res = dataSource.ExecuteSQL(exec_str)
+        #         dataSource.ReleaseResultSet(exec_res)
+        #     if SFJSYD_index > -1:
+        #         exec_str = r"UPDATE {} SET SFJSYD = '{}' WHERE CZCSXM = '201' or CZCSXM = '202'".format(layer_name, '是')
+        #         exec_res = dataSource.ExecuteSQL(exec_str)
+        #         dataSource.ReleaseResultSet(exec_res)
 
 
         # end = time.time()
