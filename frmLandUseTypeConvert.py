@@ -25,6 +25,7 @@ Slot = QtCore.pyqtSlot
 
 log = Log(__name__)
 
+max_table_width = 1200
 
 class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self, parent=None):
@@ -391,13 +392,33 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         if self.splitter.splitterState == SplitterState.collapsed:
             init_width = self.tableWidget.width()
-            resize_width = self.width() + (resize_width - init_width)
-            self.resize(resize_width + 40, self.height())
+            # init_width = self.dialog_width
+            if resize_width - init_width >= 0:
+                resize_width = self.width() + (resize_width - init_width)
+            if resize_width > 1200:  # 最大宽度不超过1200
+                resize_width = 1200
+            elif resize_width < self.dialog_width:
+                resize_width = self.dialog_width
+            self.resize(resize_width, self.height())
         else:
-            init_width = self.splitter.widget(0).width()
-            resize_width2 = self.splitter.width() + (resize_width - init_width)
+            init_width = self.tableWidget.width()
+            log_width = self.splitter.widget(1).width()
+            remain_width = self.width() - self.splitter.widget(0).width() - self.splitter.widget(1).width()
+            # print("table width:{}".format(self.width()))
+            # print("splitter width:{}".format(self.splitter.width()))
+            # print("left width:{}".format(self.splitter.widget(0).width()))
+            # print("right width:{}".format(self.splitter.widget(1).width()))
+            if resize_width > 1200:  # 最大宽度不超过1200
+                resize_width = 1200
+            elif resize_width < self.dialog_width:
+                resize_width = self.dialog_width
+            if resize_width - init_width >= 0:
+                resize_width2 = self.width() + (resize_width - init_width)
+            else:
+                resize_width2 = resize_width + log_width + remain_width
             self.resize(resize_width2, self.height())
-            self.splitter.setSizes([resize_width, self.splitter.width() - resize_width - 30])
+            # self.splitter.setSizes([resize_width, self.splitter.width() - resize_width])
+            self.splitter.setSizes([self.width()-log_width - remain_width,  log_width])
 
         self.tableWidget.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)  # 行高固定
         self.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
