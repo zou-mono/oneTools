@@ -81,6 +81,12 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.dialog_height = 0
         self.splitter_width = self.splitter.width()
         self.splitter_height = self.splitter.height()
+
+        self.chk_convert.setChecked(True)
+        self.chk_report1.setChecked(False)
+        self.chk_report2.setChecked(False)
+        self.chk_report3.setChecked(False)
+        self.chk_report4.setChecked(False)
         # self.rel_tables = []
 
     def showEvent(self, a0: QtGui.QShowEvent) -> None:
@@ -139,6 +145,12 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 header = []
                 layer_name = ""
 
+                bConvert = False
+                bReport1 = False
+                bReport2 = False
+                bReport3 = False
+                bReport4 = False
+
                 if self.txt_addressLayerFile.text() == '' or self.txt_addressLayerFile.text() == '':
                     return
 
@@ -147,6 +159,17 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 self.updateThread.moveToThread(self.thread)
                 self.updateThread.update.connect(self.updateThread.updateAttribute)
                 self.updateThread.finished.connect(self.threadStop)
+
+                if self.chk_convert.isChecked():
+                    bConvert = True
+                if self.chk_report1.isChecked():
+                    bReport1 = True
+                if self.chk_report2.isChecked():
+                    bReport2 = True
+                if self.chk_report3.isChecked():
+                    bReport3 = True
+                if self.chk_report4.isChecked():
+                    bReport4 = True
 
                 for icol in range(self.tableWidget.columnCount()):
                     header_txt = self.tableWidget.horizontalHeaderItem(icol).text()
@@ -235,7 +258,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 return
 
             self.thread.start()
-            self.updateThread.update.emit(file_type, in_path, layer_name, right_header, rel_tables, MC_tables, DLBM_values, report_file_name)
+            self.updateThread.update.emit(file_type, in_path, layer_name, right_header, rel_tables,  MC_tables, DLBM_values,
+                                          report_file_name, bConvert, bReport1, bReport2, bReport3, bReport4)
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
             self.threadTerminate()
             self.close()

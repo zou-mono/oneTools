@@ -22,8 +22,8 @@
     <rect>
      <x>10</x>
      <y>10</y>
-     <width>741</width>
-     <height>491</height>
+     <width>688</width>
+     <height>512</height>
     </rect>
    </property>
    <property name="orientation">
@@ -240,6 +240,67 @@
        </item>
        <item>
         <widget class="QTableWidget" name="tableWidget"/>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="chk_convert">
+         <property name="text">
+          <string>现状与国土空间规划分类转换</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_5">
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="font">
+            <font>
+             <family>微软雅黑</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>输出报表</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QFormLayout" name="formLayout">
+           <property name="sizeConstraint">
+            <enum>QLayout::SetFixedSize</enum>
+           </property>
+           <property name="leftMargin">
+            <number>20</number>
+           </property>
+           <item row="0" column="0">
+            <widget class="QCheckBox" name="chk_report1">
+             <property name="text">
+              <string>生成各区现状分类面积汇总表</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QCheckBox" name="chk_report2">
+             <property name="text">
+              <string>生成规划分类面积汇总表</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QCheckBox" name="chk_report4">
+             <property name="text">
+              <string>生成规划结构分类面积汇总表</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QCheckBox" name="chk_report3">
+             <property name="text">
+              <string>生成规划分类三大类面积汇总表</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
        </item>
        <item>
         <widget class="QDialogButtonBox" name="buttonBox">

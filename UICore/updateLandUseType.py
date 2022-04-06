@@ -105,7 +105,8 @@ cell_number_style.font = cell_font2
 cell_number_style.number_format = "0.00"
 
 
-def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC_tables, DLBM_values, report_file_name):
+def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC_tables, DLBM_values, report_file_name,
+                    bConvert, bReport1, bReport2, bReport3, bReport4):
     dataSource = None
     wks = None
     bflag = False
@@ -114,42 +115,31 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
     temp_sqliteDB_name = '%s.db' % (layer_name + '_' + time.strftime('%Y-%m-%d-%H-%M-%S'))
     temp_sqliteDB_path = os.path.join(cur_path, "tmp")
 
+    bflag = True
     try:
-        log.info("开始更新矢量图层的对应字段...")
-        start = time.time()
+        if bConvert:
+            log.info("开始更新矢量图层的对应字段...")
+            start = time.time()
 
-        if file_type == DataType.shapefile:
-            bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
-            # if bflag:
-            #     if not os.path.exists(temp_sqliteDB_path):
-            #         os.mkdir(temp_sqliteDB_path)
-            #     translateOptions = gdal.VectorTranslateOptions(format="SQLite", layerName=layer_name, datasetCreationOptions=["SPATIALITE=YES"])
-            #     hr = gdal.VectorTranslate(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), in_path, options=translateOptions)
-            #     if not hr:
-            #         raise Exception("创建临时sqlite数据库出错!错误原因:\n{}".format(traceback.format_exc()))
-            #     else:
-            #         wks = workspaceFactory().get_factory(DataType.sqlite)
-            #         dataSource = wks.openFromFile(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), 1)
-            #     del hr
-            # else:
-            #     return
+            if file_type == DataType.shapefile:
+                bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
 
-        elif file_type == DataType.fileGDB:
-            # bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
-            drop_index(in_path, layer_name, need_indexes)
+            elif file_type == DataType.fileGDB:
+                # bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
+                drop_index(in_path, layer_name, need_indexes)
 
-            bflag = update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tables,
-                                                      DLBM_values)
-            # if bflag:
-            #     wks = workspaceFactory().get_factory(DataType.fileGDB)
-            #     dataSource = wks.openFromFile(in_path, 1)
-            # else:
-            #     return
-        end = time.time()
-        log.info('矢量图层对应字段更新完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+                bflag = update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tables,
+                                                          DLBM_values)
 
-        log.info("创建用于统计的临时数据库...")
+            end = time.time()
+            log.info('矢量图层对应字段更新完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+
+        if not bReport1 and not bReport2 and not bReport3 and not bReport4:
+            return
+
         if bflag:
+            log.info("创建用于统计的临时数据库...")
+
             if not os.path.exists(temp_sqliteDB_path):
                 os.mkdir(temp_sqliteDB_path)
             translateOptions = gdal.VectorTranslateOptions(format="SQLite", layerName=layer_name,
@@ -173,52 +163,55 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
         if dataSource is not None:
             wb = Workbook()
 
-            start = time.time()
-            log.info('开始统计"各区现状分类面积汇总表"...')
-            bflag = output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables)
-            if not bflag:
-                return
+            if bReport1:
+                start = time.time()
+                log.info('开始统计"各区现状分类面积汇总表"...')
+                bflag = output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables)
+                if not bflag:
+                    return
 
-            end = time.time()
-            log.info('"各区现状分类汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
-            wb.save(report_file_name)
+                end = time.time()
+                log.info('"各区现状分类汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+                wb.save(report_file_name)
 
-            start = time.time()
-            log.info('开始统计"规划分类面积汇总表"...')
-            # if file_type == DataType.fileGDB:
-            #     drop_index(in_path, layer_name, need_indexes)
-            bflag = output_stat_report2(file_type, wb, dataSource, layer_name)
-            if not bflag:
-                return
+            if bReport2:
+                start = time.time()
+                log.info('开始统计"规划分类面积汇总表"...')
+                # if file_type == DataType.fileGDB:
+                #     drop_index(in_path, layer_name, need_indexes)
+                bflag = output_stat_report2(file_type, wb, dataSource, layer_name)
+                if not bflag:
+                    return
 
-            end = time.time()
-            wb.save(report_file_name)
-            log.info('"规划分类面积汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+                end = time.time()
+                wb.save(report_file_name)
+                log.info('"规划分类面积汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
 
-            start = time.time()
-            log.info('开始统计"规划分类三大类面积汇总表"...')
-            # if file_type == DataType.fileGDB:
-            #     drop_index(in_path, layer_name, need_indexes)
-            bflag = output_stat_report3(file_type, wb, dataSource, layer_name)
-            if not bflag:
-                return
-            end = time.time()
-            log.info('"规划分类三大类面积汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
-            wb.save(report_file_name)
+            if bReport3:
+                start = time.time()
+                log.info('开始统计"规划分类三大类面积汇总表"...')
+                # if file_type == DataType.fileGDB:
+                #     drop_index(in_path, layer_name, need_indexes)
+                bflag = output_stat_report3(file_type, wb, dataSource, layer_name)
+                if not bflag:
+                    return
+                end = time.time()
+                log.info('"规划分类三大类面积汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+                wb.save(report_file_name)
 
-            start = time.time()
-            log.info('开始统计"规划结构分类面积汇总表"...')
-            # if file_type == DataType.fileGDB:
-            #     drop_index(in_path, layer_name, need_indexes)
-            bflag = output_stat_report4(file_type, wb, dataSource, layer_name)
-            if not bflag:
-                return
-            end = time.time()
-            log.info('"规划结构分类面积汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
-            wb.save(report_file_name)
+            if bReport4:
+                start = time.time()
+                log.info('开始统计"规划结构分类面积汇总表"...')
+                # if file_type == DataType.fileGDB:
+                #     drop_index(in_path, layer_name, need_indexes)
+                bflag = output_stat_report4(file_type, wb, dataSource, layer_name)
+                if not bflag:
+                    return
+                end = time.time()
+                log.info('"规划结构分类面积汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+                wb.save(report_file_name)
 
             log.info("所有报表都已统计完成，结果保存至路径{}".format(report_file_name))
-
     except:
         log.error(traceback.format_exc())
         return
