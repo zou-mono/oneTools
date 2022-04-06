@@ -50,17 +50,28 @@ class Handler(QObject, logging.Handler):
             '[%(asctime)s] [%(levelname)s]- %(message)s')
         self.setFormatter(formatter)
         parent.splitter.handle(1).handleClicked.connect(self.handleClicked)
+        self.color = "#000000"
+
+    def setColor(self, _color):
+        self.color = _color
 
     def handleClicked(self):
         if self.parent.splitter.splitterState == SplitterState.collapsed:
             #  splitter缩起来时必须要先清空plainText，否则会卡死
             self.clear_record.emit(self.parent)
         else:
-            output = os.linesep.join(self.stringList)
+            # output = os.linesep.join(self.stringList)
+            output = "<br>".join(self.stringList)
             self.set_record.emit(output)
 
     def emit(self, record):
         msg = self.format(record)
+        if record.levelno == 40:
+            msg = '<font color=\"#FF0000\">{}</font>'.format(msg)  ## 红色
+        elif record.levelno == 30:
+            msg = '<font color=\"#FFA500\">{}</font>'.format(msg)  ## 橙色
+        elif record.levelno == 20:
+            msg = '<font color={}>{}</font>'.format(self.color, msg)  ## 自定义颜色
         # msg = "<span style=\" font-size:8pt; font-weight:600; color:#ff0000;\" >"
         # msg += self.format(record)
         # msg += "</span>"
@@ -68,7 +79,7 @@ class Handler(QObject, logging.Handler):
             if len(self.stringList) > 500:
                 self.clear_record.emit(self.parent)
             else:
-                self.new_record.emit(msg) # <---- emit signal here
+                self.new_record.emit(msg)  # <---- emit signal here
         if len(self.stringList) > 500:
             self.stringList.clear()
         self.stringList.append(msg)
@@ -112,9 +123,9 @@ class Log:
     def setLogViewer(self, parent, logViewer: QPlainTextEdit):
         self.handler = Handler(parent)
         self.logViewer = logViewer
-        self.handler.new_record.connect(self.logViewer.appendPlainText)
+        self.handler.new_record.connect(self.logViewer.appendHtml)
         self.handler.clear_record.connect(self.logViewer.clear)
-        self.handler.set_record.connect(self.logViewer.setPlainText)
+        self.handler.set_record.connect(self.logViewer.appendHtml)
 
     def get_file_sorted(self, file_path):
         """最后修改时间顺序升序排列 os.path.getmtime()->获取文件最后修改时间"""
@@ -158,17 +169,18 @@ class Log:
         except PermissionError as e:
             Log().warning('删除日志文件失败：{}'.format(e))
 
-    def __console(self, level, message):
+    def __console(self, level, message, color):
         self.logger = logging.getLogger(self.fileName)
         self.logger.setLevel(logging.DEBUG)
 
         if self.handler is not None:
+            self.handler.setColor(color)
             self.logger.addHandler(self.handler)
 
         formatter = logging.Formatter(
             '[%(asctime)s] [%(filename)s:%(funcName)s:%(lineno)d] [%(levelname)s]- %(message)s')  # 日志输出格式
         # 创建一个FileHandler，用于写到本地
-        fh = RotatingFileHandler(filename=self.logName, mode='a', maxBytes=1024 * 1024 * 5, backupCount=5,
+        fh = RotatingFileHandler(filename=self.logName, mode='a', maxBytes=1024 * 1024 * 100, backupCount=5,
                                  encoding='utf-8')  # 使用RotatingFileHandler类，滚动备份日志
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(formatter)
@@ -206,8 +218,8 @@ class Log:
     def debug(self, message):
         self.__console('debug', message)
 
-    def info(self, message):
-        self.__console('info', message)
+    def info(self, message, color="#000000"):
+        self.__console('info', message, color)
 
     def warning(self, message, parent=None, dialog=False):
         self.__console('warning', message)

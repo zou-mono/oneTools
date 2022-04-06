@@ -34,6 +34,8 @@ region_dict = {
     '440312': '大鹏新区'
 }
 
+report_dict = ["各区现状分类面积汇总表", "规划分类面积汇总表", "规划分类三大类面积汇总表", "规划结构分类面积汇总表"]
+
 header_font = Font(bold=True, size=11)
 header_font2 = Font(bold=True, size=9)
 header_font3 = Font(bold=False, size=11)
@@ -104,6 +106,7 @@ cell_number_style.alignment = alignment_center
 cell_number_style.font = cell_font2
 cell_number_style.number_format = "0.00"
 
+step_color = "#0000FF"
 
 def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC_tables, DLBM_values, report_file_name,
                     bConvert, bReport1, bReport2, bReport3, bReport4):
@@ -118,7 +121,7 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
     bflag = True
     try:
         if bConvert:
-            log.info("开始更新矢量图层的对应字段...")
+            log.info("开始现状与国土空间规划分类转换...", color=step_color)
             start = time.time()
 
             if file_type == DataType.shapefile:
@@ -132,27 +135,12 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
                                                           DLBM_values)
 
             end = time.time()
-            log.info('矢量图层对应字段更新完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+            log.info('现状与国土空间规划分类转换完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)), color=step_color)
 
         if not bReport1 and not bReport2 and not bReport3 and not bReport4:
             return
 
-        if bflag:
-            log.info("创建用于统计的临时数据库...")
-
-            if not os.path.exists(temp_sqliteDB_path):
-                os.mkdir(temp_sqliteDB_path)
-            translateOptions = gdal.VectorTranslateOptions(format="SQLite", layerName=layer_name,
-                                                           datasetCreationOptions=["SPATIALITE=YES"])
-            hr = gdal.VectorTranslate(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), in_path,
-                                      options=translateOptions)
-            if not hr:
-                raise Exception("创建临时数据库出错!错误原因:\n{}".format(traceback.format_exc()))
-            else:
-                wks = workspaceFactory().get_factory(DataType.sqlite)
-                dataSource = wks.openFromFile(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), 1)
-            del hr
-        else:
+        if not bflag:
             return
 
         # # 测试用
@@ -160,58 +148,76 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
         # dataSource = wks.openFromFile(in_path, 1)
         # layer = dataSource.GetLayerByName(layer_name)
 
+        # log.info("开始进行报表统计和输出...", color=step_color)
+
+        if file_type == DataType.fileGDB:
+            wks = workspaceFactory().get_factory(DataType.fileGDB)
+        elif file_type == DataType.shapefile:
+            wks = workspaceFactory().get_factory(DataType.shapefile)
+        dataSource = wks.openFromFile(in_path, 0)
+
+        log.info("必要性字段检查...")
+        bReports = check_report_need_fields([bReport1, bReport2, bReport3, bReport4], dataSource, layer_name)
+
+        log.info("创建用于统计的临时数据库...")
+        dataSource = create_temp_sqliteDB(temp_sqliteDB_path, temp_sqliteDB_name, in_path, layer_name)
+
         if dataSource is not None:
             wb = Workbook()
 
-            if bReport1:
-                start = time.time()
-                log.info('开始统计"各区现状分类面积汇总表"...')
-                bflag = output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables)
-                if not bflag:
-                    return
+            nReport = 0
+            for bReport in bReports:
+                if nReport == 0 and bReport:
+                    start = time.time()
+                    log.info('开始统计"各区现状分类面积汇总表"...', color=step_color)
+                    bflag = output_stat_report1(wb, dataSource, layer_name, MC_tables)
+                    if not bflag:
+                        return
 
-                end = time.time()
-                log.info('"各区现状分类汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
-                wb.save(report_file_name)
+                    end = time.time()
+                    log.info('"{}"统计完成, 总共耗时:{}秒.'.format(report_dict[nReport], "{:.2f}".format(end - start)), color=step_color)
+                    wb.save(report_file_name)
 
-            if bReport2:
-                start = time.time()
-                log.info('开始统计"规划分类面积汇总表"...')
-                # if file_type == DataType.fileGDB:
-                #     drop_index(in_path, layer_name, need_indexes)
-                bflag = output_stat_report2(file_type, wb, dataSource, layer_name)
-                if not bflag:
-                    return
+                if nReport == 1 and bReport:
+                    start = time.time()
+                    log.info('开始统计"规划分类面积汇总表"...', color=step_color)
+                    # if file_type == DataType.fileGDB:
+                    #     drop_index(in_path, layer_name, need_indexes)
+                    bflag = output_stat_report2(wb, dataSource, layer_name)
+                    if not bflag:
+                        return
 
-                end = time.time()
-                wb.save(report_file_name)
-                log.info('"规划分类面积汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
+                    end = time.time()
+                    wb.save(report_file_name)
+                    log.info('"{}"统计完成, 总共耗时:{}秒.'.format(report_dict[nReport], "{:.2f}".format(end - start)), color=step_color)
 
-            if bReport3:
-                start = time.time()
-                log.info('开始统计"规划分类三大类面积汇总表"...')
-                # if file_type == DataType.fileGDB:
-                #     drop_index(in_path, layer_name, need_indexes)
-                bflag = output_stat_report3(file_type, wb, dataSource, layer_name)
-                if not bflag:
-                    return
-                end = time.time()
-                log.info('"规划分类三大类面积汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
-                wb.save(report_file_name)
+                if nReport == 2 and bReport:
+                    start = time.time()
+                    log.info('开始统计"规划分类三大类面积汇总表"...', color=step_color)
+                    # if file_type == DataType.fileGDB:
+                    #     drop_index(in_path, layer_name, need_indexes)
+                    bflag = output_stat_report3(wb, dataSource, layer_name)
+                    if not bflag:
+                        return
+                    end = time.time()
+                    log.info('"{}"统计完成, 总共耗时:{}秒.'.format(report_dict[nReport], "{:.2f}".format(end - start)), color=step_color)
+                    wb.save(report_file_name)
 
-            if bReport4:
-                start = time.time()
-                log.info('开始统计"规划结构分类面积汇总表"...')
-                # if file_type == DataType.fileGDB:
-                #     drop_index(in_path, layer_name, need_indexes)
-                bflag = output_stat_report4(file_type, wb, dataSource, layer_name)
-                if not bflag:
-                    return
-                end = time.time()
-                log.info('"规划结构分类面积汇总表"统计完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)))
-                wb.save(report_file_name)
+                if nReport == 3 and bReport:
+                    start = time.time()
+                    log.info('开始统计"规划结构分类面积汇总表"...', color=step_color)
+                    # if file_type == DataType.fileGDB:
+                    #     drop_index(in_path, layer_name, need_indexes)
+                    bflag = output_stat_report4(wb, dataSource, layer_name)
+                    if not bflag:
+                        return
+                    end = time.time()
+                    log.info('"{}"统计完成, 总共耗时:{}秒.'.format(report_dict[nReport], "{:.2f}".format(end - start)), color=step_color)
+                    wb.save(report_file_name)
 
-            log.info("所有报表都已统计完成，结果保存至路径{}".format(report_file_name))
+                nReport += 1
+
+            log.info("所有报表都已统计完成，结果保存至路径{}".format(report_file_name), color=step_color)
     except:
         log.error(traceback.format_exc())
         return
@@ -222,6 +228,25 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
             drop_index(in_path, layer_name, need_indexes)
         # elif file_type == DataType.shapefile:
         remove_temp_sqliteDB(temp_sqliteDB_path, temp_sqliteDB_name)
+
+
+# 创建用于统计的临时数据库
+def create_temp_sqliteDB(temp_sqliteDB_path, temp_sqliteDB_name, in_path, layer_name):
+    dataSource = None
+    if not os.path.exists(temp_sqliteDB_path):
+        os.mkdir(temp_sqliteDB_path)
+    translateOptions = gdal.VectorTranslateOptions(format="SQLite", layerName=layer_name,
+                                                   datasetCreationOptions=["SPATIALITE=NO"])
+    hr = gdal.VectorTranslate(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), in_path,
+                              options=translateOptions)
+    if not hr:
+        raise Exception("创建临时数据库出错!错误原因:\n{}".format(traceback.format_exc()))
+    else:
+        wks = workspaceFactory().get_factory(DataType.sqlite)
+        dataSource = wks.openFromFile(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), 1)
+    del hr
+
+    return dataSource
 
 
 def remove_temp_sqliteDB(in_path, db_name):
@@ -466,7 +491,7 @@ def update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tab
 
         for key, value in region_dict.items():
             exec_str = r"UPDATE {} SET XZQMC='{}' WHERE XZQDM='{}'".format(layer_name, value, key)
-            print(exec_str)
+            # print(exec_str)
             exec_res = dataSource.ExecuteSQL(exec_str)
             dataSource.ReleaseResultSet(exec_res)
 
@@ -562,28 +587,46 @@ def drop_index(in_path, layer_name, indexes):
     filegdbapi.CloseGeodatabase(gdb)
 
 
-# 报表1 各区现状面积汇总表
-def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
-    # report_need_fields = ['DLMC', 'XZFLSDL', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2', 'GHFLSDL', 'GHJGFLDM', 'GHJGFLMC', 'SFJSYD', 'ZLDWDM_1', 'ZLDWMC', 'TBMJ', 'KCMJ']
-
-    report_need_fields = ['DLMC', 'DLBM', 'XZFLSDL', 'ZLDWDM', 'XZQDM', 'ZLDWMC', 'TBDLMJ', 'KCMJ']
+def check_report_need_fields(bReports, dataSource, layer_name):
     layer = dataSource.GetLayerByName(layer_name)
 
-    # if file_type == DataType.shapefile:
+    res = copy.deepcopy(bReports)
+    report_need_fields = []
+
+    nReport = 0
+    for bReport in bReports:
+        if bReport:
+            if nReport == 0:
+                report_need_fields = ['DLMC', 'DLBM', 'XZFLSDL', 'ZLDWDM', 'XZQDM', 'ZLDWMC', 'TBDLMJ', 'KCMJ']
+            elif nReport == 1:
+                report_need_fields = ['TBDLMJ', 'KCMJ', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2']
+            elif nReport == 2:
+                report_need_fields = ['TBDLMJ', 'GHFLSDL']
+            elif nReport == 3:
+                report_need_fields = ['GHJGFLDM', 'TBDLMJ']
+
+            all_field_names = check_field(layer, report_need_fields, nReport)
+            if all_field_names is None:
+                res[nReport] = False
+            else:
+                res[nReport] = True
+        else:
+            res[nReport] = False
+
+        nReport += 1
+
+    del layer
+    return res
+
+# 报表1 各区现状面积汇总表
+def output_stat_report1(wb, dataSource, layer_name, MC_tables):
+    # report_need_fields = ['DLMC', 'XZFLSDL', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2', 'GHFLSDL', 'GHJGFLDM', 'GHJGFLMC', 'SFJSYD', 'ZLDWDM_1', 'ZLDWMC', 'TBMJ', 'KCMJ']
+
     layer_name = "[{}]".format(layer_name)
 
+    # if file_type == DataType.shapefile:
     try:
-        log.info("第1步：必要性字段检查...")
-        all_field_names = check_field(file_type, dataSource, layer, report_need_fields)
-
-        if all_field_names is None:
-            return
-
-        # log.info("针对ZLDWDM, XZFLSDL字段构建索引...")
-        # exec_str = r"CREATE INDEX ZLDWDM_index ON {} (ZLDWDM_1)".format(layer_name)
-        # dataSource.ExecuteSQL(exec_str)
-        # exec_str = r"CREATE INDEX XZFLSDL_index ON {} (XZFLSDL)".format(layer_name)
-        # dataSource.ExecuteSQL(exec_str)
+        # check_report_need_fields(1, dataSource, layer_name)
 
         ws = wb.create_sheet('表2 各区现状分类面积汇总表')
 
@@ -592,7 +635,7 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
                         '440311', '440312']
         col_count = len(region_names) + 2
 
-        log.info("第2步：创建表头...")
+        log.info("第1步：创建表头...")
         # 注意： 要先设置样式再合并，否则边框会出问题，这是openpyxl的Bug， 相关讨论见https://foss.heptapod.net/openpyxl/openpyxl/-/issues/365
         ws.cell(1, 1).value = "表2 各区现状分类面积汇总表"
         ws.cell(1, 1).style = header_style
@@ -639,12 +682,13 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
             # exec_res = exec_layer.GetNextFeature().GetField(0)
             # ws.cell(6, i).value = exec_res
 
-        log.info("第3步：统计各区现状三大类面积...")
+        log.info("第2步：统计各区现状三大类面积...")
 
         # 统计三大类面积
         for i in range(0, 3):
             exec_str = r"SELECT SUBSTR(XZQDM, 1, 6), SUM(TBDLMJ) FROM {} WHERE XZFLSDL='{}' GROUP BY SUBSTR(XZQDM, 1, 6)".format(
                 layer_name, str(ws.cell(6 + i, 2).value).strip())
+            # print(exec_str)
             exec_layer = dataSource.ExecuteSQL(exec_str, dialect="SQLite")
 
             if exec_layer is None:
@@ -668,7 +712,7 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
                 dataSource.ReleaseResultSet(exec_layer)
                 del exec_res
 
-        log.info("第4步：统计各区分类面积...")
+        log.info("第3步：统计各区分类面积...")
         i = 0
         start_row = 9
         xiaoji_rows = []
@@ -739,7 +783,7 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
             i += 1
 
         # 深圳市总计
-        log.info("第5步：汇总各区统计结果...")
+        log.info("第4步：汇总各区统计结果...")
         for i in range(6, start_row):
             sum = 0
             for iRange in range(4, col_count + 1):
@@ -764,31 +808,29 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
         log.error("无法完成报表统计！错误原因:\n{}".format(traceback.format_exc()))
         return False
         # return False, "无法完成报表统计！错误原因:\n{}".format(traceback.format_exc())
-    finally:
-        del layer
 
 
 # 报表2 规划分类面积汇总表 格式写死
-def output_stat_report2(file_type, wb, dataSource, layer_name):
+def output_stat_report2(wb, dataSource, layer_name):
     report_need_fields = ['TBDLMJ', 'KCMJ', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2']
 
     col_count = 5
 
     try:
-        layer = dataSource.GetLayerByName(layer_name)
+        # layer = dataSource.GetLayerByName(layer_name)
 
-        log.info("第1步：必要性字段检查...")
-        all_field_names = check_field(file_type, dataSource, layer, report_need_fields, report=2)
+        # log.info("第1步：必要性字段检查...")
+        # all_field_names = check_field(file_type, dataSource, layer, report_need_fields, report=2)
 
-        if all_field_names is None:
-            return
+        # if all_field_names is None:
+        #     return
 
         ws = wb.create_sheet('表3 规划分类面积汇总表')
 
         # if file_type == DataType.shapefile:
         layer_name = "[{}]".format(layer_name)
 
-        log.info("第2步：创建表头...")
+        log.info("第1步：创建表头...")
         # 注意： 要先设置样式再合并，否则边框会出问题，这是openpyxl的Bug， 相关讨论见https://foss.heptapod.net/openpyxl/openpyxl/-/issues/365
         ws.cell(1, 1).value = "表3 各区现状分类面积汇总表"
         ws.cell(1, 1).style = header_style
@@ -968,13 +1010,13 @@ def output_stat_report2(file_type, wb, dataSource, layer_name):
         for i in range(4, 40):
             ws.cell(i, 5).style = cell_number_style
 
-        log.info("第3步: 对矢量图层{}的字段创建索引...".format(layer_name))
+        log.info("第2步: 对矢量图层{}的字段创建索引...".format(layer_name))
         exec_str = r"CREATE INDEX GHFLDM_index ON {} (GHFLDM1, GHFLDM2)".format(layer_name)
         exec_res = dataSource.ExecuteSQL(exec_str)
         dataSource.ReleaseResultSet(exec_res)
         del exec_res
 
-        log.info("第4步：统计规划分类面积...")
+        log.info("第3步：统计规划分类面积...")
 
         total_MJ = 0
         GHFLDM1_rows = [4, 5, 6, 7, 8, 9, 13, 14, 18, 31, 32, 33, 34]
@@ -1037,25 +1079,25 @@ def output_stat_report2(file_type, wb, dataSource, layer_name):
 
 
 # 报表3 规划分类三大类面积汇总表
-def output_stat_report3(file_type, wb, dataSource, layer_name):
-    report_need_fields = ['TBDLMJ', 'GHFLSDL']
+def output_stat_report3(wb, dataSource, layer_name):
+    # report_need_fields = ['TBDLMJ', 'GHFLSDL']
     col_count = 2
 
     try:
-        layer = dataSource.GetLayerByName(layer_name)
+        # layer = dataSource.GetLayerByName(layer_name)
 
-        log.info("第1步：必要性字段检查...")
-        all_field_names = check_field(file_type, dataSource, layer, report_need_fields, report=2)
-
-        if all_field_names is None:
-            return
+        # log.info("第1步：必要性字段检查...")
+        # all_field_names = check_field(file_type, dataSource, layer, report_need_fields, report=2)
+        #
+        # if all_field_names is None:
+        #     return
 
         ws = wb.create_sheet('表4 规划分类三大类面积汇总表')
 
         # if file_type == DataType.shapefile:
         layer_name = "[{}]".format(layer_name)
 
-        log.info("第2步：创建表头...")
+        log.info("第1步：创建表头...")
         ws.cell(1, 1).value = "表4 规划分类三大类面积汇总表"
         ws.cell(1, 1).style = header_style
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=col_count)
@@ -1072,13 +1114,13 @@ def output_stat_report3(file_type, wb, dataSource, layer_name):
         ws.cell(5, 1).value = "建设用地"
         ws.cell(6, 1).value = "未利用地"
 
-        log.info("第3步: 对矢量图层{}的字段创建索引...".format(layer_name))
+        log.info("第2步: 对矢量图层{}的字段创建索引...".format(layer_name))
         exec_str = r"CREATE INDEX GHFLSDL_index ON {} (GHFLSDL)".format(layer_name)
         exec_res = dataSource.ExecuteSQL(exec_str)
         dataSource.ReleaseResultSet(exec_res)
         del exec_res
 
-        log.info("第4步：统计规划分类三大类面积...")
+        log.info("第3步：统计规划分类三大类面积...")
         for i in range(4, 7):
             ws.cell(i, 1).style = cell_common_style
             GHFLSDL = str(ws.cell(i, 1).value).strip()
@@ -1096,25 +1138,25 @@ def output_stat_report3(file_type, wb, dataSource, layer_name):
         return False
 
 
-def output_stat_report4(file_type, wb, dataSource, layer_name):
-    report_need_fields = ['GHJGFLDM', 'TBDLMJ']
+def output_stat_report4(wb, dataSource, layer_name):
+    # report_need_fields = ['GHJGFLDM', 'TBDLMJ']
     col_count = 3
 
     try:
-        layer = dataSource.GetLayerByName(layer_name)
+        # layer = dataSource.GetLayerByName(layer_name)
 
-        log.info("第1步：必要性字段检查...")
-        all_field_names = check_field(file_type, dataSource, layer, report_need_fields, report=2)
-
-        if all_field_names is None:
-            return
+        # log.info("第1步：必要性字段检查...")
+        # all_field_names = check_field(file_type, dataSource, layer, report_need_fields, report=2)
+        #
+        # if all_field_names is None:
+        #     return
 
         ws = wb.create_sheet('表5 规划结构分类面积汇总表')
 
         # if file_type == DataType.shapefile:
         layer_name = "[{}]".format(layer_name)
 
-        log.info("第2步：创建表头...")
+        log.info("第1步：创建表头...")
         ws.cell(1, 1).value = "表5 规划结构分类面积汇总表"
         ws.cell(1, 1).style = header_style
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=col_count)
@@ -1156,13 +1198,13 @@ def output_stat_report4(file_type, wb, dataSource, layer_name):
             for j in range(1, 3):
                 ws.cell(i, j).style = cell_common_style
 
-        log.info("第3步: 对矢量图层{}的字段创建索引...".format(layer_name))
+        log.info("第2步: 对矢量图层{}的字段创建索引...".format(layer_name))
         exec_str = r"CREATE INDEX GHJGFLDM_index ON {} (GHJGFLDM)".format(layer_name)
         exec_res = dataSource.ExecuteSQL(exec_str)
         dataSource.ReleaseResultSet(exec_res)
         del exec_res
 
-        log.info("第4步：统计规划结构分类面积...")
+        log.info("第3步：统计规划结构分类面积...")
         for i in range(4, 15):
             ws.cell(i, 1).style = cell_common_style
             GHJGFLDM = str(ws.cell(i, 1).value).strip()
@@ -1325,7 +1367,7 @@ def stat_mj_by_sql(dataSource, exec_str):
 #         log.error(traceback.format_exc())
 #         return False
 
-def check_field(file_type, dataSource, layer, report_need_fields, report=1):
+def check_field(layer, report_need_fields, nReport):
     all_field_names = []
     layer_name = layer.GetName()
 
@@ -1349,7 +1391,7 @@ def check_field(file_type, dataSource, layer, report_need_fields, report=1):
 
     for need_field in report_need_fields:
         if need_field not in all_field_names:
-            log.warning('缺失输出报表得必要字段"{}"，无法执行输出报表操作，请补全！'.format(need_field))
+            log.warning('输出报表"{}"缺失必要字段"{}"，无法执行输出报表操作，请补全！'.format(report_dict[nReport], need_field))
             berror = True
 
     # if report == 1:
