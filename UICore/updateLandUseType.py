@@ -16,10 +16,23 @@ from UICore.DataFactory import workspaceFactory
 from UICore.Gv import DataType
 from UICore.log4p import Log
 import os
+import copy
 
 log = Log(__name__)
 
-need_indexes = ["DLBM_index", "GHFLDM_index", "GHFLSDL_index", "GHJGFLDM_index"]
+need_indexes = ["DLBM_index", "GHFLDM_index", "XZQDM_index", "GHFLSDL_index", "GHJGFLDM_index"]
+region_dict = {
+    '440303': '罗湖区',
+    '440304': '福田区',
+    '440305': '南山区',
+    '440306': '宝安区',
+    '440307': '龙岗区',
+    '440308': '盐田区',
+    '440309': '龙华区',
+    '440310': '坪山区',
+    '440311': '光明区',
+    '440312': '大鹏新区'
+}
 
 header_font = Font(bold=True, size=11)
 header_font2 = Font(bold=True, size=9)
@@ -91,6 +104,7 @@ cell_number_style.alignment = alignment_center
 cell_number_style.font = cell_font2
 cell_number_style.number_format = "0.00"
 
+
 def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC_tables, DLBM_values, report_file_name):
     dataSource = None
     wks = None
@@ -121,10 +135,11 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
             #     return
 
         elif file_type == DataType.fileGDB:
+            # bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
             drop_index(in_path, layer_name, need_indexes)
 
             bflag = update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tables,
-                                                                 DLBM_values)
+                                                      DLBM_values)
             # if bflag:
             #     wks = workspaceFactory().get_factory(DataType.fileGDB)
             #     dataSource = wks.openFromFile(in_path, 1)
@@ -137,8 +152,10 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
         if bflag:
             if not os.path.exists(temp_sqliteDB_path):
                 os.mkdir(temp_sqliteDB_path)
-            translateOptions = gdal.VectorTranslateOptions(format="SQLite", layerName=layer_name, datasetCreationOptions=["SPATIALITE=YES"])
-            hr = gdal.VectorTranslate(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), in_path, options=translateOptions)
+            translateOptions = gdal.VectorTranslateOptions(format="SQLite", layerName=layer_name,
+                                                           datasetCreationOptions=["SPATIALITE=YES"])
+            hr = gdal.VectorTranslate(os.path.join(temp_sqliteDB_path, temp_sqliteDB_name), in_path,
+                                      options=translateOptions)
             if not hr:
                 raise Exception("创建临时数据库出错!错误原因:\n{}".format(traceback.format_exc()))
             else:
@@ -228,6 +245,7 @@ def update_attribute_value(file_type, in_path, layer_name, right_header, rel_tab
     layer = None
     dataSource = None
     wks = None
+
     try:
         # start = time.time()
 
@@ -247,6 +265,9 @@ def update_attribute_value(file_type, in_path, layer_name, right_header, rel_tab
             fieldName = layerDefn.GetFieldDefn(i).GetName()
             field_names.append(fieldName)
 
+        right_header.append("XZQDM")
+        right_header.append("XZQMC")
+
         log.info("第1步: 根据规则表的DLBM右侧表头增加矢量图层{}中的相应字段...".format(layer_name))
         for header_value in right_header:
             if header_value not in field_names:
@@ -259,6 +280,16 @@ def update_attribute_value(file_type, in_path, layer_name, right_header, rel_tab
         total_count = layer.GetFeatureCount()
 
         feature = layer.GetNextFeature()
+        field_index_order = []
+        for field_name in right_header:
+            field_index = feature.GetFieldIndex(field_name)
+            # field_dict[field_name] = field_index
+            field_index_order.append(field_index)
+
+        XZQDM_index = feature.GetFieldIndex("XZQDM")
+        XZQMC_index = feature.GetFieldIndex("XZQMC")
+        ZLDWDM_index = feature.GetFieldIndex("ZLDWDM")
+        ZLDWMC_index = feature.GetFieldIndex("ZLDWMC")
 
         log.info("第2步: 根据规则表更新{}图层对应数据...".format(layer_name))
         icount = 0
@@ -268,29 +299,59 @@ def update_attribute_value(file_type, in_path, layer_name, right_header, rel_tab
             DLBM_value = feature.GetField("DLBM")
             bchecked = False
 
+            # ZLDWDM = feature.GetField("ZLDWDM")
+            # ZLDWMC = feature.GetField("ZLDWMC")
+            ZLDWDM = feature.GetField(ZLDWDM_index)
+            ZLDWMC = feature.GetField(ZLDWMC_index)
+
+            if ZLDWDM is not None and len(ZLDWDM) > 6:
+                XZQDM = ZLDWDM[0:6]
+
+                if XZQDM in region_dict:
+                    XZQMC = region_dict[XZQDM]
+                else:
+                    XZQMC = ""
+
+                if XZQDM == '440307':
+                    if ZLDWMC != '宝龙街道' and ZLDWMC != '布吉街道' and ZLDWMC != '龙城街道' and ZLDWMC != '龙岗街道' \
+                            and ZLDWMC != '平湖街道' and ZLDWMC != '坪地街道' and ZLDWMC != '园山街道' and ZLDWMC != '南湾街道' \
+                            and ZLDWMC != '坂田街道' and ZLDWMC != '吉华街道' and ZLDWMC != '横岗街道':
+                        # feature.SetField("XZQDM", "440312")
+                        # feature.SetField("XZQMC", "大鹏新区")
+                        feature.SetField(XZQDM_index, "440312")
+                        feature.SetField(XZQMC_index, "大鹏新区")
+                    else:
+                        feature.SetField(XZQDM_index, XZQDM)
+                        feature.SetField(XZQMC_index, XZQMC)
+                else:
+                    feature.SetField(XZQDM_index, XZQDM)
+                    feature.SetField(XZQMC_index, XZQMC)
+
             for i in range(len(rel_tables)):
                 rel = rel_tables[i]
                 field_name = right_header[i]
+                field_index = field_index_order[i]
+
                 if DLBM_value not in rel:
                     if not bchecked:
                         if DLBM_value not in lack_BM:
                             lack_BM.add(DLBM_value)
                             log.warning("出现了在规则表中不存在的编码：{}".format(DLBM_value))
                         # log.warning("第{}个要素的地类编码{}在规则表中不存在！".format(icount, DLBM_value))
-                        feature.SetField(field_name, None)
+                        feature.SetField(field_index, None)
                         bchecked = True
                     else:
-                        feature.SetField(field_name, None)
+                        feature.SetField(field_index, None)
                 else:
-                    if feature.GetFieldType(field_name) == ogr.OFTString:
-                        feature.SetField(field_name, str(rel[DLBM_value]))
-                    elif feature.GetFieldType(field_name) == ogr.OFTInteger:
-                        feature.SetField(field_name, int(rel[DLBM_value]))
-                    elif feature.GetFieldType(field_name) == ogr.OFTReal:
-                        feature.SetField(field_name, float(rel[DLBM_value]))
+                    if feature.GetFieldType(field_index) == ogr.OFTString:
+                        feature.SetField(field_index, str(rel[DLBM_value]))
+                    elif feature.GetFieldType(field_index) == ogr.OFTInteger:
+                        feature.SetField(field_index, int(rel[DLBM_value]))
+                    elif feature.GetFieldType(field_index) == ogr.OFTReal:
+                        feature.SetField(field_index, float(rel[DLBM_value]))
                     else:
                         log.error("第{}个要素的字段{}是无法识别的数据类型. 字段类型只允许是整型、字符型或者浮点型，请调整原始数据!".format(icount, field_name))
-                        feature.SetField(field_name, None)
+                        feature.SetField(field_index, None)
 
             # # 如果是CZCSXM是201或者202则重新赋值
             # CZCSXM_index = feature.GetFieldIndex("CZCSXM")
@@ -332,6 +393,8 @@ def update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tab
     wks = None
     exec_res = None
 
+    need_add_header = copy.deepcopy(right_header)
+
     try:
         # start = time.time()
         wks = workspaceFactory().get_factory(DataType.fileGDB)
@@ -345,11 +408,26 @@ def update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tab
             fieldName = layerDefn.GetFieldDefn(i).GetName()
             field_names.append(fieldName)
 
+        #  增加两列表示行政区代码和行政区名称
+        # if "XZQDM" not in field_names:
+        #     new_field = ogr.FieldDefn("XZQDM", ogr.OFTString)
+        #     new_field.SetWidth(100)
+        #     layer.CreateField(new_field, True)
+        #     del new_field
+        #
+        # if "XZQMC" not in field_names:
+        #     new_field = ogr.FieldDefn("XZQMC", ogr.OFTString)
+        #     new_field.SetWidth(100)
+        #     layer.CreateField(new_field, True)
+        #     del new_field
+        need_add_header.append("XZQMC")
+        need_add_header.append("XZQDM")
+
         log.info("第1步: 根据规则表的DLBM右侧表头增加矢量图层{}中的相应字段...".format(layer_name))
-        for header_value in right_header:
+        for header_value in need_add_header:
             if header_value not in field_names:
                 new_field = ogr.FieldDefn(header_value, ogr.OFTString)
-                new_field.SetWidth(200)
+                new_field.SetWidth(100)
                 layer.CreateField(new_field, True)
                 del new_field
 
@@ -372,7 +450,35 @@ def update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tab
         feature = layer.GetFeature(1)
         dataSource.ReleaseResultSet(exec_res)
 
-        log.info("第4步: 根据规则表计算矢量图层相应字段的值...")
+        # exec_str = r"UPDATE {} SET ZLDWDM_1=''".format(layer_name)
+        # exec_res = dataSource.ExecuteSQL(exec_str)
+        # dataSource.ReleaseResultSet(exec_res)
+        log.info("第4步: 更新行政区代码和行政区名称...")
+
+        exec_str = r"UPDATE {} SET XZQDM=SUBSTRING(ZLDWDM, 1, 6)".format(layer_name)
+        exec_res = dataSource.ExecuteSQL(exec_str)
+        dataSource.ReleaseResultSet(exec_res)
+
+        exec_str = r"UPDATE {} SET XZQDM='440312' WHERE ZLDWDM LIKE '440307%' AND " \
+                   r"ZLDWMC <> '宝龙街道' AND ZLDWMC <> '布吉街道' AND ZLDWMC <> '龙城街道' AND " \
+                   r"ZLDWMC <> '龙岗街道' AND ZLDWMC <> '平湖街道' AND ZLDWMC <> '坪地街道' AND " \
+                   r"ZLDWMC <> '园山街道' AND ZLDWMC <> '南湾街道' AND ZLDWMC <> '坂田街道' AND " \
+                   r"ZLDWMC <> '吉华街道' AND ZLDWMC <> '横岗街道'".format(layer_name)
+        exec_res = dataSource.ExecuteSQL(exec_str)
+        dataSource.ReleaseResultSet(exec_res)
+
+        exec_str = r"CREATE INDEX XZQDM_index ON {} (XZQDM)".format(layer_name)
+        exec_res = dataSource.ExecuteSQL(exec_str)
+        dataSource.ReleaseResultSet(exec_res)
+
+        for key, value in region_dict.items():
+            exec_str = r"UPDATE {} SET XZQMC='{}' WHERE XZQDM='{}'".format(layer_name, value, key)
+            print(exec_str)
+            exec_res = dataSource.ExecuteSQL(exec_str)
+            dataSource.ReleaseResultSet(exec_res)
+
+        log.info("第5步: 根据规则表计算矢量图层相应字段的值...")
+
         for DLBM_key in DLBM_keys:
             log.info("更新矢量图层{}字段DLBM中所有等于{}的值".format(layer_name, DLBM_key))
 
@@ -432,7 +538,6 @@ def update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tab
         #         exec_res = dataSource.ExecuteSQL(exec_str)
         #         dataSource.ReleaseResultSet(exec_res)
 
-
         # end = time.time()
         # log.info("操作完成, 总共耗时:{}秒".format("{:.2f}".format(end-start)))
         return True
@@ -468,7 +573,7 @@ def drop_index(in_path, layer_name, indexes):
 def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
     # report_need_fields = ['DLMC', 'XZFLSDL', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2', 'GHFLSDL', 'GHJGFLDM', 'GHJGFLMC', 'SFJSYD', 'ZLDWDM_1', 'ZLDWMC', 'TBMJ', 'KCMJ']
 
-    report_need_fields = ['DLMC', 'DLBM', 'XZFLSDL', 'ZLDWDM', 'ZLDWDM_1', 'ZLDWMC', 'TBDLMJ', 'KCMJ']
+    report_need_fields = ['DLMC', 'DLBM', 'XZFLSDL', 'ZLDWDM', 'XZQDM', 'ZLDWMC', 'TBDLMJ', 'KCMJ']
     layer = dataSource.GetLayerByName(layer_name)
 
     # if file_type == DataType.shapefile:
@@ -545,7 +650,7 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
 
         # 统计三大类面积
         for i in range(0, 3):
-            exec_str = r"SELECT SUBSTR(ZLDWDM_1, 1, 6), SUM(TBDLMJ) FROM {} WHERE XZFLSDL='{}' GROUP BY SUBSTR(ZLDWDM_1, 1, 6)".format(
+            exec_str = r"SELECT SUBSTR(XZQDM, 1, 6), SUM(TBDLMJ) FROM {} WHERE XZFLSDL='{}' GROUP BY SUBSTR(XZQDM, 1, 6)".format(
                 layer_name, str(ws.cell(6 + i, 2).value).strip())
             exec_layer = dataSource.ExecuteSQL(exec_str, dialect="SQLite")
 
@@ -592,10 +697,10 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
 
                 DLBM_key = DLMCs[j]["DLBM"]
                 if DLBM_key == '1203':  # 田坎的面积单独计算
-                    exec_str = r"SELECT SUBSTR(ZLDWDM_1, 1, 6), SUM(KCMJ) FROM {} GROUP BY SUBSTR(ZLDWDM_1, 1, 6)".format(
+                    exec_str = r"SELECT SUBSTR(XZQDM, 1, 6), SUM(KCMJ) FROM {} GROUP BY SUBSTR(XZQDM, 1, 6)".format(
                         layer_name, DLBM_key)
                 else:
-                    exec_str = r"SELECT SUBSTR(ZLDWDM_1, 1, 6), SUM(TBDLMJ) FROM {} WHERE DLBM='{}' GROUP BY SUBSTR(ZLDWDM_1, 1, 6)".format(
+                    exec_str = r"SELECT SUBSTR(XZQDM, 1, 6), SUM(TBDLMJ) FROM {} WHERE DLBM='{}' GROUP BY SUBSTR(XZQDM, 1, 6)".format(
                         layer_name, DLBM_key)
                 exec_layer = dataSource.ExecuteSQL(exec_str, dialect="SQLite")
 
@@ -611,7 +716,7 @@ def output_stat_report1(file_type, wb, dataSource, layer_name, MC_tables):
                         pos = region_codes.index(ZDDWDM)
                         if pos > -1:
                             ws.cell(start_row + j + 1, pos + 3).value = float(ZDDWDM_MJ)
-                            if DLBM_key == '1203':   # 把田坎面积加入到三大类的农用地面积中
+                            if DLBM_key == '1203':  # 把田坎面积加入到三大类的农用地面积中
                                 if ws.cell(6, pos + 3).value == "":
                                     ws.cell(6, pos + 3).value = float(ZDDWDM_MJ)
                                 else:
@@ -911,7 +1016,8 @@ def output_stat_report2(file_type, wb, dataSource, layer_name):
         exec_str = "SELECT SUM(KCMJ) FROM {}".format(layer_name)
         KCMJ = stat_mj_by_sql(dataSource, exec_str)
         ws.cell(36, 5).value = KCMJ
-        exec_str = "SELECT SUM(TBDLMJ) FROM {} WHERE GHFLDM1='23' AND GHFLDM2 <> '2301' AND GHFLDM2 <> '2302'".format(layer_name)
+        exec_str = "SELECT SUM(TBDLMJ) FROM {} WHERE GHFLDM1='23' AND GHFLDM2 <> '2301' AND GHFLDM2 <> '2302'".format(
+            layer_name)
         MJ_23 = stat_mj_by_sql(dataSource, exec_str)
         ws.cell(35, 5).value = MJ
         ws.cell(37, 5).value = MJ_23
@@ -1081,6 +1187,7 @@ def output_stat_report4(file_type, wb, dataSource, layer_name):
         log.error("无法完成报表统计！错误原因:\n{}".format(traceback.format_exc()))
         return False
 
+
 def stat_mj_by_sql(dataSource, exec_str):
     MJ = ""
     exec_layer = dataSource.ExecuteSQL(exec_str, dialect="SQLite")
@@ -1103,6 +1210,7 @@ def stat_mj_by_sql(dataSource, exec_str):
         return 0
     else:
         return float(MJ)
+
 
 # def output_stat_report2(file_type, wb, dataSource, layer_name, rel_tables, right_header):
 #     report_need_fields = ['TBMJ', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2']
@@ -1228,45 +1336,44 @@ def check_field(file_type, dataSource, layer, report_need_fields, report=1):
     all_field_names = []
     layer_name = layer.GetName()
 
-    # if file_type == DataType.shapefile:
-    layer_name = "[{}]".format(layer_name)
+    # layer_name = "[{}]".format(layer_name)
 
     berror = False
     layerDefn = layer.GetLayerDefn()
 
     for i in range(layerDefn.GetFieldCount()):
         fieldName = layerDefn.GetFieldDefn(i).GetName()
-        if fieldName.upper() == 'ZLDWDM':
-            all_field_names.append('ZLDWDM_1')
+        # if fieldName.upper() == 'ZLDWDM':
+        #     all_field_names.append('ZLDWDM_1')
         all_field_names.append(fieldName.upper())
 
-    if report == 1:
-        if layerDefn.GetFieldIndex('ZLDWDM_1') < 0:
-            new_field = ogr.FieldDefn('ZLDWDM_1', ogr.OFTString)
-            new_field.SetWidth(200)
-            layer.CreateField(new_field, True)
-            del new_field
+    # if report == 1:
+    #     if layerDefn.GetFieldIndex('ZLDWDM_1') < 0:
+    #         new_field = ogr.FieldDefn('ZLDWDM_1', ogr.OFTString)
+    #         new_field.SetWidth(200)
+    #         layer.CreateField(new_field, True)
+    #         del new_field
 
     for need_field in report_need_fields:
         if need_field not in all_field_names:
             log.warning('缺失输出报表得必要字段"{}"，无法执行输出报表操作，请补全！'.format(need_field))
             berror = True
 
-    if report == 1:
-        # 这里有BUG，需要先给一个值，让新字段不为空，然后才能复制其他字段的值
-        exec_str = r"UPDATE {} SET ZLDWDM_1=''".format(layer_name)
-        exec_res = dataSource.ExecuteSQL(exec_str)
-        dataSource.ReleaseResultSet(exec_res)
-        exec_str = r"UPDATE {} SET ZLDWDM_1=ZLDWDM".format(layer_name)
-        exec_res = dataSource.ExecuteSQL(exec_str)
-        dataSource.ReleaseResultSet(exec_res)
-        exec_str = r"UPDATE {} SET ZLDWDM_1='4403120000000000000' WHERE ZLDWDM LIKE '440307%' AND " \
-                   r"ZLDWMC <> '宝龙街道' AND ZLDWMC <> '布吉街道' AND ZLDWMC <> '龙城街道' AND " \
-                   r"ZLDWMC <> '龙岗街道' AND ZLDWMC <> '平湖街道' AND ZLDWMC <> '坪地街道' AND " \
-                   r"ZLDWMC <> '园山街道' AND ZLDWMC <> '南湾街道' AND ZLDWMC <> '坂田街道' AND " \
-                   r"ZLDWMC <> '吉华街道' AND ZLDWMC <> '横岗街道'".format(layer_name)
-        exec_res = dataSource.ExecuteSQL(exec_str)
-        dataSource.ReleaseResultSet(exec_res)
+    # if report == 1:
+    #     # 这里有BUG，需要先给一个值，让新字段不为空，然后才能复制其他字段的值
+    #     exec_str = r"UPDATE {} SET ZLDWDM_1=''".format(layer_name)
+    #     exec_res = dataSource.ExecuteSQL(exec_str)
+    #     dataSource.ReleaseResultSet(exec_res)
+    #     exec_str = r"UPDATE {} SET ZLDWDM_1=ZLDWDM".format(layer_name)
+    #     exec_res = dataSource.ExecuteSQL(exec_str)
+    #     dataSource.ReleaseResultSet(exec_res)
+    #     exec_str = r"UPDATE {} SET ZLDWDM_1='4403120000000000000' WHERE ZLDWDM LIKE '440307%' AND " \
+    #                r"ZLDWMC <> '宝龙街道' AND ZLDWMC <> '布吉街道' AND ZLDWMC <> '龙城街道' AND " \
+    #                r"ZLDWMC <> '龙岗街道' AND ZLDWMC <> '平湖街道' AND ZLDWMC <> '坪地街道' AND " \
+    #                r"ZLDWMC <> '园山街道' AND ZLDWMC <> '南湾街道' AND ZLDWMC <> '坂田街道' AND " \
+    #                r"ZLDWMC <> '吉华街道' AND ZLDWMC <> '横岗街道'".format(layer_name)
+    #     exec_res = dataSource.ExecuteSQL(exec_str)
+    #     dataSource.ReleaseResultSet(exec_res)
 
     if berror:
         return None

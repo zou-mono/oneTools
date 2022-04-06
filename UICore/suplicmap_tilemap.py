@@ -110,7 +110,7 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
                 if not os.path.exists(f'{output_path}/{i}'):
                     os.makedirs(f'{output_path}/{i}')
 
-                if os.path.exists(f'{output_path}/{i}/{j}.png'):
+                if os.path.exists(f'{output_path}/{i}/{j}.png') and os.path.getsize(f'{output_path}/{i}/{j}.png') > 0:
                     # if os.path.getsize(f'{output_path}/{i}_{j}.png') > 0:
                     continue
                 # tile_url = url + "/tile/" + str(level) + "/" + str(i) + "/" + str(j)
@@ -185,7 +185,7 @@ def get_tile(url):
             # log.debug('{}请求失败！重新尝试...'.format(url))
             trytime += 1
 
-        time.sleep(2)
+        time.sleep(1)
         continue
     return None
 
@@ -205,8 +205,9 @@ def output_img(url, output_path, i, j):
 def output_img2(url, output_path, i, j):
     try:
         img = get_tile(url)
-        with open(f'{output_path}/{i}/{j}.png', "wb") as f:
-            f.write(img)
+        if img is not None:
+            with open(f'{output_path}/{i}/{j}.png', "wb") as f:
+                f.write(img)
         return True
     except:
         return False
@@ -234,8 +235,9 @@ async def output_img_asyc(url, output_path, i, j):
         # log.info('开始抓取...')
         if img is None:
             bSkip = True
-        with open(f'{output_path}/{i}/{j}.png', "wb") as f:
-            f.write(img)
+        else:
+            with open(f'{output_path}/{i}/{j}.png', "wb") as f:
+                f.write(img)
     except:
         # await lock.acquire()
         # failed_urls.append([url, i, j])

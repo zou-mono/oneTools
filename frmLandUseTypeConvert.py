@@ -487,14 +487,23 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             return header, DLBM_values, all_data
 
     def check_field(self, layer):
-        bexist = False
+        bDLBM = False
+        bZLDWDM = False
+        bZLDWMC = False
         layerDefn = layer.GetLayerDefn()
         for i in range(layerDefn.GetFieldCount()):
             fieldName = layerDefn.GetFieldDefn(i).GetName()
             if fieldName.upper() == "DLBM":
-                bexist = True
-                break
-        if not bexist:
+                bDLBM = True
+            if fieldName.upper() == "ZLDWDM":
+                bZLDWDM = True
+            if fieldName.upper() == "ZLDWMC":
+                bZLDWMC = True
+
+        if not bZLDWDM or not bZLDWMC:
+            log.warning('矢量图层数据缺失字段"ZLDWDM"或"ZLDWMC"，无法更新XZQDM和XZQMC字段!')
+
+        if not bDLBM:
             log.error('矢量图层数据缺失必要字段"DLMB"，请补全！', dialog=True)
             return False
 
