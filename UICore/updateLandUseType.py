@@ -112,7 +112,6 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
                     bConvert, bReport1, bReport2, bReport3, bReport4):
     dataSource = None
     wks = None
-    bflag = False
 
     cur_path, filename = os.path.split(os.path.abspath(sys.argv[0]))
     temp_sqliteDB_name = '%s.db' % (layer_name + '_' + time.strftime('%Y-%m-%d-%H-%M-%S'))
@@ -138,10 +137,10 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
             log.info('现状与国土空间规划分类转换完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)), color=step_log_color)
 
         if not bReport1 and not bReport2 and not bReport3 and not bReport4:
-            return
+            return True
 
         if not bflag:
-            return
+            return False
 
         # # 测试用
         # wks = workspaceFactory().get_factory(DataType.fileGDB)
@@ -160,7 +159,7 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
         bReports, bflag = check_report_need_fields([bReport1, bReport2, bReport3, bReport4], dataSource, layer_name)
 
         if not bflag:
-            return
+            return False
 
         log.info("创建用于统计的临时数据库...")
         dataSource = create_temp_sqliteDB(temp_sqliteDB_path, temp_sqliteDB_name, in_path, layer_name)
@@ -175,7 +174,7 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
                     log.info('开始统计"各区现状分类面积汇总表"...', color=step_log_color)
                     bflag = output_stat_report1(wb, dataSource, layer_name, MC_tables)
                     if not bflag:
-                        return
+                        return False
 
                     end = time.time()
                     log.info('"{}"统计完成, 总共耗时:{}秒.'.format(report_dict[nReport], "{:.2f}".format(end - start)), color=step_log_color)
@@ -188,7 +187,7 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
                     #     drop_index(in_path, layer_name, need_indexes)
                     bflag = output_stat_report2(wb, dataSource, layer_name)
                     if not bflag:
-                        return
+                        return False
 
                     end = time.time()
                     wb.save(report_file_name)
@@ -201,7 +200,7 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
                     #     drop_index(in_path, layer_name, need_indexes)
                     bflag = output_stat_report3(wb, dataSource, layer_name)
                     if not bflag:
-                        return
+                        return False
                     end = time.time()
                     log.info('"{}"统计完成, 总共耗时:{}秒.'.format(report_dict[nReport], "{:.2f}".format(end - start)), color=step_log_color)
                     wb.save(report_file_name)
@@ -213,7 +212,7 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
                     #     drop_index(in_path, layer_name, need_indexes)
                     bflag = output_stat_report4(wb, dataSource, layer_name)
                     if not bflag:
-                        return
+                        return False
                     end = time.time()
                     log.info('"{}"统计完成, 总共耗时:{}秒.'.format(report_dict[nReport], "{:.2f}".format(end - start)), color=step_log_color)
                     wb.save(report_file_name)
@@ -221,9 +220,10 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
                 nReport += 1
 
             log.info("所有报表都已统计完成，结果保存至路径{}".format(report_file_name), color=step_log_color)
+            return True
     except:
         log.error(traceback.format_exc())
-        return
+        return False
     finally:
         del wks
         del dataSource
@@ -449,6 +449,7 @@ def update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tab
             if header_value not in field_names:
                 new_field = ogr.FieldDefn(header_value, ogr.OFTString)
                 new_field.SetWidth(100)
+                new_field.SetDefault("")
                 layer.CreateField(new_field, True)
                 del new_field
 
@@ -471,10 +472,11 @@ def update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tab
         feature = layer.GetFeature(1)
         dataSource.ReleaseResultSet(exec_res)
 
-        # exec_str = r"UPDATE {} SET ZLDWDM_1=''".format(layer_name)
-        # exec_res = dataSource.ExecuteSQL(exec_str)
-        # dataSource.ReleaseResultSet(exec_res)
         log.info("第4步: 更新行政区代码和行政区名称...")
+        # 这里有BUG，需要先给一个值，让新字段不为空，然后才能复制其他字段的值
+        exec_str = r"UPDATE {} SET XZQDM=''".format(layer_name)
+        exec_res = dataSource.ExecuteSQL(exec_str)
+        dataSource.ReleaseResultSet(exec_res)
 
         exec_str = r"UPDATE {} SET XZQDM=SUBSTRING(ZLDWDM, 1, 6)".format(layer_name)
         exec_res = dataSource.ExecuteSQL(exec_str)
@@ -492,16 +494,20 @@ def update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tab
         exec_res = dataSource.ExecuteSQL(exec_str)
         dataSource.ReleaseResultSet(exec_res)
 
+        exec_str = r"UPDATE {} SET XZQMC=''".format(layer_name)
+        exec_res = dataSource.ExecuteSQL(exec_str)
+        dataSource.ReleaseResultSet(exec_res)
+
         for key, value in region_dict.items():
             exec_str = r"UPDATE {} SET XZQMC='{}' WHERE XZQDM='{}'".format(layer_name, value, key)
             # print(exec_str)
             exec_res = dataSource.ExecuteSQL(exec_str)
             dataSource.ReleaseResultSet(exec_res)
 
-        log.info("第5步: 根据规则表计算矢量图层相应字段的值...")
+        log.info("第5步: 根据规则表计算图层{}相应字段的值...".format(layer_name))
 
         for DLBM_key in DLBM_keys:
-            log.info("更新矢量图层{}字段DLBM中所有等于{}的值".format(layer_name, DLBM_key))
+            log.info("更新DLBM等于{}的相关字段值".format(DLBM_key))
 
             if DLBM_key not in DLBM_values:
                 log.warning("字段DLBM中包含规则表中不存在的编码{}".format(DLBM_key))
@@ -626,6 +632,7 @@ def check_report_need_fields(bReports, dataSource, layer_name):
 # 报表1 各区现状面积汇总表
 def output_stat_report1(wb, dataSource, layer_name, MC_tables):
     # report_need_fields = ['DLMC', 'XZFLSDL', 'GHFLDM1', 'GHFLMC1', 'GHFLDM2', 'GHFLMC2', 'GHFLSDL', 'GHJGFLDM', 'GHJGFLMC', 'SFJSYD', 'ZLDWDM_1', 'ZLDWMC', 'TBMJ', 'KCMJ']
+    exec_layer = None
 
     layer_name = "[{}]".format(layer_name)
 
@@ -812,6 +819,8 @@ def output_stat_report1(wb, dataSource, layer_name, MC_tables):
     except:
         log.error("无法完成报表统计！错误原因:\n{}".format(traceback.format_exc()))
         return False
+    #     if exec_layer is not None:
+    #         dataSource.ReleaseResultSet(exec_layer)
         # return False, "无法完成报表统计！错误原因:\n{}".format(traceback.format_exc())
 
 

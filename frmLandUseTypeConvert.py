@@ -112,9 +112,12 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         except:
             return
 
-    def threadStop(self):
+    def threadStop(self, bflag=True):
         self.thread.quit()
-        log.info("所有操作已完成，详细处理过程见右侧日志列表.", dialog=True)
+        if bflag:
+            QMessageBox.information(self, "提示", "所有操作已完成，详细信息见右侧日志列表.", QMessageBox.Close)
+        else:
+            QMessageBox.critical(self, "错误", "操作过程中发生异常，详细信息见右侧日志列表.", QMessageBox.Close)
 
     @Slot()
     def rbtn_toggled(self):

@@ -84,7 +84,7 @@ class coordTransformWorker(QtCore.QObject):
 
 class updateLandUseTypeWorker(QtCore.QObject):
     update = pyqtSignal(object, str, str, object, object, object, object, str, bool, bool, bool, bool, bool)
-    finished = pyqtSignal()
+    finished = pyqtSignal(bool)
 
     def __init__(self):
         super(updateLandUseTypeWorker, self).__init__()
@@ -93,4 +93,4 @@ class updateLandUseTypeWorker(QtCore.QObject):
                         bConvert, bReport1, bReport2, bReport3, bReport4):
         flag = update_and_stat(file_type, in_path, layer_name, header, rel_tables, MC_tables, DLBM_values, report_file_name,
                         bConvert, bReport1, bReport2, bReport3, bReport4)
-        self.finished.emit()
+        self.finished.emit(flag)

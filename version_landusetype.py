@@ -30,13 +30,13 @@ VSVersionInfo(
       StringTable(
         u'000004b0',
         [StringStruct(u'CompanyName', u''),
-        StringStruct(u'FileDescription', u'土地利用图斑类型转换工具'),
-        StringStruct(u'FileVersion', u'1.0.0'),
+        StringStruct(u'FileDescription', u'国土空间规划基数转换工具'),
+        StringStruct(u'FileVersion', u'1.1.0'),
         StringStruct(u'InternalName', u''),
         StringStruct(u'LegalCopyright', u'MIT'),
-        StringStruct(u'OriginalFilename', u'土地利用图斑类型转换.exe'),
-        StringStruct(u'ProductName', u'土地利用图斑类型转换'),
-        StringStruct(u'ProductVersion', u'1.0.0')])
+        StringStruct(u'OriginalFilename', u'国土空间规划基数转换工具.exe'),
+        StringStruct(u'ProductName', u'国土空间规划基数转换工具'),
+        StringStruct(u'ProductVersion', u'1.1.0')])
       ]), 
     VarFileInfo([VarStruct(u'Translation', [0, 1200])])
   ]
