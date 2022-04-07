@@ -114,6 +114,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     def threadStop(self):
         self.thread.quit()
+        log.info("所有操作已完成，详细处理过程见右侧日志列表.", dialog=True)
 
     @Slot()
     def rbtn_toggled(self):
@@ -193,6 +194,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     all_data.append(row)
 
                 rel_tables, MC_tables = self.generate_config_rel(DLBM_index, MC_index, DLMC_index, all_data)
+
+                if len(MC_tables) == 0:
+                    log.error("请输入转换规则表!", dialog=True)
+                    return
 
                 fileName = self.txt_addressLayerFile.text()
                 fileName_arr = fileName.split(os.sep)

@@ -215,18 +215,20 @@ class Log:
             self.logger.removeHandler(self.handler)
         fh.close()  # 关闭打开的文件
 
-    def debug(self, message):
-        self.__console('debug', message)
+    def debug(self, message, color="#000000"):
+        self.__console('debug', message, color)
 
-    def info(self, message, color="#000000"):
+    def info(self, message, parent=None, color="#000000", dialog=False):
         self.__console('info', message, color)
-
-    def warning(self, message, parent=None, dialog=False):
-        self.__console('warning', message)
         if dialog:
-            QMessageBox.information(parent, "警告", message, QMessageBox.Close)
+            QMessageBox.information(parent, "提示", message, QMessageBox.Close)
 
-    def error(self, message, parent=None, dialog=False):
-        self.__console('error', message)
+    def warning(self, message, parent=None, color="#000000", dialog=False):
+        self.__console('warning', message, color)
+        if dialog:
+            QMessageBox.warning(parent, "警告", message, QMessageBox.Close)
+
+    def error(self, message, parent=None, color="#000000", dialog=False):
+        self.__console('error', message, color)
         if dialog:
             QMessageBox.critical(parent, "错误", message, QMessageBox.Close)

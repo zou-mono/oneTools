@@ -106,7 +106,7 @@ cell_number_style.alignment = alignment_center
 cell_number_style.font = cell_font2
 cell_number_style.number_format = "0.00"
 
-step_color = "#0000FF"
+step_log_color = "#0000FF"  # 右侧Logviewer中info日志的突出显示为蓝色
 
 def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC_tables, DLBM_values, report_file_name,
                     bConvert, bReport1, bReport2, bReport3, bReport4):
@@ -121,7 +121,7 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
     bflag = True
     try:
         if bConvert:
-            log.info("开始现状与国土空间规划分类转换...", color=step_color)
+            log.info("开始现状与国土空间规划分类转换...", color=step_log_color)
             start = time.time()
 
             if file_type == DataType.shapefile:
@@ -135,7 +135,7 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
                                                           DLBM_values)
 
             end = time.time()
-            log.info('现状与国土空间规划分类转换完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)), color=step_color)
+            log.info('现状与国土空间规划分类转换完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)), color=step_log_color)
 
         if not bReport1 and not bReport2 and not bReport3 and not bReport4:
             return
@@ -157,7 +157,10 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
         dataSource = wks.openFromFile(in_path, 0)
 
         log.info("必要性字段检查...")
-        bReports = check_report_need_fields([bReport1, bReport2, bReport3, bReport4], dataSource, layer_name)
+        bReports, bflag = check_report_need_fields([bReport1, bReport2, bReport3, bReport4], dataSource, layer_name)
+
+        if not bflag:
+            return
 
         log.info("创建用于统计的临时数据库...")
         dataSource = create_temp_sqliteDB(temp_sqliteDB_path, temp_sqliteDB_name, in_path, layer_name)
@@ -169,18 +172,18 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
             for bReport in bReports:
                 if nReport == 0 and bReport:
                     start = time.time()
-                    log.info('开始统计"各区现状分类面积汇总表"...', color=step_color)
+                    log.info('开始统计"各区现状分类面积汇总表"...', color=step_log_color)
                     bflag = output_stat_report1(wb, dataSource, layer_name, MC_tables)
                     if not bflag:
                         return
 
                     end = time.time()
-                    log.info('"{}"统计完成, 总共耗时:{}秒.'.format(report_dict[nReport], "{:.2f}".format(end - start)), color=step_color)
+                    log.info('"{}"统计完成, 总共耗时:{}秒.'.format(report_dict[nReport], "{:.2f}".format(end - start)), color=step_log_color)
                     wb.save(report_file_name)
 
                 if nReport == 1 and bReport:
                     start = time.time()
-                    log.info('开始统计"规划分类面积汇总表"...', color=step_color)
+                    log.info('开始统计"规划分类面积汇总表"...', color=step_log_color)
                     # if file_type == DataType.fileGDB:
                     #     drop_index(in_path, layer_name, need_indexes)
                     bflag = output_stat_report2(wb, dataSource, layer_name)
@@ -189,35 +192,35 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
 
                     end = time.time()
                     wb.save(report_file_name)
-                    log.info('"{}"统计完成, 总共耗时:{}秒.'.format(report_dict[nReport], "{:.2f}".format(end - start)), color=step_color)
+                    log.info('"{}"统计完成, 总共耗时:{}秒.'.format(report_dict[nReport], "{:.2f}".format(end - start)), color=step_log_color)
 
                 if nReport == 2 and bReport:
                     start = time.time()
-                    log.info('开始统计"规划分类三大类面积汇总表"...', color=step_color)
+                    log.info('开始统计"规划分类三大类面积汇总表"...', color=step_log_color)
                     # if file_type == DataType.fileGDB:
                     #     drop_index(in_path, layer_name, need_indexes)
                     bflag = output_stat_report3(wb, dataSource, layer_name)
                     if not bflag:
                         return
                     end = time.time()
-                    log.info('"{}"统计完成, 总共耗时:{}秒.'.format(report_dict[nReport], "{:.2f}".format(end - start)), color=step_color)
+                    log.info('"{}"统计完成, 总共耗时:{}秒.'.format(report_dict[nReport], "{:.2f}".format(end - start)), color=step_log_color)
                     wb.save(report_file_name)
 
                 if nReport == 3 and bReport:
                     start = time.time()
-                    log.info('开始统计"规划结构分类面积汇总表"...', color=step_color)
+                    log.info('开始统计"规划结构分类面积汇总表"...', color=step_log_color)
                     # if file_type == DataType.fileGDB:
                     #     drop_index(in_path, layer_name, need_indexes)
                     bflag = output_stat_report4(wb, dataSource, layer_name)
                     if not bflag:
                         return
                     end = time.time()
-                    log.info('"{}"统计完成, 总共耗时:{}秒.'.format(report_dict[nReport], "{:.2f}".format(end - start)), color=step_color)
+                    log.info('"{}"统计完成, 总共耗时:{}秒.'.format(report_dict[nReport], "{:.2f}".format(end - start)), color=step_log_color)
                     wb.save(report_file_name)
 
                 nReport += 1
 
-            log.info("所有报表都已统计完成，结果保存至路径{}".format(report_file_name), color=step_color)
+            log.info("所有报表都已统计完成，结果保存至路径{}".format(report_file_name), color=step_log_color)
     except:
         log.error(traceback.format_exc())
         return
@@ -590,6 +593,7 @@ def drop_index(in_path, layer_name, indexes):
 def check_report_need_fields(bReports, dataSource, layer_name):
     layer = dataSource.GetLayerByName(layer_name)
 
+    bflag = False
     res = copy.deepcopy(bReports)
     report_need_fields = []
 
@@ -610,13 +614,14 @@ def check_report_need_fields(bReports, dataSource, layer_name):
                 res[nReport] = False
             else:
                 res[nReport] = True
+                bflag = True
         else:
             res[nReport] = False
 
         nReport += 1
 
     del layer
-    return res
+    return res, bflag
 
 # 报表1 各区现状面积汇总表
 def output_stat_report1(wb, dataSource, layer_name, MC_tables):
