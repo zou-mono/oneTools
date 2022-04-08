@@ -8,6 +8,8 @@ from UICore.log4p import Log
 
 log = Log(__file__)
 
+n_try_time = 5
+
 @click.command()
 @click.option(
     '--input', '-i',
@@ -47,7 +49,7 @@ def transform_dwg(input, type, output):
 
     try:
         trytime = 0
-        while trytime < 5:
+        while trytime < n_try_time:
             try:
                 acad = Autocad()
                 break
@@ -83,7 +85,7 @@ def transform_dwg(input, type, output):
         log.info("打开dwg文件...")
         trytime = 0
 
-        while trytime < 10:
+        while trytime < n_try_time:
             try:
                 # doc = acad.Documents
                 time.sleep(1)
@@ -104,7 +106,7 @@ def transform_dwg(input, type, output):
 
         trytime = 0
         for layer in layers:
-            while trytime < 5:
+            while trytime < n_try_time:
                 try:
                     if layer.Lock:
                         layer.Lock = False
@@ -155,6 +157,7 @@ def transform_dwg(input, type, output):
         doc.SaveAs(output_dir + os.sep + output_file_name)
         acad.Quit()
         log.info("dwg文件转换完成! Success: {}, Failure: {}.".format(isuccess_num, ierror_num))
+        time.sleep(3)
         return output, output_file_name
     except:
         log.error("转换失败.\n{}".format(traceback.format_exc()))

@@ -183,8 +183,6 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
                 if nReport == 1 and bReport:
                     start = time.time()
                     log.info('开始统计"规划分类面积汇总表"...', color=step_log_color)
-                    # if file_type == DataType.fileGDB:
-                    #     drop_index(in_path, layer_name, need_indexes)
                     bflag = output_stat_report2(wb, dataSource, layer_name)
                     if not bflag:
                         return False
@@ -196,8 +194,6 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
                 if nReport == 2 and bReport:
                     start = time.time()
                     log.info('开始统计"规划分类三大类面积汇总表"...', color=step_log_color)
-                    # if file_type == DataType.fileGDB:
-                    #     drop_index(in_path, layer_name, need_indexes)
                     bflag = output_stat_report3(wb, dataSource, layer_name)
                     if not bflag:
                         return False
@@ -208,8 +204,6 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
                 if nReport == 3 and bReport:
                     start = time.time()
                     log.info('开始统计"规划结构分类面积汇总表"...', color=step_log_color)
-                    # if file_type == DataType.fileGDB:
-                    #     drop_index(in_path, layer_name, need_indexes)
                     bflag = output_stat_report4(wb, dataSource, layer_name)
                     if not bflag:
                         return False
@@ -274,6 +268,151 @@ def update_attribute_value(file_type, in_path, layer_name, right_header, rel_tab
             wks = workspaceFactory().get_factory(DataType.shapefile)
         elif file_type == DataType.fileGDB:
             wks = workspaceFactory().get_factory(DataType.fileGDB)
+
+        # wks = workspaceFactory().get_factory(DataType.shapefile)
+        dataSource = wks.openFromFile(in_path, 1)
+        layer = dataSource.GetLayer(0)
+
+        layerDefn = layer.GetLayerDefn()
+
+        field_names = []
+        for i in range(layerDefn.GetFieldCount()):
+            fieldName = layerDefn.GetFieldDefn(i).GetName()
+            field_names.append(fieldName)
+
+        right_header.append("XZQDM")
+        right_header.append("XZQMC")
+
+        log.info("第1步: 根据规则表的DLBM右侧表头增加矢量图层{}中的相应字段...".format(layer_name))
+        for header_value in right_header:
+            if header_value not in field_names:
+                new_field = ogr.FieldDefn(header_value, ogr.OFTString)
+                new_field.SetWidth(200)
+                layer.CreateField(new_field, True)
+                del new_field
+
+        iprop = 1
+        total_count = layer.GetFeatureCount()
+
+        feature = layer.GetNextFeature()
+        field_index_order = []
+        for field_name in right_header:
+            field_index = feature.GetFieldIndex(field_name)
+            # field_dict[field_name] = field_index
+            field_index_order.append(field_index)
+
+        XZQDM_index = feature.GetFieldIndex("XZQDM")
+        XZQMC_index = feature.GetFieldIndex("XZQMC")
+        ZLDWDM_index = feature.GetFieldIndex("ZLDWDM")
+        ZLDWMC_index = feature.GetFieldIndex("ZLDWMC")
+
+        log.info("第2步: 根据规则表更新{}图层对应数据...".format(layer_name))
+        icount = 0
+
+        lack_BM = set()
+        while feature:
+            DLBM_value = feature.GetField("DLBM")
+            bchecked = False
+
+            # ZLDWDM = feature.GetField("ZLDWDM")
+            # ZLDWMC = feature.GetField("ZLDWMC")
+            ZLDWDM = feature.GetField(ZLDWDM_index)
+            ZLDWMC = feature.GetField(ZLDWMC_index)
+
+            if ZLDWDM is not None and len(ZLDWDM) > 6:
+                XZQDM = ZLDWDM[0:6]
+
+                if XZQDM in region_dict:
+                    XZQMC = region_dict[XZQDM]
+                else:
+                    XZQMC = ""
+
+                if XZQDM == '440307':
+                    if ZLDWMC != '宝龙街道' and ZLDWMC != '布吉街道' and ZLDWMC != '龙城街道' and ZLDWMC != '龙岗街道' \
+                            and ZLDWMC != '平湖街道' and ZLDWMC != '坪地街道' and ZLDWMC != '园山街道' and ZLDWMC != '南湾街道' \
+                            and ZLDWMC != '坂田街道' and ZLDWMC != '吉华街道' and ZLDWMC != '横岗街道':
+                        # feature.SetField("XZQDM", "440312")
+                        # feature.SetField("XZQMC", "大鹏新区")
+                        feature.SetField(XZQDM_index, "440312")
+                        feature.SetField(XZQMC_index, "大鹏新区")
+                    else:
+                        feature.SetField(XZQDM_index, XZQDM)
+                        feature.SetField(XZQMC_index, XZQMC)
+                else:
+                    feature.SetField(XZQDM_index, XZQDM)
+                    feature.SetField(XZQMC_index, XZQMC)
+
+            for i in range(len(rel_tables)):
+                rel = rel_tables[i]
+                field_name = right_header[i]
+                field_index = field_index_order[i]
+
+                if DLBM_value not in rel:
+                    if not bchecked:
+                        if DLBM_value not in lack_BM:
+                            lack_BM.add(DLBM_value)
+                            log.warning("出现了在规则表中不存在的编码：{}".format(DLBM_value))
+                        # log.warning("第{}个要素的地类编码{}在规则表中不存在！".format(icount, DLBM_value))
+                        feature.SetField(field_index, None)
+                        bchecked = True
+                    else:
+                        feature.SetField(field_index, None)
+                else:
+                    if feature.GetFieldType(field_index) == ogr.OFTString:
+                        feature.SetField(field_index, str(rel[DLBM_value]))
+                    elif feature.GetFieldType(field_index) == ogr.OFTInteger:
+                        feature.SetField(field_index, int(rel[DLBM_value]))
+                    elif feature.GetFieldType(field_index) == ogr.OFTReal:
+                        feature.SetField(field_index, float(rel[DLBM_value]))
+                    else:
+                        log.error("第{}个要素的字段{}是无法识别的数据类型. 字段类型只允许是整型、字符型或者浮点型，请调整原始数据!".format(icount, field_name))
+                        feature.SetField(field_index, None)
+
+            # # 如果是CZCSXM是201或者202则重新赋值
+            # CZCSXM_index = feature.GetFieldIndex("CZCSXM")
+            # if CZCSXM_index > 0:
+            #     CZCSXM_value = feature.GetField(CZCSXM_index)
+            #     if str(CZCSXM_value).strip() == '201' or str(CZCSXM_value).strip() == '202':
+            #         feature.SetField("XZFLSDL", "农用地/未利用地")
+            #         feature.SetField("GHJGFLDM", "07")
+            #         feature.SetField("GHJGFLMC", "城乡建设用地")
+            #         feature.SetField("SFJSYD", "是")
+
+            layer.SetFeature(feature)
+            feature = layer.GetNextFeature()
+
+            icount += 1
+            if int(icount * 100 / total_count) == iprop * 20:
+                log.info("{:.0%}已处理完成...".format(icount / total_count))
+                iprop += 1
+
+        # end = time.time()
+        # log.info("操作完成, 总共耗时:{}秒.".format("{:.2f}".format(end-start)))
+        return True
+    except:
+        log.error("无法更新数据！错误原因:\n{}".format(traceback.format_exc()))
+        return False
+        # return False, "无法更新数据！错误原因:\n{}".format(traceback.format_exc())
+    finally:
+        del dataSource
+        del layer
+        del feature
+        del wks
+
+
+def update_attribute_value_api(file_type, in_path, layer_name, right_header, rel_tables):
+    # layer = dataSource.GetLayer(0)
+    layer = None
+    dataSource = None
+    wks = None
+
+    try:
+        # start = time.time()
+
+        if file_type == DataType.shapefile:
+            wks = workspaceFactory().get_factory(DataType.shapefile)
+        elif file_type == DataType.fileGDB:
+            wks = workspaceFactory().get_factory(DataType.FGDBAPI)
 
         # wks = workspaceFactory().get_factory(DataType.shapefile)
         dataSource = wks.openFromFile(in_path, 1)

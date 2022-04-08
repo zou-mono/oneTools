@@ -49,6 +49,7 @@ class DataType(Enum):
     memory = 7
     openFileGDB = 8
     sqlite = 9
+    FGDBAPI = 10
 
 
 DataType_dict = {

@@ -5,6 +5,7 @@ import traceback
 from openpyxl import load_workbook
 from osgeo import ogr, osr
 
+from UICore import fgdb
 from UICore.common import launderName, is_header, check_encoding, read_first_line
 from UICore.log4p import Log
 from UICore.Gv import DataType
@@ -33,6 +34,8 @@ class workspaceFactory(object):
             wks = openfilegdbWorkspaceFactory()
         elif factory == DataType.sqlite:
             wks = sqliteWorkspaceFactory()
+        elif factory == DataType.FGDBAPI:
+            wks = fgdbapiWorkspaceFactory()
 
         if wks is None:
             log.error("不支持的空间数据格式!")
@@ -45,7 +48,15 @@ class workspaceFactory(object):
             return None
         else:
             try:
-                self.datasource = self.driver.Open(file, access)
+                if self.driver == "fgdbapi":
+                    gdb = fgdb.Geodatabase()
+                    hr = filegdbapi.OpenGeodatabase(file, gdb)
+                    if hr < 0:
+                        raise Exception("fgdb api错误代码:{}".format(str(hr)))
+                    else:
+                        self.datasource = gdb
+                else:
+                    self.datasource = self.driver.Open(file, access)
                 return self.datasource
             except:
                 log.error("打开文件{}发生错误!\n{}".format(file, traceback.format_exc()))
@@ -147,6 +158,10 @@ class workspaceFactory(object):
             out_DS = None
             out_layer = None
 
+class fgdbapiWorkspaceFactory(workspaceFactory):
+    def __init__(self):
+        super().__init__()
+        self.driver = "fgdbapi"
 
 class shapefileWorkspaceFactory(workspaceFactory):
     def __init__(self):

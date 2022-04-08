@@ -61,6 +61,82 @@ class _SwigNonDynamicMeta(type):
     __setattr__ = _swig_setattr_nondynamic_class_variable(type.__setattr__)
 
 
+class SwigPyIterator(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+
+    def __init__(self, *args, **kwargs):
+        raise AttributeError("No constructor defined - class is abstract")
+    __repr__ = _swig_repr
+    __swig_destroy__ = _filegdbapi.delete_SwigPyIterator
+
+    def value(self):
+        return _filegdbapi.SwigPyIterator_value(self)
+
+    def incr(self, n=1):
+        return _filegdbapi.SwigPyIterator_incr(self, n)
+
+    def decr(self, n=1):
+        return _filegdbapi.SwigPyIterator_decr(self, n)
+
+    def distance(self, x):
+        return _filegdbapi.SwigPyIterator_distance(self, x)
+
+    def equal(self, x):
+        return _filegdbapi.SwigPyIterator_equal(self, x)
+
+    def copy(self):
+        return _filegdbapi.SwigPyIterator_copy(self)
+
+    def next(self):
+        return _filegdbapi.SwigPyIterator_next(self)
+
+    def __next__(self):
+        return _filegdbapi.SwigPyIterator___next__(self)
+
+    def previous(self):
+        return _filegdbapi.SwigPyIterator_previous(self)
+
+    def advance(self, n):
+        return _filegdbapi.SwigPyIterator_advance(self, n)
+
+    def __eq__(self, x):
+        return _filegdbapi.SwigPyIterator___eq__(self, x)
+
+    def __ne__(self, x):
+        return _filegdbapi.SwigPyIterator___ne__(self, x)
+
+    def __iadd__(self, n):
+        return _filegdbapi.SwigPyIterator___iadd__(self, n)
+
+    def __isub__(self, n):
+        return _filegdbapi.SwigPyIterator___isub__(self, n)
+
+    def __add__(self, n):
+        return _filegdbapi.SwigPyIterator___add__(self, n)
+
+    def __sub__(self, *args):
+        return _filegdbapi.SwigPyIterator___sub__(self, *args)
+    def __iter__(self):
+        return self
+
+# Register SwigPyIterator in _filegdbapi:
+_filegdbapi.SwigPyIterator_swigregister(SwigPyIterator)
+
+
+def new_intp():
+    return _filegdbapi.new_intp()
+
+def copy_intp(value):
+    return _filegdbapi.copy_intp(value)
+
+def delete_intp(obj):
+    return _filegdbapi.delete_intp(obj)
+
+def intp_assign(obj, value):
+    return _filegdbapi.intp_assign(obj, value)
+
+def intp_value(obj):
+    return _filegdbapi.intp_value(obj)
 fieldTypeSmallInteger = _filegdbapi.fieldTypeSmallInteger
 fieldTypeInteger = _filegdbapi.fieldTypeInteger
 fieldTypeSingle = _filegdbapi.fieldTypeSingle
@@ -1111,5 +1187,383 @@ class Raster(object):
 # Register Raster in _filegdbapi:
 _filegdbapi.Raster_swigregister(Raster)
 
+class fieldDefs(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def iterator(self):
+        return _filegdbapi.fieldDefs_iterator(self)
+    def __iter__(self):
+        return self.iterator()
+
+    def __nonzero__(self):
+        return _filegdbapi.fieldDefs___nonzero__(self)
+
+    def __bool__(self):
+        return _filegdbapi.fieldDefs___bool__(self)
+
+    def __len__(self):
+        return _filegdbapi.fieldDefs___len__(self)
+
+    def __getslice__(self, i, j):
+        return _filegdbapi.fieldDefs___getslice__(self, i, j)
+
+    def __setslice__(self, *args):
+        return _filegdbapi.fieldDefs___setslice__(self, *args)
+
+    def __delslice__(self, i, j):
+        return _filegdbapi.fieldDefs___delslice__(self, i, j)
+
+    def __delitem__(self, *args):
+        return _filegdbapi.fieldDefs___delitem__(self, *args)
+
+    def __getitem__(self, *args):
+        return _filegdbapi.fieldDefs___getitem__(self, *args)
+
+    def __setitem__(self, *args):
+        return _filegdbapi.fieldDefs___setitem__(self, *args)
+
+    def pop(self):
+        return _filegdbapi.fieldDefs_pop(self)
+
+    def append(self, x):
+        return _filegdbapi.fieldDefs_append(self, x)
+
+    def empty(self):
+        return _filegdbapi.fieldDefs_empty(self)
+
+    def size(self):
+        return _filegdbapi.fieldDefs_size(self)
+
+    def swap(self, v):
+        return _filegdbapi.fieldDefs_swap(self, v)
+
+    def begin(self):
+        return _filegdbapi.fieldDefs_begin(self)
+
+    def end(self):
+        return _filegdbapi.fieldDefs_end(self)
+
+    def rbegin(self):
+        return _filegdbapi.fieldDefs_rbegin(self)
+
+    def rend(self):
+        return _filegdbapi.fieldDefs_rend(self)
+
+    def clear(self):
+        return _filegdbapi.fieldDefs_clear(self)
+
+    def get_allocator(self):
+        return _filegdbapi.fieldDefs_get_allocator(self)
+
+    def pop_back(self):
+        return _filegdbapi.fieldDefs_pop_back(self)
+
+    def erase(self, *args):
+        return _filegdbapi.fieldDefs_erase(self, *args)
+
+    def __init__(self, *args):
+        _filegdbapi.fieldDefs_swiginit(self, _filegdbapi.new_fieldDefs(*args))
+
+    def push_back(self, x):
+        return _filegdbapi.fieldDefs_push_back(self, x)
+
+    def front(self):
+        return _filegdbapi.fieldDefs_front(self)
+
+    def back(self):
+        return _filegdbapi.fieldDefs_back(self)
+
+    def assign(self, n, x):
+        return _filegdbapi.fieldDefs_assign(self, n, x)
+
+    def resize(self, *args):
+        return _filegdbapi.fieldDefs_resize(self, *args)
+
+    def insert(self, *args):
+        return _filegdbapi.fieldDefs_insert(self, *args)
+
+    def reserve(self, n):
+        return _filegdbapi.fieldDefs_reserve(self, n)
+
+    def capacity(self):
+        return _filegdbapi.fieldDefs_capacity(self)
+    __swig_destroy__ = _filegdbapi.delete_fieldDefs
+
+# Register fieldDefs in _filegdbapi:
+_filegdbapi.fieldDefs_swigregister(fieldDefs)
+
+class wStringVector(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def iterator(self):
+        return _filegdbapi.wStringVector_iterator(self)
+    def __iter__(self):
+        return self.iterator()
+
+    def __nonzero__(self):
+        return _filegdbapi.wStringVector___nonzero__(self)
+
+    def __bool__(self):
+        return _filegdbapi.wStringVector___bool__(self)
+
+    def __len__(self):
+        return _filegdbapi.wStringVector___len__(self)
+
+    def __getslice__(self, i, j):
+        return _filegdbapi.wStringVector___getslice__(self, i, j)
+
+    def __setslice__(self, *args):
+        return _filegdbapi.wStringVector___setslice__(self, *args)
+
+    def __delslice__(self, i, j):
+        return _filegdbapi.wStringVector___delslice__(self, i, j)
+
+    def __delitem__(self, *args):
+        return _filegdbapi.wStringVector___delitem__(self, *args)
+
+    def __getitem__(self, *args):
+        return _filegdbapi.wStringVector___getitem__(self, *args)
+
+    def __setitem__(self, *args):
+        return _filegdbapi.wStringVector___setitem__(self, *args)
+
+    def pop(self):
+        return _filegdbapi.wStringVector_pop(self)
+
+    def append(self, x):
+        return _filegdbapi.wStringVector_append(self, x)
+
+    def empty(self):
+        return _filegdbapi.wStringVector_empty(self)
+
+    def size(self):
+        return _filegdbapi.wStringVector_size(self)
+
+    def swap(self, v):
+        return _filegdbapi.wStringVector_swap(self, v)
+
+    def begin(self):
+        return _filegdbapi.wStringVector_begin(self)
+
+    def end(self):
+        return _filegdbapi.wStringVector_end(self)
+
+    def rbegin(self):
+        return _filegdbapi.wStringVector_rbegin(self)
+
+    def rend(self):
+        return _filegdbapi.wStringVector_rend(self)
+
+    def clear(self):
+        return _filegdbapi.wStringVector_clear(self)
+
+    def get_allocator(self):
+        return _filegdbapi.wStringVector_get_allocator(self)
+
+    def pop_back(self):
+        return _filegdbapi.wStringVector_pop_back(self)
+
+    def erase(self, *args):
+        return _filegdbapi.wStringVector_erase(self, *args)
+
+    def __init__(self, *args):
+        _filegdbapi.wStringVector_swiginit(self, _filegdbapi.new_wStringVector(*args))
+
+    def push_back(self, x):
+        return _filegdbapi.wStringVector_push_back(self, x)
+
+    def front(self):
+        return _filegdbapi.wStringVector_front(self)
+
+    def back(self):
+        return _filegdbapi.wStringVector_back(self)
+
+    def assign(self, n, x):
+        return _filegdbapi.wStringVector_assign(self, n, x)
+
+    def resize(self, *args):
+        return _filegdbapi.wStringVector_resize(self, *args)
+
+    def insert(self, *args):
+        return _filegdbapi.wStringVector_insert(self, *args)
+
+    def reserve(self, n):
+        return _filegdbapi.wStringVector_reserve(self, n)
+
+    def capacity(self):
+        return _filegdbapi.wStringVector_capacity(self)
+    __swig_destroy__ = _filegdbapi.delete_wStringVector
+
+# Register wStringVector in _filegdbapi:
+_filegdbapi.wStringVector_swigregister(wStringVector)
+
+class StringVector(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def iterator(self):
+        return _filegdbapi.StringVector_iterator(self)
+    def __iter__(self):
+        return self.iterator()
+
+    def __nonzero__(self):
+        return _filegdbapi.StringVector___nonzero__(self)
+
+    def __bool__(self):
+        return _filegdbapi.StringVector___bool__(self)
+
+    def __len__(self):
+        return _filegdbapi.StringVector___len__(self)
+
+    def __getslice__(self, i, j):
+        return _filegdbapi.StringVector___getslice__(self, i, j)
+
+    def __setslice__(self, *args):
+        return _filegdbapi.StringVector___setslice__(self, *args)
+
+    def __delslice__(self, i, j):
+        return _filegdbapi.StringVector___delslice__(self, i, j)
+
+    def __delitem__(self, *args):
+        return _filegdbapi.StringVector___delitem__(self, *args)
+
+    def __getitem__(self, *args):
+        return _filegdbapi.StringVector___getitem__(self, *args)
+
+    def __setitem__(self, *args):
+        return _filegdbapi.StringVector___setitem__(self, *args)
+
+    def pop(self):
+        return _filegdbapi.StringVector_pop(self)
+
+    def append(self, x):
+        return _filegdbapi.StringVector_append(self, x)
+
+    def empty(self):
+        return _filegdbapi.StringVector_empty(self)
+
+    def size(self):
+        return _filegdbapi.StringVector_size(self)
+
+    def swap(self, v):
+        return _filegdbapi.StringVector_swap(self, v)
+
+    def begin(self):
+        return _filegdbapi.StringVector_begin(self)
+
+    def end(self):
+        return _filegdbapi.StringVector_end(self)
+
+    def rbegin(self):
+        return _filegdbapi.StringVector_rbegin(self)
+
+    def rend(self):
+        return _filegdbapi.StringVector_rend(self)
+
+    def clear(self):
+        return _filegdbapi.StringVector_clear(self)
+
+    def get_allocator(self):
+        return _filegdbapi.StringVector_get_allocator(self)
+
+    def pop_back(self):
+        return _filegdbapi.StringVector_pop_back(self)
+
+    def erase(self, *args):
+        return _filegdbapi.StringVector_erase(self, *args)
+
+    def __init__(self, *args):
+        _filegdbapi.StringVector_swiginit(self, _filegdbapi.new_StringVector(*args))
+
+    def push_back(self, x):
+        return _filegdbapi.StringVector_push_back(self, x)
+
+    def front(self):
+        return _filegdbapi.StringVector_front(self)
+
+    def back(self):
+        return _filegdbapi.StringVector_back(self)
+
+    def assign(self, n, x):
+        return _filegdbapi.StringVector_assign(self, n, x)
+
+    def resize(self, *args):
+        return _filegdbapi.StringVector_resize(self, *args)
+
+    def insert(self, *args):
+        return _filegdbapi.StringVector_insert(self, *args)
+
+    def reserve(self, n):
+        return _filegdbapi.StringVector_reserve(self, n)
+
+    def capacity(self):
+        return _filegdbapi.StringVector_capacity(self)
+    __swig_destroy__ = _filegdbapi.delete_StringVector
+
+# Register StringVector in _filegdbapi:
+_filegdbapi.StringVector_swigregister(StringVector)
+
+
+def new_fieldDefsp():
+    return _filegdbapi.new_fieldDefsp()
+
+def copy_fieldDefsp(value):
+    return _filegdbapi.copy_fieldDefsp(value)
+
+def delete_fieldDefsp(obj):
+    return _filegdbapi.delete_fieldDefsp(obj)
+
+def fieldDefsp_assign(obj, value):
+    return _filegdbapi.fieldDefsp_assign(obj, value)
+
+def fieldDefsp_value(obj):
+    return _filegdbapi.fieldDefsp_value(obj)
+
+def new_wstringp():
+    return _filegdbapi.new_wstringp()
+
+def copy_wstringp(value):
+    return _filegdbapi.copy_wstringp(value)
+
+def delete_wstringp(obj):
+    return _filegdbapi.delete_wstringp(obj)
+
+def wstringp_assign(obj, value):
+    return _filegdbapi.wstringp_assign(obj, value)
+
+def wstringp_value(obj):
+    return _filegdbapi.wstringp_value(obj)
+
+def new_wstringsp():
+    return _filegdbapi.new_wstringsp()
+
+def copy_wstringsp(value):
+    return _filegdbapi.copy_wstringsp(value)
+
+def delete_wstringsp(obj):
+    return _filegdbapi.delete_wstringsp(obj)
+
+def wstringsp_assign(obj, value):
+    return _filegdbapi.wstringsp_assign(obj, value)
+
+def wstringsp_value(obj):
+    return _filegdbapi.wstringsp_value(obj)
+
+def new_stringsp():
+    return _filegdbapi.new_stringsp()
+
+def copy_stringsp(value):
+    return _filegdbapi.copy_stringsp(value)
+
+def delete_stringsp(obj):
+    return _filegdbapi.delete_stringsp(obj)
+
+def stringsp_assign(obj, value):
+    return _filegdbapi.stringsp_assign(obj, value)
+
+def stringsp_value(obj):
+    return _filegdbapi.stringsp_value(obj)
 
 
