@@ -14,6 +14,8 @@ import UICore.fgdberror as fgdberror
 
 from UICore.DataFactory import workspaceFactory
 from UICore.Gv import DataType
+from UICore.fgdb import FieldDefn
+from UICore.filegdbapi import FieldDef
 from UICore.log4p import Log
 import os
 import copy
@@ -123,15 +125,14 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
             log.info("开始现状与国土空间规划分类转换...", color=step_log_color)
             start = time.time()
 
-            if file_type == DataType.shapefile:
-                bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
-
-            elif file_type == DataType.fileGDB:
+            if file_type == DataType.fileGDB:
                 # bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
                 drop_index(in_path, layer_name, need_indexes)
 
-                bflag = update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tables,
-                                                          DLBM_values)
+            bflag = update_attribute_value_api(file_type, in_path, layer_name, right_header, rel_tables)
+
+                # bflag = update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tables,
+                #                                           DLBM_values)
 
             end = time.time()
             log.info('现状与国土空间规划分类转换完成, 总共耗时:{}秒.'.format("{:.2f}".format(end - start)), color=step_log_color)
@@ -405,6 +406,7 @@ def update_attribute_value_api(file_type, in_path, layer_name, right_header, rel
     layer = None
     dataSource = None
     wks = None
+    feature = None
 
     try:
         # start = time.time()
@@ -416,7 +418,7 @@ def update_attribute_value_api(file_type, in_path, layer_name, right_header, rel
 
         # wks = workspaceFactory().get_factory(DataType.shapefile)
         dataSource = wks.openFromFile(in_path, 1)
-        layer = dataSource.GetLayer(0)
+        layer = dataSource.GetLayerByName(layer_name)
 
         layerDefn = layer.GetLayerDefn()
 
@@ -431,8 +433,15 @@ def update_attribute_value_api(file_type, in_path, layer_name, right_header, rel
         log.info("第1步: 根据规则表的DLBM右侧表头增加矢量图层{}中的相应字段...".format(layer_name))
         for header_value in right_header:
             if header_value not in field_names:
-                new_field = ogr.FieldDefn(header_value, ogr.OFTString)
-                new_field.SetWidth(200)
+                if file_type == DataType.shapefile:
+                    new_field = ogr.FieldDefn(header_value, ogr.OFTString)
+                    new_field.SetWidth(200)
+                elif file_type == DataType.fileGDB:
+                    new_field = FieldDef()
+                    new_field.SetName(header_value)
+                    new_field.SetLength(200)
+                    new_field.SetType(4)
+
                 layer.CreateField(new_field, True)
                 del new_field
 
@@ -453,6 +462,10 @@ def update_attribute_value_api(file_type, in_path, layer_name, right_header, rel
 
         log.info("第2步: 根据规则表更新{}图层对应数据...".format(layer_name))
         icount = 0
+
+        if file_type == DataType.fileGDB:
+            layer.LoadOnlyMode(True)
+            layer.SetWriteLock()
 
         lack_BM = set()
         while feature:
@@ -503,15 +516,16 @@ def update_attribute_value_api(file_type, in_path, layer_name, right_header, rel
                     else:
                         feature.SetField(field_index, None)
                 else:
-                    if feature.GetFieldType(field_index) == ogr.OFTString:
-                        feature.SetField(field_index, str(rel[DLBM_value]))
-                    elif feature.GetFieldType(field_index) == ogr.OFTInteger:
-                        feature.SetField(field_index, int(rel[DLBM_value]))
-                    elif feature.GetFieldType(field_index) == ogr.OFTReal:
-                        feature.SetField(field_index, float(rel[DLBM_value]))
-                    else:
-                        log.error("第{}个要素的字段{}是无法识别的数据类型. 字段类型只允许是整型、字符型或者浮点型，请调整原始数据!".format(icount, field_name))
-                        feature.SetField(field_index, None)
+                    feature.SetField(field_index, rel[DLBM_value])
+                    # if feature.GetFieldType(field_index) == ogr.OFTString:
+                    #     feature.SetField(field_index, str(rel[DLBM_value]))
+                    # elif feature.GetFieldType(field_index) == ogr.OFTInteger:
+                    #     feature.SetField(field_index, int(rel[DLBM_value]))
+                    # elif feature.GetFieldType(field_index) == ogr.OFTReal:
+                    #     feature.SetField(field_index, float(rel[DLBM_value]))
+                    # else:
+                    #     log.error("第{}个要素的字段{}是无法识别的数据类型. 字段类型只允许是整型、字符型或者浮点型，请调整原始数据!".format(icount, field_name))
+                    #     feature.SetField(field_index, None)
 
             # # 如果是CZCSXM是201或者202则重新赋值
             # CZCSXM_index = feature.GetFieldIndex("CZCSXM")
@@ -526,6 +540,9 @@ def update_attribute_value_api(file_type, in_path, layer_name, right_header, rel
             layer.SetFeature(feature)
             feature = layer.GetNextFeature()
 
+            # if icount == 114694:
+            #     print("debug")
+
             icount += 1
             if int(icount * 100 / total_count) == iprop * 20:
                 log.info("{:.0%}已处理完成...".format(icount / total_count))
@@ -539,11 +556,16 @@ def update_attribute_value_api(file_type, in_path, layer_name, right_header, rel
         return False
         # return False, "无法更新数据！错误原因:\n{}".format(traceback.format_exc())
     finally:
+        if file_type == DataType.fileGDB:
+            if layer is not None:
+                layer.LoadOnlyMode(False)
+                layer.FreeWriteLock()
+            dataSource.CloseTable(layer)
+            filegdbapi.CloseGeodatabase(dataSource)
         del dataSource
         del layer
         del feature
         del wks
-
 
 # 采用执行SQL方式更新数据
 def update_attribute_value_by_fileGDB(in_path, layer_name, right_header, rel_tables, DLBM_values):

@@ -122,21 +122,6 @@ class SwigPyIterator(object):
 # Register SwigPyIterator in _filegdbapi:
 _filegdbapi.SwigPyIterator_swigregister(SwigPyIterator)
 
-
-def new_intp():
-    return _filegdbapi.new_intp()
-
-def copy_intp(value):
-    return _filegdbapi.copy_intp(value)
-
-def delete_intp(obj):
-    return _filegdbapi.delete_intp(obj)
-
-def intp_assign(obj, value):
-    return _filegdbapi.intp_assign(obj, value)
-
-def intp_value(obj):
-    return _filegdbapi.intp_value(obj)
 fieldTypeSmallInteger = _filegdbapi.fieldTypeSmallInteger
 fieldTypeInteger = _filegdbapi.fieldTypeInteger
 fieldTypeSingle = _filegdbapi.fieldTypeSingle
@@ -1187,6 +1172,15 @@ class Raster(object):
 # Register Raster in _filegdbapi:
 _filegdbapi.Raster_swigregister(Raster)
 
+
+def utc_string_to_dt(sTime):
+    return _filegdbapi.utc_string_to_dt(sTime)
+
+def GetDate_string(*args):
+    return _filegdbapi.GetDate_string(*args)
+
+def SetDate_string(*args):
+    return _filegdbapi.SetDate_string(*args)
 class fieldDefs(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
@@ -1292,6 +1286,7 @@ class fieldDefs(object):
 
 # Register fieldDefs in _filegdbapi:
 _filegdbapi.fieldDefs_swigregister(fieldDefs)
+cvar = _filegdbapi.cvar
 
 class wStringVector(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
@@ -1506,6 +1501,66 @@ class StringVector(object):
 _filegdbapi.StringVector_swigregister(StringVector)
 
 
+def new_intp():
+    return _filegdbapi.new_intp()
+
+def copy_intp(value):
+    return _filegdbapi.copy_intp(value)
+
+def delete_intp(obj):
+    return _filegdbapi.delete_intp(obj)
+
+def intp_assign(obj, value):
+    return _filegdbapi.intp_assign(obj, value)
+
+def intp_value(obj):
+    return _filegdbapi.intp_value(obj)
+
+def new_shortp():
+    return _filegdbapi.new_shortp()
+
+def copy_shortp(value):
+    return _filegdbapi.copy_shortp(value)
+
+def delete_shortp(obj):
+    return _filegdbapi.delete_shortp(obj)
+
+def shortp_assign(obj, value):
+    return _filegdbapi.shortp_assign(obj, value)
+
+def shortp_value(obj):
+    return _filegdbapi.shortp_value(obj)
+
+def new_floatp():
+    return _filegdbapi.new_floatp()
+
+def copy_floatp(value):
+    return _filegdbapi.copy_floatp(value)
+
+def delete_floatp(obj):
+    return _filegdbapi.delete_floatp(obj)
+
+def floatp_assign(obj, value):
+    return _filegdbapi.floatp_assign(obj, value)
+
+def floatp_value(obj):
+    return _filegdbapi.floatp_value(obj)
+
+def new_doublep():
+    return _filegdbapi.new_doublep()
+
+def copy_doublep(value):
+    return _filegdbapi.copy_doublep(value)
+
+def delete_doublep(obj):
+    return _filegdbapi.delete_doublep(obj)
+
+def doublep_assign(obj, value):
+    return _filegdbapi.doublep_assign(obj, value)
+
+def doublep_value(obj):
+    return _filegdbapi.doublep_value(obj)
+
 def new_fieldDefsp():
     return _filegdbapi.new_fieldDefsp()
 
@@ -1536,6 +1591,21 @@ def wstringp_assign(obj, value):
 def wstringp_value(obj):
     return _filegdbapi.wstringp_value(obj)
 
+def new_stringp():
+    return _filegdbapi.new_stringp()
+
+def copy_stringp(value):
+    return _filegdbapi.copy_stringp(value)
+
+def delete_stringp(obj):
+    return _filegdbapi.delete_stringp(obj)
+
+def stringp_assign(obj, value):
+    return _filegdbapi.stringp_assign(obj, value)
+
+def stringp_value(obj):
+    return _filegdbapi.stringp_value(obj)
+
 def new_wstringsp():
     return _filegdbapi.new_wstringsp()
 
@@ -1565,5 +1635,35 @@ def stringsp_assign(obj, value):
 
 def stringsp_value(obj):
     return _filegdbapi.stringsp_value(obj)
+
+def new_fieldtypep():
+    return _filegdbapi.new_fieldtypep()
+
+def copy_fieldtypep(value):
+    return _filegdbapi.copy_fieldtypep(value)
+
+def delete_fieldtypep(obj):
+    return _filegdbapi.delete_fieldtypep(obj)
+
+def fieldtypep_assign(obj, value):
+    return _filegdbapi.fieldtypep_assign(obj, value)
+
+def fieldtypep_value(obj):
+    return _filegdbapi.fieldtypep_value(obj)
+
+def new_tmp():
+    return _filegdbapi.new_tmp()
+
+def copy_tmp(value):
+    return _filegdbapi.copy_tmp(value)
+
+def delete_tmp(obj):
+    return _filegdbapi.delete_tmp(obj)
+
+def tmp_assign(obj, value):
+    return _filegdbapi.tmp_assign(obj, value)
+
+def tmp_value(obj):
+    return _filegdbapi.tmp_value(obj)
 
 

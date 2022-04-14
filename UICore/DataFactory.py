@@ -5,7 +5,7 @@ import traceback
 from openpyxl import load_workbook
 from osgeo import ogr, osr
 
-from UICore import fgdb
+from UICore import fgdb, filegdbapi
 from UICore.common import launderName, is_header, check_encoding, read_first_line
 from UICore.log4p import Log
 from UICore.Gv import DataType
@@ -49,17 +49,20 @@ class workspaceFactory(object):
         else:
             try:
                 if self.driver == "fgdbapi":
-                    gdb = fgdb.Geodatabase()
-                    hr = filegdbapi.OpenGeodatabase(file, gdb)
-                    if hr < 0:
-                        raise Exception("fgdb api错误代码:{}".format(str(hr)))
+                    gdb = fgdb.GeoDatabase()
+                    bflag, err_msg = gdb.Open(file)
+                    if not bflag:
+                        raise Exception(err_msg)
                     else:
                         self.datasource = gdb
                 else:
                     self.datasource = self.driver.Open(file, access)
                 return self.datasource
-            except:
-                log.error("打开文件{}发生错误!\n{}".format(file, traceback.format_exc()))
+            except Exception as e:
+                if self.driver == "fgdbapi":
+                    log.error("打开文件{}发生错误!\n{}".format(file, e))
+                else:
+                    log.error("打开文件{}发生错误!\n{}".format(file, traceback.format_exc()))
                 return None
 
     def openLayer(self, name):
