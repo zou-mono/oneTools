@@ -121,7 +121,7 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
                     loop.run_until_complete(asyncio.wait(tasks))
                     tasks = []
                     # iloop += 1
-                    log.debug("{:.0%}".format(iloop / total_count))
+                    log.info("{:.0%}".format(iloop / total_count))
                     continue
                 else:
                     tasks.append(asyncio.ensure_future(output_img_asyc(tile_url, output_path, i, j)))
@@ -235,6 +235,8 @@ async def output_img_asyc(url, output_path, i, j):
         # log.info('开始抓取...')
         if img is None:
             bSkip = True
+            async with lock:
+                failed_urls.append([url, i, j])
         else:
             with open(f'{output_path}/{i}/{j}.png', "wb") as f:
                 f.write(img)
