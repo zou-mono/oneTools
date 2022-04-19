@@ -193,9 +193,13 @@ def get_tile(url):
 def output_img(url, output_path, i, j):
     try:
         img = get_tile(url)
-        with open(f'{output_path}/{i}/{j}.png', "wb") as f:
-            f.write(img)
-        return True
+        if img is None:
+            failed_urls.append([url, i, j])
+            return False
+        else:
+            with open(f'{output_path}/{i}/{j}.png', "wb") as f:
+                f.write(img)
+            return True
     except:
         failed_urls.append([url, i, j])
         log.error('url:{} error:{}'.format(url, traceback.format_exc()))
@@ -208,7 +212,9 @@ def output_img2(url, output_path, i, j):
         if img is not None:
             with open(f'{output_path}/{i}/{j}.png', "wb") as f:
                 f.write(img)
-        return True
+            return True
+        else:
+            return False
     except:
         return False
 
