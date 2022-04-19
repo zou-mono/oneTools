@@ -374,8 +374,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                         tileFolder = defaultTileFolder(url, level)
                         log.warning('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认值"{}".'.format(row + 1, tileFolder))
                     else:
-                        url_encodeStr = urlEncodeToFileName(url)
-                        tileFolder = os.path.join(tileFolder, url_encodeStr, str(level))
+                        # url_encodeStr = urlEncodeToFileName(url)
+                        # tileFolder = os.path.join(tileFolder, url_encodeStr, str(level))
+                        tileFolder = os.path.join(tileFolder, str(level))
                         if not os.path.exists(tileFolder):
                             os.makedirs(tileFolder)
 
@@ -399,8 +400,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                         tileFolder = defaultTileFolder(url, level)
                         log.warning('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认值"{}".'.format(row + 1, tileFolder))
                     else:
-                        url_encodeStr = urlEncodeToFileName(url)
-                        tileFolder = os.path.join(tileFolder, url_encodeStr, str(level))
+                        # url_encodeStr = urlEncodeToFileName(url)
+                        # tileFolder = os.path.join(tileFolder, url_encodeStr, str(level))
+                        tileFolder = os.path.join(tileFolder, str(level))
                         if not os.path.exists(tileFolder):
                             os.makedirs(tileFolder)
 
