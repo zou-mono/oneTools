@@ -134,11 +134,11 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
             log.info('开始用协程重新抓取失败的url...')
 
             total_count = len(failed_urls)
-            # 比较前后两次抓取成功的数量，如果太少则说明协程途径行不通，考虑单线程抓取
+            # 比较前后两次抓取成功的数量，如果等于0，则说明协程途径行不通，考虑单线程抓取
             start_failed_count = len(failed_urls)
             delta_count = len(failed_urls)
             tasks = []
-            while len(failed_urls) > 0 and delta_count >= 100:
+            while len(failed_urls) > 0 and delta_count > 0:
                 iloop += 1
 
                 furl = failed_urls.pop()
