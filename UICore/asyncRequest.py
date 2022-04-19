@@ -86,7 +86,7 @@ async def send_http(session, method, url, *,
                     elif respond_Type == 'text':
                         data = await response.text()
                     raised_exc = None
-                    return data
+                    return data, response.status
 
                 elif response.status in http_status_codes_to_retry:
                     log.error(
@@ -99,6 +99,10 @@ async def send_http(session, method, url, *,
                     raise aiohttp.ClientError
                     # raise aiohttp.errors.HttpProcessingError(
                     #     code=response.status, message=response.reason)
+                elif response.status == 404:
+                    log.warning('received empty data for {}.'.format(data, url))
+                    raised_exc = None
+                    return None, response.status
                 else:
                     try:
                         if respond_Type == 'content':
@@ -121,6 +125,7 @@ async def send_http(session, method, url, *,
                         # print(data['errors'][0]['detail'])
                         raised_exc = None
                 response.close()
+                return None, response.status
         except aiohttp.ClientError as exc:
             try:
                 code = exc.status

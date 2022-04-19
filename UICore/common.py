@@ -31,17 +31,18 @@ def is_already_opened_in_write_mode(filename):
 def get_json(url):
     try_num = 5
     # 定义请求头
-    reqheaders = {'Content-Type': 'application/x-www-form-urlencoded',
-                  # 'Host': 'suplicmap.pnr.sz',
-                  'Pragma': 'no-cache'}
+    # reqheaders = {'Content-Type': 'application/x-www-form-urlencoded',
+    #               # 'Host': 'suplicmap.pnr.sz',
+    #               'Pragma': 'no-cache'}
     # 请求不同页面的数据
     trytime = 0
     while trytime < try_num:
         try:
-            req = urllib.request.Request(url=url, headers=reqheaders)
+            req = urllib.request.Request(url=url)
             r = urllib.request.urlopen(req)
             respData = r.read().decode('utf-8', 'ignore')
             # return respData
+            log.debug(respData)
             res = json.loads(respData)
             if 'error' not in res.keys():
                 return res
@@ -58,6 +59,7 @@ def get_json(url):
 def get_paraInfo(url):
     http = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
     res = re.match(http, string=url)
+    log.debug(res)
     url_json = url + "?f=pjson"
     if res is not None:
         getInfo = get_json(url_json)

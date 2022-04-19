@@ -130,8 +130,36 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
             loop.run_until_complete(asyncio.wait(tasks))
         log.info('协程抓取完成.')
 
-        dead_link = 0
         if len(failed_urls) > 0:
+            log.info('开始用协程重新抓取失败的url...')
+
+            total_count = len(failed_urls)
+            # 比较前后两次抓取成功的数量，如果太少则说明协程途径行不通，考虑单线程抓取
+            start_failed_count = len(failed_urls)
+            delta_count = len(failed_urls)
+            tasks = []
+            while len(failed_urls) > 0 and delta_count >= 100:
+                iloop += 1
+
+                furl = failed_urls.pop()
+                if len(tasks) >= coroutine_num:
+                    tasks.append(asyncio.ensure_future(output_img_asyc(furl[0], output_path, furl[1], furl[2])))
+                    loop.run_until_complete(asyncio.wait(tasks))
+                    tasks = []
+                    log.info("{:.0%}".format(iloop / total_count))
+                    delta_count = start_failed_count - len(failed_urls)
+                    start_failed_count = len(failed_urls)
+                    continue
+                else:
+                    tasks.append(asyncio.ensure_future(output_img_asyc(furl[0], output_path, furl[1], furl[2])))
+
+            if len(failed_urls) > 3000:
+                log.error("抓取失败的url数量太多，请检查网络状态并重新抓取.")
+                if lock.locked():
+                    lock.release()
+                return False
+
+            dead_link = 0
             log.info('开始用单线程抓取失败的url...')
             while len(failed_urls) > 0:
                 furl = failed_urls.pop()
@@ -218,32 +246,31 @@ def output_img2(url, output_path, i, j):
     except:
         return False
 
-
 async def get_tile_async(url, output_path, i, j):
     async with aiohttp.ClientSession() as session:
         try:
-            respData = await send_http(session, method="get", respond_Type="content", read_timeout=10, url=url, retries=0)
+            respData, error_code = await send_http(session, method="get", respond_Type="content", read_timeout=10, url=url, retries=0)
             # response = await session.post(url, data=data, headers=reqheaders)
             if len(respData) > 0:
-                return respData, url, output_path, i, j
+                return respData, 200, url, output_path, i, j
             else:
                 raise Exception("传回数据为空")
         except:
             # log.error('url:{} error:{}'.format(url, traceback.format_exc()))
-            return None, url, output_path, i, j
+            return None, error_code, url, output_path, i, j
 
 
 async def output_img_asyc(url, output_path, i, j):
     bSkip = False
     try:
-        img, url, output_path, i, j = await get_tile_async(url, output_path, i, j)
+        img, error_code, url, output_path, i, j = await get_tile_async(url, output_path, i, j)
         # log.info('任务载入完成.')
         # log.info('开始抓取...')
-        if img is None:
+        if img is None and error_code != 404:
             bSkip = True
             async with lock:
                 failed_urls.append([url, i, j])
-        else:
+        elif img is not None and error_code == 200:
             with open(f'{output_path}/{i}/{j}.png', "wb") as f:
                 f.write(img)
     except:
