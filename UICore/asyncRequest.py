@@ -100,7 +100,7 @@ async def send_http(session, method, url, *,
                     # raise aiohttp.errors.HttpProcessingError(
                     #     code=response.status, message=response.reason)
                 elif response.status == 404:
-                    log.warning('received empty data for {}.'.format(data, url))
+                    log.warning('received empty data for {}.'.format(url))
                     raised_exc = None
                     return None, response.status
                 else:

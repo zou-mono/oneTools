@@ -130,13 +130,12 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
             loop.run_until_complete(asyncio.wait(tasks))
         log.info('协程抓取完成.')
 
-        if len(failed_urls) > 0:
-            log.info('开始用协程重新抓取失败的url...')
-
-            total_count = len(failed_urls)
+        failed_count = len(failed_urls)
+        if failed_count > 0:
+            log.info('开始用协程重新抓取失败的url, 总计{}条...'.format(str(failed_count)))
             # 比较前后两次抓取成功的数量，如果等于0，则说明协程途径行不通，考虑单线程抓取
-            start_failed_count = len(failed_urls)
-            delta_count = len(failed_urls)
+            start_failed_count = failed_count
+            delta_count = failed_count
             tasks = []
             while len(failed_urls) > 0 and delta_count > 0:
                 iloop += 1
