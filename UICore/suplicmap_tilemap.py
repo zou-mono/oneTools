@@ -1,6 +1,9 @@
 import time
 import aiohttp
 import asyncio
+
+import requests
+
 from UICore.log4p import Log
 import urllib.request, urllib.parse
 import json
@@ -197,13 +200,14 @@ def launderPath(path):
         return path + os.sep
 
 
-def get_tile(url):
+def get_tile(url, reqheaders=None):
     trytime = 0
     while trytime < try_num:
         try:
-            req = urllib.request.Request(url=url)
-            r = urllib.request.urlopen(req)
-            respData = r.read()
+            # req = urllib.request.Request(url=url)
+            # r = urllib.request.urlopen(req)
+            # respData = r.read()
+            respData = requests.get(url, headers=reqheaders).content
             if len(respData) > 0:
                 return respData
             else:
@@ -246,6 +250,7 @@ def output_img2(url, output_path, i, j):
         return False
 
 async def get_tile_async(url, output_path, i, j):
+    error_code = -1
     async with aiohttp.ClientSession() as session:
         try:
             respData, error_code = await send_http(session, method="get", respond_Type="content", read_timeout=10, url=url, retries=0)
@@ -253,6 +258,7 @@ async def get_tile_async(url, output_path, i, j):
             if len(respData) > 0:
                 return respData, 200, url, output_path, i, j
             else:
+                # return None, error_code, url, output_path, i, j
                 raise Exception("传回数据为空")
         except:
             # log.error('url:{} error:{}'.format(url, traceback.format_exc()))

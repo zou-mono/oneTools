@@ -15,6 +15,7 @@ import aiohttp
 import asyncio
 from UICore.asyncRequest import send_http
 from UICore.common import urlEncodeToFileName, check_layer_name
+import requests
 import encodings.idna
 
 try_num = 5
@@ -30,11 +31,14 @@ dateLst = []
 OID_NAME = "OBJECTID"  # FID字段名称
 m_fields = []
 
+openapi = ''
+
 # 定义请求头
 reqheaders = {
-    'User-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36 Edg/81.0.416.72',
-    'Content-Type': 'application/x-www-form-urlencoded',
-    # 'Host': 'suplicmap.pnr.sz',
+    'User-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36 Edg/100.0.1185.39',
+    # 'Content-Type': 'application/x-www-form-urlencoded',
+    'Connection': 'keep-alive',
+    ''
     'Pragma': 'no-cache'}
 
 
@@ -187,10 +191,10 @@ def crawl_vector_batch(url, key, output, paras):
 
 def getIds(query_url, loop_pos):
     # 定义请求头
-    reqheaders = {'Content-Type': 'application/x-www-form-urlencoded',
-                  # 'Host': 'suplicmap.pnr.sz',
-                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36 Edg/93.0.961.38',
-                  'Pragma': 'no-cache'}
+    # reqheaders = {'Content-Type': 'application/x-www-form-urlencoded',
+    #               # 'Host': 'suplicmap.pnr.sz',
+    #               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36 Edg/93.0.961.38',
+    #               'Pragma': 'no-cache'}
 
     # 定义post的参数
     body_value = {'where': '{}>=0'.format(OID_NAME),
@@ -203,10 +207,12 @@ def getIds(query_url, loop_pos):
     trytime = 0
     while trytime < try_num:
         try:
-            req = urllib.request.Request(url=query_url, data=data, headers=reqheaders)
-            r = urllib.request.urlopen(req)
-            respData = r.read().decode('utf-8')
-            respData = json.loads(respData)
+            # req = urllib.request.Request(url=query_url, data=data, headers=reqheaders)
+            # r = urllib.request.urlopen(req)
+            r = requests.get(query_url, params=data, headers=reqheaders)
+            # respData = r.read().decode('utf-8')
+            # respData = json.loads(respData)
+            respData = r.json()
             ids = respData['objectIds']
             OID = respData['objectIdFieldName']
 
@@ -288,7 +294,7 @@ def createFileGDB(output_path, layer_name, url_json, service_name, layer_order):
             gdb = outdriver.CreateDataSource(output_path)
 
         # 向服务器发送一条请求，获取数据字段信息
-        respData = get_json(url_json)
+        respData = get_json(url_json, reqheaders=reqheaders)
         if respData is None:
             log.error('获取数据字段信息失败,无法创建数据库.')
             return
@@ -371,15 +377,17 @@ def createFileGDB(output_path, layer_name, url_json, service_name, layer_order):
         return None, None, ""
 
 
-def get_json(url):
+def get_json(url, reqheaders=None):
     # 请求不同页面的数据
     trytime = 0
     while trytime < try_num:
         try:
-            req = urllib.request.Request(url=url, headers=reqheaders)
-            r = urllib.request.urlopen(req)
-            respData = r.read().decode('utf-8')
-            res = json.loads(respData)
+            # req = urllib.request.Request(url=url, headers=reqheaders)
+            # r = urllib.request.urlopen(req)
+            # respData = r.read().decode('utf-8')
+            # res = json.loads(respData)
+            respData = requests.get(url, headers=reqheaders)
+            res = respData.json()
             if 'error' not in res.keys():
                 return respData
         except:
@@ -422,9 +430,11 @@ def get_json_by_query(url, query_clause):
     trytime = 0
     while trytime < try_num:
         try:
-            req = urllib.request.Request(url=url, data=data, headers=reqheaders)
-            r = urllib.request.urlopen(req)
-            respData = r.read().decode('utf-8')
+            # req = urllib.request.Request(url=url, data=data, headers=reqheaders)
+            # r = urllib.request.urlopen(req)
+            # respData = r.read().decode('utf-8')
+            # res = respData.json()
+            respData = requests.get(url, params=data, headers=reqheaders)
             return respData
         except:
             log.error('HTTP请求失败！正在准备重发...')

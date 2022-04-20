@@ -21,6 +21,14 @@ Slot = QtCore.pyqtSlot
 
 log = Log(__name__)
 
+# 定义请求头
+reqheaders = {
+    'User-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36 Edg/81.0.416.72',
+    'Content-Type': 'application/x-www-form-urlencoded',
+    # 'Host': 'suplicmap.pnr.sz',
+    'X-OPENAPI-SubscriptionToken': '0d6325d440f14ee8847f7551c686f19c',
+    'Pragma': 'no-cache'}
+
 class Ui_Window(QDialog, Ui_Dialog):
     def __init__(self, parent=None):
         super(Ui_Window, self).__init__(parent=parent)
@@ -430,7 +438,7 @@ class Ui_Window(QDialog, Ui_Dialog):
 
             if url == "": continue
 
-            getInfo = get_paraInfo(url)
+            getInfo = get_paraInfo(url, reqheaders=reqheaders)
 
             key = url + "_*"
             if getInfo is None:
@@ -464,7 +472,7 @@ class Ui_Window(QDialog, Ui_Dialog):
                             service = layer['id']
                             services.append(service)
                             new_url = url + "/" + str(service)
-                            layer_getInfo = get_paraInfo(new_url)
+                            layer_getInfo = get_paraInfo(new_url, reqheaders=reqheaders)
                             self.setParaToMemory(url, str(service), layer_getInfo)
 
         if 'fullExtent' in getInfo.keys():

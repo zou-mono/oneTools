@@ -115,8 +115,7 @@ async def send_http(session, method, url, *,
                         log.error(
                             'failed to decode response code:%s url:{} '
                             'error:{} response:{}', response.status, url,
-                            exc, response.reason
-                        )
+                            exc)
                         raise FailedRequest(
                             code=response.status, message=exc,
                             raised=exc.__class__.__name__, url=url)

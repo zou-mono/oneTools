@@ -10,6 +10,7 @@ import time
 import chardet
 from openpyxl import load_workbook
 from openpyxl.styles import Border
+import requests
 
 from UICore.Gv import srs_dict, SpatialReference, DataType
 from UICore.log4p import Log
@@ -28,7 +29,7 @@ def is_already_opened_in_write_mode(filename):
     return False
 
 
-def get_json(url):
+def get_json(url, reqheaders=None):
     try_num = 5
     # 定义请求头
     # reqheaders = {'Content-Type': 'application/x-www-form-urlencoded',
@@ -38,31 +39,38 @@ def get_json(url):
     trytime = 0
     while trytime < try_num:
         try:
-            req = urllib.request.Request(url=url)
-            r = urllib.request.urlopen(req)
-            respData = r.read().decode('utf-8', 'ignore')
+            # req = urllib.request.Request(url=url, headers=reqheaders)
+            # r = urllib.request.urlopen(req)
+            r = requests.get(url, headers=reqheaders)
+            # respData = r.read().decode('utf-8', 'ignore')
+            res = r.json()
             # return respData
-            log.debug(respData)
-            res = json.loads(respData)
-            if 'error' not in res.keys():
-                return res
+            # log.debug(respData)
+            # res = json.loads(respData)
+            if isinstance(res, dict):
+                if 'error' not in res.keys():
+                    return res
+                else:
+                    trytime += 1
             else:
-                trytime += 1
-        except:
+                return None
+        except json.decoder.JSONDecodeError as exc:
+            return None
+        else:
             # log.error('HTTP请求失败！重新尝试...')
             trytime += 1
 
-        time.sleep(2)
+        time.sleep(0.2)
         continue
 
 
-def get_paraInfo(url):
+def get_paraInfo(url, reqheaders=None):
     http = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
     res = re.match(http, string=url)
-    log.debug(res)
+    # log.debug(res)
     url_json = url + "?f=pjson"
     if res is not None:
-        getInfo = get_json(url_json)
+        getInfo = get_json(url_json, reqheaders=reqheaders)
         return getInfo
     else:
         return None
