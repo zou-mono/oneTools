@@ -188,6 +188,14 @@ class Table(filegdbapi.Table):
         if hr < 0:
             log.error("更新字段错误. 代码:{}".format(str(hr)))
 
+    def CreateFeature(self):
+        row = Row()
+        hr = self.CreateRowObject(row)
+        if hr < 0:
+            log.error("创建要素失败. 代码:{}".format(str(hr)))
+            return None
+        return row
+
 
 class Row(filegdbapi.Row):
     def __init__(self):

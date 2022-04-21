@@ -1,0 +1,5 @@
+# 栅格数据转坐标
+gdalwarp -t_srs EPSG:4326 -s_srs EPSG:2326 -co BIGTIFF=YES -co INTERLEAVE=PIXEL -co COMPRESS=LZW -co TILED=YES merged_DOP5000_HK.tif output.tif
+
+# 构建影像金字塔
+gdaladdo -r nearest  -ro --config COMPRESS_OVERVIEW LZW output.tif 2 4 8 16

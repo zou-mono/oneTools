@@ -126,8 +126,8 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
             start = time.time()
 
             if file_type == DataType.fileGDB:
-                # bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
                 drop_index(in_path, layer_name, need_indexes)
+                # bflag = update_attribute_value(file_type, in_path, layer_name, right_header, rel_tables)
 
             bflag = update_attribute_value_api(file_type, in_path, layer_name, right_header, rel_tables)
 
@@ -273,7 +273,6 @@ def update_attribute_value(file_type, in_path, layer_name, right_header, rel_tab
         # wks = workspaceFactory().get_factory(DataType.shapefile)
         dataSource = wks.openFromFile(in_path, 1)
         layer = dataSource.GetLayer(0)
-
         layerDefn = layer.GetLayerDefn()
 
         field_names = []
@@ -310,6 +309,7 @@ def update_attribute_value(file_type, in_path, layer_name, right_header, rel_tab
         log.info("第2步: 根据规则表更新{}图层对应数据...".format(layer_name))
         icount = 0
 
+        gdal.SetConfigOption('FGDB_BULK_LOAD', 'YES')
         lack_BM = set()
         while feature:
             DLBM_value = feature.GetField("DLBM")

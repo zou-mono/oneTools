@@ -2,6 +2,10 @@
 
 import json
 import time
+
+from UICore.DataFactory import workspaceFactory
+from UICore.Gv import DataType
+from UICore.filegdbapi import CloseGeodatabase
 from UICore.log4p import Log
 import urllib.request, urllib.parse
 import os
@@ -84,6 +88,9 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, _a
     global epsg
     epsg = sr
 
+    gdb = None
+    out_layer = None
+
     if url[-1] == r"/":
         query_url = url + "query"
         url_json = url[:-1] + "?f=pjson"
@@ -101,15 +108,17 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, _a
 
     log.info("\n开始创建文件数据库...")
 
-    gdb, out_layer, OID = createFileGDB(output_path, layer_name, url_json, service_name, layer_order)
+    bFlag, gdb, out_layer, OID = createFileGDB(output_path, layer_name, url_json, service_name, layer_order)
+    # bFlag, new_layer_name, OID = createFileGDB(output_path, layer_name, url_json, service_name, layer_order)
 
     global OID_NAME
     OID_NAME = OID
 
-    if out_layer is None or gdb is None:
+    if not bFlag:
         return False, '创建数据库失败！\n'
 
-    log.info("文件数据库创建成功, 位置为{}, 图层名称为{}".format(os.path.abspath(output_path), out_layer.GetName()))
+    new_layer_name = out_layer.GetName()
+    log.info("文件数据库创建成功, 位置为{}, 图层名称为{}".format(os.path.abspath(output_path), new_layer_name))
 
     looplst, OID, total_count = getIds(query_url, loop_pos)
 
@@ -126,6 +135,12 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, _a
         tasks = []
         loop = asyncio.ProactorEventLoop()
         asyncio.set_event_loop(loop)
+
+        # wks = workspaceFactory().get_factory(DataType.FGDBAPI)
+        # gdb = wks.openFromFile(output_path, 1)
+        # out_layer = gdb.GetLayerByName(new_layer_name)
+        # out_layer.LoadOnlyMode(True)
+        # out_layer.SetWriteLock()
 
         iloop = 0
         for i in range(0, len(looplst) - 1):
@@ -162,13 +177,17 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, _a
                             dead_link += 1
                             continue
     except:
-        del gdb
         # log.error(traceback.format_exc())
         return False, traceback.format_exc()
-
-    outdriver = None
-    del gdb
-    out_layer = None
+    finally:
+        # if out_layer is not None:
+        #     out_layer.LoadOnlyMode(False)
+        #     out_layer.FreeWriteLock()
+        # gdb.CloseTable(out_layer)
+        # CloseGeodatabase(gdb)
+        gdal.SetConfigOption('FGDB_BULK_LOAD', None)
+        del gdb
+        del out_layer
 
     if lock.locked():
         lock.release()
@@ -297,6 +316,8 @@ def addField(feature, defn, OID_NAME, out_layer):
 
 
 def createFileGDB(output_path, layer_name, url_json, service_name, layer_order):
+    outdriver = None
+
     try:
         outdriver = ogr.GetDriverByName('FileGDB')
         if os.path.exists(output_path):
@@ -343,6 +364,7 @@ def createFileGDB(output_path, layer_name, url_json, service_name, layer_order):
 
         out_layer = gdb.CreateLayer(layer_name, srs=srs, geom_type=GeoType,
                                     options=[f'FEATURE_DATASET={service_name}', f'LAYER_ALIAS={layer_alias_name}'])
+        gdal.SetConfigOption('FGDB_BULK_LOAD', 'YES')
         # LayerDefn = out_layer.GetLayerDefn()
         global m_fields
         m_fields = []
@@ -387,10 +409,18 @@ def createFileGDB(output_path, layer_name, url_json, service_name, layer_order):
 
             # log.debug(fieldName + " - " + fieldType + " " + str(fieldWidth) + " " + str(GetPrecision))
 
-        return gdb, out_layer, OID
+        # out_layer_name = out_layer.GetName()
+        # del gdb
+        # del out_layer
+
+        return True, gdb, out_layer, OID
+        # return True, out_layer_name, OID
     except:
         log.error("创建数据库失败.\n" + traceback.format_exc())
-        return None, None, ""
+        # return False, "", ""
+        return False, None, None, ""
+    finally:
+        del outdriver
 
 
 def get_json(url, reqheaders=None):
