@@ -36,13 +36,18 @@ def get_json(url, reqheaders=None):
     #               # 'Host': 'suplicmap.pnr.sz',
     #               'Pragma': 'no-cache'}
     # 请求不同页面的数据
+    r = None
     trytime = 0
     while trytime < try_num:
         try:
             # req = urllib.request.Request(url=url, headers=reqheaders)
             # r = urllib.request.urlopen(req)
-            r = requests.get(url, headers=reqheaders)
+            if reqheaders is None:
+                r = requests.get(url)
+            else:
+                r = requests.get(url, headers=reqheaders)
             # respData = r.read().decode('utf-8', 'ignore')
+            r.close()
             res = r.json()
             # return respData
             # log.debug(respData)
@@ -56,11 +61,13 @@ def get_json(url, reqheaders=None):
                 return None
         except json.decoder.JSONDecodeError as exc:
             return None
-        else:
+        except:
             # log.error('HTTP请求失败！重新尝试...')
+            if r is not None:
+                r.close()
             trytime += 1
 
-        time.sleep(0.2)
+        time.sleep(0.5)
         continue
 
 

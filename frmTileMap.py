@@ -25,7 +25,7 @@ log = Log(__name__)
 # 定义请求头
 reqheaders = {
     'User-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36 Edg/81.0.416.72',
-    'Content-Type': 'application/x-www-form-urlencoded',
+    # 'Content-Type': 'application/x-www-form-urlencoded',
     # 'Host': 'suplicmap.pnr.sz',
     'Pragma': 'no-cache'}
 
@@ -772,51 +772,54 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     @Slot()
     def btn_obtainMeta_clicked(self):
-        selModel = self.tbl_address.selectionModel()
+        try:
+            selModel = self.tbl_address.selectionModel()
 
-        if selModel is None:
-            return
+            if selModel is None:
+                return
 
-        indexes = selModel.selectedIndexes()
+            indexes = selModel.selectedIndexes()
 
-        if self.rbtn_onlyHandle.isChecked():
-            return
+            if self.rbtn_onlyHandle.isChecked():
+                return
 
-        ## 如果有被选中的行，则只获取被选中行的信息
-        if len(indexes) > 0:
-            rows = sorted(set(index.row() for index in
-                              self.tbl_address.selectedIndexes()))
-        else:
-            rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
-
-        subscription_token = self.txt_subscriptionToken.text()
-        if subscription_token != '':
-            global reqheaders
-            reqheaders['X-OPENAPI-SubscriptionToken'] = subscription_token
-
-        for row in rows:
-            url_index, level_index, url, level = self.return_url_and_level(row)
-            editor_delegate = self.tbl_address.itemDelegate(level_index)
-
-            url = str(self.tbl_address.model().data(url_index, Qt.DisplayRole)).strip()
-
-            if url == "": continue
-
-            # if url not in self.paras.keys():
-            getInfo = get_paraInfo(url, reqheaders=reqheaders)
-            if getInfo is None:
-                log.error(url + "无法获取远程参数信息，请检查地址是否正确以及网络是否连通！")
-                continue
+            ## 如果有被选中的行，则只获取被选中行的信息
+            if len(indexes) > 0:
+                rows = sorted(set(index.row() for index in
+                                  self.tbl_address.selectedIndexes()))
             else:
-                log.info(url + "参数信息获取成功！")
+                rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
 
-            self.setParaToMemory(url, getInfo)
+            subscription_token = self.txt_subscriptionToken.text()
+            if subscription_token != '':
+                global reqheaders
+                reqheaders['X-OPENAPI-SubscriptionToken'] = subscription_token
 
-            levels = self.paras[url]['levels']
+            for row in rows:
+                url_index, level_index, url, level = self.return_url_and_level(row)
+                editor_delegate = self.tbl_address.itemDelegate(level_index)
 
-            if isinstance(editor_delegate, addressTableDelegate):
-                # self.model.setLevelData(level_index, levels)
-                self.model.setLevelData(url, levels)
+                url = str(self.tbl_address.model().data(url_index, Qt.DisplayRole)).strip()
+
+                if url == "": continue
+
+                # if url not in self.paras.keys():
+                getInfo = get_paraInfo(url, reqheaders=reqheaders)
+                if getInfo is None:
+                    log.error(url + "无法获取远程参数信息，请检查地址是否正确以及网络是否连通！")
+                    continue
+                else:
+                    log.info(url + "参数信息获取成功！")
+
+                self.setParaToMemory(url, getInfo)
+
+                levels = self.paras[url]['levels']
+
+                if isinstance(editor_delegate, addressTableDelegate):
+                    # self.model.setLevelData(level_index, levels)
+                    self.model.setLevelData(url, levels)
+        except:
+            log.error("无法获取远程参数，错误原因：\n{}".format(traceback.format_exc()))
 
     def setParaToMemory(self, url, getInfo):
         levels = []

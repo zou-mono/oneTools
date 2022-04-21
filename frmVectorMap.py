@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import traceback
 import urllib.parse
 
 from PyQt5.QtGui import QFont, QPalette, QShowEvent, QResizeEvent
@@ -24,7 +25,7 @@ log = Log(__name__)
 # 定义请求头
 reqheaders = {
     'User-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36 Edg/81.0.416.72',
-    'Content-Type': 'application/x-www-form-urlencoded',
+    # 'Content-Type': 'application/x-www-form-urlencoded',
     # 'Host': 'suplicmap.pnr.sz',
     'Pragma': 'no-cache'}
 
@@ -423,51 +424,54 @@ class Ui_Window(QDialog, Ui_Dialog):
 
     @Slot()
     def btn_obtainMeta_clicked(self):
-        selModel = self.tbl_address.selectionModel()
+        try:
+            selModel = self.tbl_address.selectionModel()
 
-        if selModel is None:
-            return
+            if selModel is None:
+                return
 
-        indexes = selModel.selectedIndexes()
+            indexes = selModel.selectedIndexes()
 
-        ## 如果有被选中的行，则只获取被选中行的信息
-        if len(indexes) > 0:
-            rows = sorted(set(index.row() for index in
-                              self.tbl_address.selectedIndexes()))
-        else:
-            rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
-
-        subscription_token = self.txt_subscriptionToken.text()
-        if subscription_token != '':
-            global reqheaders
-            reqheaders['X-OPENAPI-SubscriptionToken'] = subscription_token
-
-        for row in rows:
-            url_index, service_index, url, service = self.return_url_and_level(row)
-            editor_delegate = self.tbl_address.itemDelegate(service_index)
-
-            if url == "": continue
-
-            getInfo = get_paraInfo(url, reqheaders=reqheaders)
-
-            key = url + "_*"
-            if getInfo is None:
-                log.error(url + "无法获取远程参数信息，请检查地址是否正确以及网络是否连通！")
-                continue
+            ## 如果有被选中的行，则只获取被选中行的信息
+            if len(indexes) > 0:
+                rows = sorted(set(index.row() for index in
+                                  self.tbl_address.selectedIndexes()))
             else:
-                log.info(url + "参数信息获取成功！")
+                rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
 
-            self.setAllParaToMemory(url, getInfo)
+            subscription_token = self.txt_subscriptionToken.text()
+            if subscription_token != '':
+                global reqheaders
+                reqheaders['X-OPENAPI-SubscriptionToken'] = subscription_token
 
-            services = self.paras[key]['services']
-            if isinstance(editor_delegate, vectorTableDelegate):
-                self.model.setLevelData(key, services)
+            for row in rows:
+                url_index, service_index, url, service = self.return_url_and_level(row)
+                editor_delegate = self.tbl_address.itemDelegate(service_index)
 
-            if service != "*" and service != "":
-                layername_index = self.tbl_address.model().index(row, 2)
-                if url + "_" + str(service) in self.paras:
-                    layername = self.paras[url + "_" + str(service)]['old_layername']
-                    self.tbl_address.model().setData(layername_index, layername)
+                if url == "": continue
+
+                getInfo = get_paraInfo(url, reqheaders=reqheaders)
+
+                key = url + "_*"
+                if getInfo is None:
+                    log.error(url + "无法获取远程参数信息，请检查地址是否正确以及网络是否连通！")
+                    continue
+                else:
+                    log.info(url + "参数信息获取成功！")
+
+                self.setAllParaToMemory(url, getInfo)
+
+                services = self.paras[key]['services']
+                if isinstance(editor_delegate, vectorTableDelegate):
+                    self.model.setLevelData(key, services)
+
+                if service != "*" and service != "":
+                    layername_index = self.tbl_address.model().index(row, 2)
+                    if url + "_" + str(service) in self.paras:
+                        layername = self.paras[url + "_" + str(service)]['old_layername']
+                        self.tbl_address.model().setData(layername_index, layername)
+        except:
+            log.error("无法获取远程参数，错误原因：\n{}".format(traceback.format_exc()))
 
     def setAllParaToMemory(self, url, getInfo):
         xmin = xmax = ymin = ymax = sp = ""
