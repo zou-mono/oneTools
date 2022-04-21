@@ -111,9 +111,7 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, _a
 
     log.info("文件数据库创建成功, 位置为{}, 图层名称为{}".format(os.path.abspath(output_path), out_layer.GetName()))
 
-    log.info(f'开始使用协程抓取服务{service_name}的第{layer_order}个图层...')
-
-    looplst, OID = getIds(query_url, loop_pos)
+    looplst, OID, total_count = getIds(query_url, loop_pos)
 
     if OID != OID_NAME:
         OID_NAME = OID
@@ -121,6 +119,8 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, _a
 
     if looplst is None:
         return False, '要素为空！'
+
+    log.info(f'开始使用协程抓取服务{service_name}的第{layer_order}个图层，共计{total_count}个要素...')
 
     try:
         tasks = []
@@ -139,7 +139,8 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, _a
                 loop.run_until_complete(asyncio.wait(tasks))
                 tasks = []
                 iloop += 1
-                log.debug(iloop)
+                # log.debug(iloop)
+                log.info("{:.0%}".format(iloop * concurrence_num * num_return / total_count))
                 continue
             else:
                 tasks.append(asyncio.ensure_future(output_data_async(query_url, query_clause, out_layer, line1, line2)))
@@ -249,10 +250,10 @@ def getIds(query_url, loop_pos):
                 if looplst[len(looplst) - 1] != endId + 1:
                     looplst.append(endId + 1)
 
-                return looplst, OID
+                return looplst, OID, len(ids)
             else:
                 # log.warning("要素为空!")
-                return None, None
+                return None, None, None
         except:
             log.error('HTTP请求失败！正在准备重发...')
             trytime += 1
