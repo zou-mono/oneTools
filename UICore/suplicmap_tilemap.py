@@ -55,56 +55,59 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
     """crawler program for tilemap data in http://suplicmap.pnr.sz."""
     start = time.time()
 
+    dead_link = 0
+
     if url[-1] == "/":
         url = url[:-1]
 
-    # if not os.path.exists(output_path):
-    #     os.makedirs(output_path)
-
-    # output_path = launderPath(output_path)
-    # level_path = output_path + str(level)
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
-
-    # getInfo = get_json(url_json)
-    # out_file = write_info_to_json(getInfo, output_path)
-    # log.info('输出影像信息json文件:{}'.format(out_file))
-
-    # tile_size = getInfo['tileInfo']['rows']  # 瓦片尺寸
-    # x0 = getInfo['tileInfo']['origin']['x']  # 初始x
-    # y0 = getInfo['tileInfo']['origin']['y']  # 初始y
-    # xmin = getInfo['extent']['xmin']  # xmin
-    # ymin = getInfo['extent']['ymin']  # ymin
-    # xmax = getInfo['extent']['xmax']  # xmax
-    # ymax = getInfo['extent']['ymax']  # ymax
-
-    # lods = getInfo['tileInfo']['lods']  # lod信息
-    # lod = get_lod(lods, level)
-    # resolution = lod['resolution']
-    min_col, min_row = get_col_row(x0, y0, xmin, ymax, tile_size, resolution)
-    print(str(min_col) + " " + str(min_row))
-    max_col, max_row = get_col_row(x0, y0, xmax, ymin, tile_size, resolution)
-    print(str(max_col) + " " + str(max_row))
-
-    if min_row > max_row:
-        log.error("最小行号大于最大行号,请检查参数！\n")
-        return False
-    elif min_col > max_col:
-        log.error("最小列号大于最大列号,请检查参数！\n")
-        return False
-
-    log.info('\n开始使用协程抓取...')
-    # for i in range(min_row, max_row):
-    #     for j in range(min_col, max_col):
-    #         tile_url = f'{url}/tile/{level}/{i}/{j}'
-    #         output_img(tile_url, level_path, i, j)
-
-    tasks = []
-    loop = asyncio.ProactorEventLoop()
-    asyncio.set_event_loop(loop)
-    # loop = asyncio.get_event_loop()
-    total_count = (max_row - min_row + 1) * (max_col - min_col + 1)
     try:
+        # if not os.path.exists(output_path):
+        #     os.makedirs(output_path)
+
+        # output_path = launderPath(output_path)
+        # level_path = output_path + str(level)
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+
+        # getInfo = get_json(url_json)
+        # out_file = write_info_to_json(getInfo, output_path)
+        # log.info('输出影像信息json文件:{}'.format(out_file))
+
+        # tile_size = getInfo['tileInfo']['rows']  # 瓦片尺寸
+        # x0 = getInfo['tileInfo']['origin']['x']  # 初始x
+        # y0 = getInfo['tileInfo']['origin']['y']  # 初始y
+        # xmin = getInfo['extent']['xmin']  # xmin
+        # ymin = getInfo['extent']['ymin']  # ymin
+        # xmax = getInfo['extent']['xmax']  # xmax
+        # ymax = getInfo['extent']['ymax']  # ymax
+
+        # lods = getInfo['tileInfo']['lods']  # lod信息
+        # lod = get_lod(lods, level)
+        # resolution = lod['resolution']
+        min_col, min_row = get_col_row(x0, y0, xmin, ymax, tile_size, resolution)
+        print(str(min_col) + " " + str(min_row))
+        max_col, max_row = get_col_row(x0, y0, xmax, ymin, tile_size, resolution)
+        print(str(max_col) + " " + str(max_row))
+
+        if min_row > max_row:
+            log.error("最小行号大于最大行号,请检查参数！\n")
+            return False
+        elif min_col > max_col:
+            log.error("最小列号大于最大列号,请检查参数！\n")
+            return False
+
+        log.info('\n开始使用协程抓取, 行数：{}, 列数:{}...'.format(max_col - min_col + 1, max_row - min_row + 1))
+        # for i in range(min_row, max_row):
+        #     for j in range(min_col, max_col):
+        #         tile_url = f'{url}/tile/{level}/{i}/{j}'
+        #         output_img(tile_url, level_path, i, j)
+
+        tasks = []
+        loop = asyncio.ProactorEventLoop()
+        asyncio.set_event_loop(loop)
+        # loop = asyncio.get_event_loop()
+        total_count = (max_row - min_row) * (max_col - min_col)
+
         iloop = 0
         for i in range(min_row, max_row + 1):
             for j in range(min_col, max_col + 1):
@@ -140,6 +143,8 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
             start_failed_count = failed_count
             delta_count = failed_count
             tasks = []
+            loop = asyncio.ProactorEventLoop()
+            asyncio.set_event_loop(loop)
             while len(failed_urls) > 0 and delta_count > 0:
                 iloop += 1
 
@@ -155,13 +160,15 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
                 else:
                     tasks.append(asyncio.ensure_future(output_img_asyc(furl[0], output_path, furl[1], furl[2])))
 
+            if len(tasks) > 0:
+                loop.run_until_complete(asyncio.wait(tasks))
+
             if len(failed_urls) > 3000:
                 log.error("抓取失败的url数量太多，请检查网络状态并重新抓取.")
                 if lock.locked():
                     lock.release()
                 return False
 
-            dead_link = 0
             log.info('开始用单线程抓取失败的url...')
             while len(failed_urls) > 0:
                 furl = failed_urls.pop()

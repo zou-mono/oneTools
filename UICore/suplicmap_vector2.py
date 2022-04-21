@@ -31,14 +31,14 @@ dateLst = []
 OID_NAME = "OBJECTID"  # FID字段名称
 m_fields = []
 
-openapi = ''
+api_token = ''
+subscription_token = ''
 
 # 定义请求头
 reqheaders = {
     'User-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36 Edg/100.0.1185.39',
     # 'Content-Type': 'application/x-www-form-urlencoded',
     'Connection': 'keep-alive',
-    ''
     'Pragma': 'no-cache'}
 
 
@@ -63,18 +63,22 @@ reqheaders = {
     default=-1,
     required=False)
 @click.option(
+    '--token', '-t',
+    help='OpenAPI token. If exists, set it.',
+    required=False)
+@click.option(
     '--output-path', '-o',
     help='Output file geodatabase, need the full path. For example, res/data.gdb',
     required=True)
-def main(url, layer_name, sr, loop_pos, output_path):
+def main(url, layer_name, sr, loop_pos, api_token, subscription_token, output_path):
     """crawler program for vector data in http://suplicmap.pnr.sz."""
     url_lst = url.split(r'/')
     layer_order = url_lst[-1]
     service_name = url_lst[-1]
-    crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, loop_pos)
+    crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, api_token, subscription_token, loop_pos)
 
 
-def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, loop_pos=-1):
+def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, _api_token='', _subscription_token='', loop_pos=-1):
     start = time.time()
 
     global epsg
@@ -86,6 +90,14 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, lo
     else:
         query_url = url + "/query"
         url_json = url + "?f=pjson"
+
+    if _subscription_token != '':
+        global reqheaders
+        reqheaders['X-OPENAPI-SubscriptionToken'] = _subscription_token
+
+    if _api_token != '':
+        global api_token
+        api_token = _api_token
 
     log.info("\n开始创建文件数据库...")
 
@@ -167,7 +179,7 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, lo
     return True, ''
 
 
-def crawl_vector_batch(url, key, output, paras):
+def crawl_vector_batch(url, key, output, api_token, subscription_token, paras):
     services = paras[key]['services']
     for service in services:
         if service != "*":
@@ -186,7 +198,8 @@ def crawl_vector_batch(url, key, output, paras):
             if layername == "":
                 layername = None
 
-            crawl_vector(res_url, service_name=service_name, layer_order=service, layer_name=layername, output_path=output, sr=sr)
+            crawl_vector(res_url, service_name=service_name, layer_order=service, layer_name=layername,
+                         output_path=output, api_token=api_token, subscription_token=subscription_token, sr=sr)
 
 
 def getIds(query_url, loop_pos):
@@ -197,19 +210,20 @@ def getIds(query_url, loop_pos):
     #               'Pragma': 'no-cache'}
 
     # 定义post的参数
-    body_value = {'where': '{}>=0'.format(OID_NAME),
+    body_value = {'where': '{}>-1'.format(OID_NAME),
                   'returnIdsOnly': 'true',
-                  'f': 'pjson'}
+                  'f': 'pjson',
+                  'apitoken': api_token}
 
     # 对请求参数进行编码
-    data = urllib.parse.urlencode(body_value).encode(encoding='UTF8')
+    # data = urllib.parse.urlencode(body_value).encode(encoding='UTF8')
     # 请求不同页面的数据
     trytime = 0
     while trytime < try_num:
         try:
             # req = urllib.request.Request(url=query_url, data=data, headers=reqheaders)
             # r = urllib.request.urlopen(req)
-            r = requests.get(query_url, params=data, headers=reqheaders)
+            r = requests.get(query_url, params=body_value, headers=reqheaders)
             # respData = r.read().decode('utf-8')
             # respData = json.loads(respData)
             respData = r.json()
@@ -243,7 +257,7 @@ def getIds(query_url, loop_pos):
             log.error('HTTP请求失败！正在准备重发...')
             trytime += 1
 
-        time.sleep(2)
+        time.sleep(0.2)
         continue
     return None, None
 
@@ -299,7 +313,8 @@ def createFileGDB(output_path, layer_name, url_json, service_name, layer_order):
             log.error('获取数据字段信息失败,无法创建数据库.')
             return
 
-        geoObjs = json.loads(respData)
+        # geoObjs = json.loads(respData)
+        geoObjs = respData.json()
         if geoObjs['type'] != 'Feature Layer':
             log.warning('远程数据为非要素图层.')
             # return None, None, ""
@@ -404,12 +419,13 @@ async def get_json_by_query_async(url, query_clause):
     body_value = {'where': query_clause,
                   'outFields': '*',
                   'outSR': str(epsg),
-                  'f': 'json'}
+                  'f': 'json',
+                  'apitoken': api_token}
 
     async with aiohttp.ClientSession() as session:
         try:
-            respData = await send_http(session, method="post", respond_Type="content", headers=reqheaders,
-                                       data=body_value, read_timeout=60, url=url, retries=0)
+            respData, error_code = await send_http(session, method="get", respond_Type="json", headers=reqheaders,
+                                       params=body_value, read_timeout=60, url=url, retries=0)
             return respData
         except:
             log.error('url:{} data:{} error:{}'.format(url, query_clause, traceback.format_exc()))
@@ -422,10 +438,11 @@ def get_json_by_query(url, query_clause):
     body_value = {'where': query_clause,
                   'outFields': '*',
                   'outSR': str(epsg),
-                  'f': 'json'}
+                  'f': 'json',
+                  'api_token': api_token}
 
     # 对请求参数进行编码
-    data = urllib.parse.urlencode(body_value).encode(encoding='UTF8')
+    # data = urllib.parse.urlencode(body_value).encode(encoding='UTF8')
     # 请求不同页面的数据
     trytime = 0
     while trytime < try_num:
@@ -434,7 +451,7 @@ def get_json_by_query(url, query_clause):
             # r = urllib.request.urlopen(req)
             # respData = r.read().decode('utf-8')
             # res = respData.json()
-            respData = requests.get(url, params=data, headers=reqheaders)
+            respData = requests.get(url, params=body_value, headers=reqheaders)
             return respData
         except:
             log.error('HTTP请求失败！正在准备重发...')
@@ -449,8 +466,8 @@ async def output_data_async(url, query_clause, out_layer, startID, endID):
     try:
         respData = await get_json_by_query_async(url, query_clause)
         if respData is not None:
-            respData = respData.decode('utf-8')
-            respData = json.loads(respData)
+            # respData = respData.decode('utf-8')
+            # respData = json.loads(respData)
             if 'fields' not in respData:
                 respData['fields'] = m_fields
             esri_json = ogr.GetDriverByName('ESRIJSON')

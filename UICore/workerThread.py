@@ -42,21 +42,21 @@ class crawlTilesWorker(QtCore.QObject):
 
 
 class crawlVectorWorker(QtCore.QObject):
-    crawl = pyqtSignal(str, str, str, str, str, int)
-    crawlBatch = pyqtSignal(str, str, str, object)
+    crawl = pyqtSignal(str, str, str, str, str, str, str, int)
+    crawlBatch = pyqtSignal(str, str, str, str, str, object)
     finished = pyqtSignal()
 
     def __init__(self):
         super(crawlVectorWorker, self).__init__()
 
-    def crawlVector(self, url, service_name, layer_order, layer_name, output_path, sr):
-        flag, message = crawl_vector(url, service_name, layer_order, layer_name, output_path, sr)
+    def crawlVector(self, url, service_name, layer_order, layer_name, output_path, api_token, subscription_token, sr):
+        flag, message = crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, api_token, subscription_token)
         if not flag:
             log.error(message)
         self.finished.emit()
 
-    def crawlVectorBatch(self, url, key, output, paras):
-        crawl_vector_batch(url, key, output, paras)
+    def crawlVectorBatch(self, url, key, output, api_token, subscription_token, paras):
+        crawl_vector_batch(url, key, output, api_token, subscription_token, paras)
         self.finished.emit()
 
 

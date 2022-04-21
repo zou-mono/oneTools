@@ -74,6 +74,10 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.tbl_address.clicked.connect(self.table_index_clicked)
         self.tbl_address.verticalHeader().sectionClicked.connect(self.table_section_clicked)
 
+        self.txt_subscriptionToken.setText('0d6325d440f14ee8847f7551c686f19c')
+        self.txt_apiToken.setText('eyJpc3N1Y2Nlc3MiOiJ0cnVlIiwiZmFpbHJlc29uIjoiIiwiYWNjb3VudCI6InpvdWhhaXgiLCJ0b2tlbiI6IjFmMGVkMTM2MWY3ZjRiZTJhMGJkMjMzYjAzYmQwYjhlIn0%3D.Eg4DFhERDQ%3D%3D')
+        self.txt_subscriptionToken.home(False)
+        self.txt_apiToken.home(False)
         self.splitter.setupUi()
 
     def showEvent(self, a0: QShowEvent) -> None:
@@ -140,6 +144,8 @@ class Ui_Window(QDialog, Ui_Dialog):
             output_index = self.tbl_address.model().index(row, 3, QModelIndex())
             # layername = str(self.tbl_address.model().data(layername_index, Qt.DisplayRole)).strip()
             output = str(self.tbl_address.model().data(output_index, Qt.DisplayRole)).strip()
+            subscription_token = self.txt_subscriptionToken.text()
+            api_token = self.txt_apiToken.text()
 
             if service != "*":
                 key = url + "_" + str(service)
@@ -159,13 +165,13 @@ class Ui_Window(QDialog, Ui_Dialog):
                     layername = self.paras[key]['old_layername']
 
                 # crawl_vector(res_url, service_name=service_name, layer_order=service, layer_name=layername, output_path=output, sr=sr)
-                self.crawlVectorThread.crawl.emit(res_url, service_name, str(service), layername, output, sr)
+                self.crawlVectorThread.crawl.emit(res_url, service_name, str(service), layername, output, api_token, subscription_token, sr)
             else:
                 key_all = url + "_*"
                 if self.paras[key_all]['output'] != "":
                     output = self.paras[key_all]['output']
 
-                self.crawlVectorThread.crawlBatch.emit(url, key_all, output, self.paras)
+                self.crawlVectorThread.crawlBatch.emit(url, key_all, output, api_token, subscription_token, self.paras)
 
     def check_paras(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
