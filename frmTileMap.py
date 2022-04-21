@@ -22,6 +22,13 @@ Slot = QtCore.pyqtSlot
 
 log = Log(__name__)
 
+# 定义请求头
+reqheaders = {
+    'User-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36 Edg/81.0.416.72',
+    'Content-Type': 'application/x-www-form-urlencoded',
+    # 'Host': 'suplicmap.pnr.sz',
+    'Pragma': 'no-cache'}
+
 pixelType_dict = {
     'U8': '无符号8位整型',
     'S8': '符号8位整型',
@@ -98,6 +105,11 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         self.txt_log.setReadOnly(True)
 
         self.splitter.setupUi()
+
+        self.txt_subscriptionToken.setText('0d6325d440f14ee8847f7551c686f19c')
+        self.txt_apiToken.setText('eyJpc3N1Y2Nlc3MiOiJ0cnVlIiwiZmFpbHJlc29uIjoiIiwiYWNjb3VudCI6InpvdWhhaXgiLCJ0b2tlbiI6IjFmMGVkMTM2MWY3ZjRiZTJhMGJkMjMzYjAzYmQwYjhlIn0%3D.Eg4DFhERDQ%3D%3D')
+        self.txt_subscriptionToken.home(False)
+        self.txt_apiToken.home(False)
 
         # self.txt_log_width = self.txt_log.width()
 
@@ -351,11 +363,16 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         bCompression = True if self.cb_compression.checkState() == 2 else False
 
         irow = 0
+        subscription_token = self.txt_subscriptionToken.text()
+        api_token = self.txt_apiToken.text()
+
+        if subscription_token != '':
+            global reqheaders
+            reqheaders['X-OPENAPI-SubscriptionToken'] = subscription_token
+
         for row in rows:
             irow += 1
-            # if self.rbtn_onlyHandle:
-            #     pass
-            # else:
+
             url_index, level_index, url, level = self.return_url_and_level(row)
 
             try:
@@ -387,7 +404,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     self.crawlTilesThread.crawlAndMerge.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
                                                              float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
                                                              float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']),
-                                                             str(paras['pixelType']), bCompression, tileFolder, imgFile)
+                                                             str(paras['pixelType']), bCompression, tileFolder, api_token, subscription_token, imgFile)
                 elif self.rbtn_onlySpider.isChecked():
                     if url not in self.paras:
                         log.error("{}地址错误".format(url))
@@ -408,7 +425,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
                     self.crawlTilesThread.crawl.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
                                                      float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
-                                                     float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']), tileFolder)
+                                                     float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']),
+                                                     api_token, subscription_token, tileFolder)
                 elif self.rbtn_onlyHandle.isChecked():
                     key = url + "_" + level
                     if key not in self.paras:
@@ -771,6 +789,11 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         else:
             rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
 
+        subscription_token = self.txt_subscriptionToken.text()
+        if subscription_token != '':
+            global reqheaders
+            reqheaders['X-OPENAPI-SubscriptionToken'] = subscription_token
+
         for row in rows:
             url_index, level_index, url, level = self.return_url_and_level(row)
             editor_delegate = self.tbl_address.itemDelegate(level_index)
@@ -780,7 +803,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             if url == "": continue
 
             # if url not in self.paras.keys():
-            getInfo = get_paraInfo(url)
+            getInfo = get_paraInfo(url, reqheaders=reqheaders)
             if getInfo is None:
                 log.error(url + "无法获取远程参数信息，请检查地址是否正确以及网络是否连通！")
                 continue

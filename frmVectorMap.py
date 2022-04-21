@@ -26,7 +26,6 @@ reqheaders = {
     'User-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36 Edg/81.0.416.72',
     'Content-Type': 'application/x-www-form-urlencoded',
     # 'Host': 'suplicmap.pnr.sz',
-    'X-OPENAPI-SubscriptionToken': '0d6325d440f14ee8847f7551c686f19c',
     'Pragma': 'no-cache'}
 
 class Ui_Window(QDialog, Ui_Dialog):
@@ -437,6 +436,11 @@ class Ui_Window(QDialog, Ui_Dialog):
                               self.tbl_address.selectedIndexes()))
         else:
             rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))
+
+        subscription_token = self.txt_subscriptionToken.text()
+        if subscription_token != '':
+            global reqheaders
+            reqheaders['X-OPENAPI-SubscriptionToken'] = subscription_token
 
         for row in rows:
             url_index, service_index, url, service = self.return_url_and_level(row)

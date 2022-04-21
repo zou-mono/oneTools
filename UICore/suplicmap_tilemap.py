@@ -18,6 +18,17 @@ import encodings.idna
 try_num = 5
 coroutine_num = 500  # 协程数
 
+api_token = ''
+subscription_token = ''
+
+# 定义请求头
+reqheaders = {
+    'User-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36 Edg/100.0.1185.39',
+    # 'Content-Type': 'application/x-www-form-urlencoded',
+    'Connection': 'keep-alive',
+    'Pragma': 'no-cache'}
+
+
 log = Log()
 failed_urls = []
 lock = asyncio.Lock()  # 协程锁
@@ -47,11 +58,11 @@ lock = asyncio.Lock()  # 协程锁
     '--output-path', '-o',
     help='Output folder, need the full path. For example, res/tilemaps',
     required=True)
-def main(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path):
-    crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path)
+def main(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, api_token, subscription_token, output_path):
+    crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, api_token, subscription_token, output_path)
 
 
-def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, output_path):
+def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, _api_token, _subscription_token, output_path):
     """crawler program for tilemap data in http://suplicmap.pnr.sz."""
     start = time.time()
 
@@ -95,6 +106,14 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
         elif min_col > max_col:
             log.error("最小列号大于最大列号,请检查参数！\n")
             return False
+
+        if _subscription_token != '':
+            global reqheaders
+            reqheaders['X-OPENAPI-SubscriptionToken'] = _subscription_token
+
+        if _api_token != '':
+            global api_token
+            api_token = _api_token
 
         log.info('\n开始使用协程抓取, 行数：{}, 列数:{}...'.format(max_col - min_col + 1, max_row - min_row + 1))
         # for i in range(min_row, max_row):
@@ -143,8 +162,10 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
             start_failed_count = failed_count
             delta_count = failed_count
             tasks = []
+            iloop = total_count - len(failed_urls)
             loop = asyncio.ProactorEventLoop()
             asyncio.set_event_loop(loop)
+
             while len(failed_urls) > 0 and delta_count > 0:
                 iloop += 1
 
@@ -156,6 +177,7 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
                     log.info("{:.0%}".format(iloop / total_count))
                     delta_count = start_failed_count - len(failed_urls)
                     start_failed_count = len(failed_urls)
+                    iloop = total_count - len(failed_urls)
                     continue
                 else:
                     tasks.append(asyncio.ensure_future(output_img_asyc(furl[0], output_path, furl[1], furl[2])))
@@ -260,7 +282,8 @@ async def get_tile_async(url, output_path, i, j):
     error_code = -1
     async with aiohttp.ClientSession() as session:
         try:
-            respData, error_code = await send_http(session, method="get", respond_Type="content", read_timeout=10, url=url, retries=0)
+            respData, error_code = await send_http(session, method="get", headers=reqheaders,
+                                                   respond_Type="content", read_timeout=10, url=url, retries=0)
             # response = await session.post(url, data=data, headers=reqheaders)
             if len(respData) > 0:
                 return respData, 200, url, output_path, i, j
