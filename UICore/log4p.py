@@ -110,7 +110,7 @@ class up_stacked_logger:
     def __exit__(self, *args, **kwds):
         self.logger.removeFilter(self.f)
 
-@singleton
+# @singleton
 class Log:
     def __init__(self, fileName=None):
         # logging.setLoggerClass(WrappedLogger)

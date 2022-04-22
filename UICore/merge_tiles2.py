@@ -72,7 +72,11 @@ def main(input_folder, scope, origin, resolution, tilesize, pixeltype, compressi
     merge_tiles(input_folder, scope, origin, resolution, tilesize, pixeltype, compression, merged_file)
 
 
-def merge_tiles(input_folder, scope, origin, resolution, tilesize, pixeltype, compression, merged_file):
+def merge_tiles(input_folder, scope, origin, resolution, tilesize, pixeltype, compression, merged_file, logClass=None):
+    global log
+    if logClass is not None:
+        log = logClass
+
     originX = origin[0]
     originY = origin[1]
     minX = scope[0]

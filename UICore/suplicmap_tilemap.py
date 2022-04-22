@@ -29,7 +29,7 @@ reqheaders = {
     'Pragma': 'no-cache'}
 
 
-log = Log()
+log = Log(__name__)
 failed_urls = []
 lock = asyncio.Lock()  # 协程锁
 
@@ -62,9 +62,14 @@ def main(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, api_
     crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, api_token, subscription_token, output_path)
 
 
-def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, _api_token, _subscription_token, output_path):
+def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size,
+                  _api_token, _subscription_token, output_path, logClass=None):
     """crawler program for tilemap data in http://suplicmap.pnr.sz."""
     start = time.time()
+
+    global log
+    if logClass is not None:
+        log = logClass
 
     dead_link = 0
 
@@ -153,12 +158,15 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
 
         if len(tasks) > 0:
             loop.run_until_complete(asyncio.wait(tasks))
+        loop.close()
         log.info('协程抓取完成.')
 
         failed_count = len(failed_urls)
         if failed_count > 0:
             log.info('开始用协程重新抓取失败的url, 总计{}条...'.format(str(failed_count)))
             # 比较前后两次抓取成功的数量，如果等于0，则说明协程途径行不通，考虑单线程抓取
+            time.sleep(1)
+
             start_failed_count = failed_count
             delta_count = failed_count
             tasks = []
@@ -184,6 +192,7 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
 
             if len(tasks) > 0:
                 loop.run_until_complete(asyncio.wait(tasks))
+            loop.close()
 
             if len(failed_urls) > 3000:
                 log.error("抓取失败的url数量太多，请检查网络状态并重新抓取.")
@@ -197,17 +206,17 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
                 if not output_img2(furl[0], output_path, furl[1], furl[2]):
                     log.error('url:{} error:{}'.format(url, traceback.format_exc()))
                     dead_link += 1
+
+        end = time.time()
+        if lock.locked():
+            lock.release()
+        # log.info('爬取瓦片任务完成！瓦片存储至{}.'.format(output_path))
+        log.info('爬取瓦片任务完成！总共耗时:{}秒. 死链接数目为:{}. 瓦片存储至{}.'.format("{:.2f} \n".format(end - start), dead_link, output_path))
+        return True
+
     except:
         log.error("抓取失败，请检查参数！{}".format(traceback.format_exc()))
         return False
-
-    end = time.time()
-    if lock.locked():
-        lock.release()
-    # log.info('爬取瓦片任务完成！瓦片存储至{}.'.format(output_path))
-    log.info('爬取瓦片任务完成！总共耗时:{}秒. 死链接数目为:{}. 瓦片存储至{}.'.format("{:.2f} \n".format(end - start), dead_link, output_path))
-    return True
-
 
 def url_json(url):
     if url[-1] == "/":

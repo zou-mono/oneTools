@@ -17,6 +17,8 @@ from UICore.log4p import Log
 from UICore.Gv import SpatialReference
 
 log = Log(__name__)
+parent_window = None
+log_viewer = None
 
 @click.command()
 @click.option(
@@ -58,55 +60,59 @@ def main(inpath, inlayer, insrs, outpath, outlayer, outsrs):
     coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs)
 
 
-def coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs):
+def coordTransform(inpath, inlayer, insrs, outpath, outlayer, outsrs, logClass=None):
     if inpath[-1] == os.sep:
         inpath = inpath[:-1]
     if outpath[-1] == os.sep:
         outpath = outpath[:-1]
 
-    in_format = get_suffix(inpath)
-
-    if in_format == DataType.cad_dwg:
-        checked_insrs = insrs
-        checked_outsrs = outsrs
-    else:
-        in_wks = workspaceFactory().get_factory(in_format)
-
-        if in_wks is None:
-            return False
-
-        if in_wks.openFromFile(inpath) is None:
-            log.error("无法读取输入文件!可能原因:数据引擎未加载或者数据格式不正确.")
-            return False
-        in_layer = in_wks.openLayer(inlayer)
-
-        if in_layer is None:
-            log.error("输入图层不存在!")
-            return False
-
-        srs_ref = in_layer.GetSpatialRef()
-        # in_DS.Release()
-        in_layer = None
-
-        checked_insrs = check_srs(insrs, srs_ref)
-        if checked_insrs == -2435:
-            log.error("输入的空间参考在ESPG中不存在!")
-            return False
-        elif checked_insrs == -4547:
-            log.error("不支持输入空间数据的坐标转换!")
-            return False
-
-        checked_outsrs = check_srs(outsrs, outlayer)
-        if checked_outsrs == -2435:
-            log.error("输出的空间参考在ESPG中不存在!")
-            return False
-        elif checked_outsrs == -4547:
-            log.error("不支持输出空间数据的坐标转换!")
-            return False
-
-    out_format = get_suffix(outpath)
-
     try:
+        global log
+        if logClass is not None:
+            log = logClass
+
+        in_format = get_suffix(inpath)
+
+        if in_format == DataType.cad_dwg:
+            checked_insrs = insrs
+            checked_outsrs = outsrs
+        else:
+            in_wks = workspaceFactory().get_factory(in_format)
+
+            if in_wks is None:
+                return False
+
+            if in_wks.openFromFile(inpath) is None:
+                log.error("无法读取输入文件!可能原因:数据引擎未加载或者数据格式不正确.")
+                return False
+            in_layer = in_wks.openLayer(inlayer)
+
+            if in_layer is None:
+                log.error("输入图层不存在!")
+                return False
+
+            srs_ref = in_layer.GetSpatialRef()
+            # in_DS.Release()
+            in_layer = None
+
+            checked_insrs = check_srs(insrs, srs_ref)
+            if checked_insrs == -2435:
+                log.error("输入的空间参考在ESPG中不存在!")
+                return False
+            elif checked_insrs == -4547:
+                log.error("不支持输入空间数据的坐标转换!")
+                return False
+
+            checked_outsrs = check_srs(outsrs, outlayer)
+            if checked_outsrs == -2435:
+                log.error("输出的空间参考在ESPG中不存在!")
+                return False
+            elif checked_outsrs == -4547:
+                log.error("不支持输出空间数据的坐标转换!")
+                return False
+
+        out_format = get_suffix(outpath)
+
         tfer = Transformer(in_format, out_format, inpath, inlayer, outpath, outlayer)
         tfer.transform(checked_insrs, checked_outsrs)
         return True
@@ -188,11 +194,11 @@ class Transformer(object):
         if self.in_format == DataType.cad_dwg:
             res = None
             if srcSRS == SpatialReference.sz_Local and dstSRS == SpatialReference.pcs_2000:
-                res = transform_dwg(self.in_path, 1, self.out_path)
+                res = transform_dwg(self.in_path, 1, self.out_path, log)
             elif srcSRS == SpatialReference.pcs_2000 and dstSRS == SpatialReference.sz_Local:
-                res = transform_dwg(self.in_path, 2, self.out_path)
+                res = transform_dwg(self.in_path, 2, self.out_path, log)
             elif srcSRS == SpatialReference.pcs_hk80 and dstSRS == SpatialReference.pcs_2000:
-                res = transform_dwg(self.in_path, 3, self.out_path)
+                res = transform_dwg(self.in_path, 3, self.out_path, log)
             else:
                 log.error("不支持从{}到{}的转换!".format(srs_dict[srcSRS], srs_dict[dstSRS]))
                 return False

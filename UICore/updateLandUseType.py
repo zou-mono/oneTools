@@ -111,13 +111,17 @@ cell_number_style.number_format = "0.00"
 step_log_color = "#0000FF"  # 右侧Logviewer中info日志的突出显示为蓝色
 
 def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC_tables, DLBM_values, report_file_name,
-                    bConvert, bReport1, bReport2, bReport3, bReport4):
+                    bConvert, bReport1, bReport2, bReport3, bReport4, logClass=None):
     dataSource = None
     wks = None
 
     cur_path, filename = os.path.split(os.path.abspath(sys.argv[0]))
     temp_sqliteDB_name = '%s.db' % (layer_name + '_' + time.strftime('%Y-%m-%d-%H-%M-%S'))
     temp_sqliteDB_path = os.path.join(cur_path, "tmp")
+
+    global log
+    if logClass is not None:
+        log = logClass
 
     bflag = True
     try:

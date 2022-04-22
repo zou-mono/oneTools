@@ -611,10 +611,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
                     # UICore.coordTransform_table.coordTransform(in_path, inencode, bheader, x, y, in_srs, out_srs, out_path, "gbk")
                     self.coordTransformThread.transform_tbl.emit(
-                        in_path, inencode, bheader, x, y, in_srs, out_srs, out_path, "gb18030")
+                        in_path, inencode, bheader, x, y, in_srs, out_srs, out_path, "gb18030", log)
                 else:
                     self.coordTransformThread.transform_tbl.emit(
-                        in_path, "gbk", bheader, x, y, in_srs, out_srs, out_path, "gb18030")
+                        in_path, "gbk", bheader, x, y, in_srs, out_srs, out_path, "gb18030", log)
         else:
             for row in rows:
                 in_path_index = self.tbl_address.model().index(row, 0, QModelIndex())
@@ -634,7 +634,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 in_srs = list(srs_dict.keys())[list(srs_dict.values()).index(in_srs)]
                 out_srs = list(srs_dict.keys())[list(srs_dict.values()).index(out_srs)]
 
-                self.coordTransformThread.transform.emit(in_path, in_layername, in_srs, out_path, out_layername, out_srs)
+                self.coordTransformThread.transform.emit(in_path, in_layername, in_srs, out_path, out_layername, out_srs, log)
 
     @Slot()
     def btn_saveMetaFile_clicked(self):

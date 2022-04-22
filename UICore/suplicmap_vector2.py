@@ -26,7 +26,7 @@ try_num = 5
 num_return = 1000  # 返回条数
 concurrence_num = 10  # 协程并发次数
 # max_return = 1000000
-log = Log(__file__)
+log = Log(__name__)
 failed_urls = []
 lock = asyncio.Lock()
 
@@ -81,8 +81,8 @@ def main(url, layer_name, sr, loop_pos, api_token, subscription_token, output_pa
     service_name = url_lst[-1]
     crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, api_token, subscription_token, loop_pos)
 
-
-def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, _api_token='', _subscription_token='', loop_pos=-1):
+def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr,
+                 _api_token='', _subscription_token='', logClass=None, loop_pos=-1):
     start = time.time()
 
     global epsg
@@ -105,6 +105,10 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, _a
     if _api_token != '':
         global api_token
         api_token = _api_token
+
+    global log
+    if logClass is not None:
+        log = logClass
 
     log.info("\n开始创建文件数据库...")
 
@@ -162,6 +166,7 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, _a
 
         if len(tasks) > 0:
             loop.run_until_complete(asyncio.wait(tasks))
+        loop.close()
         log.info('协程抓取完成.')
 
         dead_link = 0
@@ -199,7 +204,11 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr, _a
     return True, ''
 
 
-def crawl_vector_batch(url, key, output, api_token, subscription_token, paras):
+def crawl_vector_batch(url, key, output, api_token, subscription_token, paras, logClass):
+    global log
+    if logClass is not None:
+        log = logClass
+
     services = paras[key]['services']
     for service in services:
         if service != "*":
@@ -279,7 +288,7 @@ def getIds(query_url, loop_pos):
 
         time.sleep(0.2)
         continue
-    return None, None
+    return None, None, -1
 
 
 def addField(feature, defn, OID_NAME, out_layer):

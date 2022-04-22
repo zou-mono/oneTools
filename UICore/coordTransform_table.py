@@ -77,8 +77,12 @@ def main(inpath, inencode, header, xfield, yfield, insrs, outsrs, outpath, outen
     """spatial coordinate transformation program"""
     coordTransform(inpath, inencode, header, xfield, yfield, insrs, outsrs, outpath, outencode)
 
-def coordTransform(inpath, inencode, header, xfield, yfield, insrs, outsrs, outpath, outencode):
+def coordTransform(inpath, inencode, header, xfield, yfield, insrs, outsrs, outpath, outencode, logClass=None):
     gdal.SetConfigOption("OGR_CT_FORCE_TRADITIONAL_GIS_ORDER", "YES")
+
+    global log
+    if logClass is not None:
+        log = logClass
 
     if inpath[-1] == os.sep:
         inpath = inpath[:-1]

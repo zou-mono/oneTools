@@ -30,13 +30,17 @@ def main(input, type, output):
     transform_dwg(input, type, output)
 
 
-def transform_dwg(input, type, output):
+def transform_dwg(input, type, output, logClass=None):
     # cur_path = os.path.abspath('.')
     # log.info("checking parameters...")
     input_dir = os.path.abspath(os.path.dirname(input))
     input_file_name = os.path.basename(input)
     output_dir = os.path.abspath(os.path.dirname(output))
     output_file_name = os.path.basename(output)
+
+    global log
+    if logClass is not None:
+        log = logClass
 
     if not os.path.exists(input):
         log.error("输入的dwg文件不存在!")
@@ -130,8 +134,8 @@ def transform_dwg(input, type, output):
         isuccess_num = 0
         trytime = 0
         while icount < total_count:
+            entity = msp.Item(icount)
             try:
-                entity = msp.Item(icount)
                 entity.TransformBy(mat)
                 # if icount % 1000 == 0 and icount > 0:
                 #     log.debug("{}个entities 转换成功.".format(icount))

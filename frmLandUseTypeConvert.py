@@ -267,7 +267,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
             self.thread.start()
             self.updateThread.update.emit(file_type, in_path, layer_name, right_header, rel_tables,  MC_tables, DLBM_values,
-                                          report_file_name, bConvert, bReport1, bReport2, bReport3, bReport4)
+                                          report_file_name, bConvert, bReport1, bReport2, bReport3, bReport4, log)
         elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
             self.threadTerminate()
             self.close()

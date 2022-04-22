@@ -165,13 +165,14 @@ class Ui_Window(QDialog, Ui_Dialog):
                     layername = self.paras[key]['old_layername']
 
                 # crawl_vector(res_url, service_name=service_name, layer_order=service, layer_name=layername, output_path=output, sr=sr)
-                self.crawlVectorThread.crawl.emit(res_url, service_name, str(service), layername, output, api_token, subscription_token, sr)
+                self.crawlVectorThread.crawl.emit(res_url, service_name, str(service), layername, output,
+                                                  api_token, subscription_token, sr, log)
             else:
                 key_all = url + "_*"
                 if self.paras[key_all]['output'] != "":
                     output = self.paras[key_all]['output']
 
-                self.crawlVectorThread.crawlBatch.emit(url, key_all, output, api_token, subscription_token, self.paras)
+                self.crawlVectorThread.crawlBatch.emit(url, key_all, output, api_token, subscription_token, self.paras, log)
 
     def check_paras(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))

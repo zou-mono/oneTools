@@ -113,15 +113,6 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
         # self.txt_log_width = self.txt_log.width()
 
-        # #  最后运算过程放至到另一个线程避免GUI卡住
-        # self.thread = QThread(self)
-        # self.crawlTilesThread = crawlTilesWorker()
-        # self.crawlTilesThread.moveToThread(self.thread)
-        # self.crawlTilesThread.crawl.connect(self.crawlTilesThread.crawlTiles)
-        # self.crawlTilesThread.crawlAndMerge.connect(self.crawlTilesThread.crawlAndMergeTiles)
-        # self.crawlTilesThread.finished.connect(self.threadStop)
-        # self.crawlTilesThread.merge.connect(self.crawlTilesThread.mergeTiles)
-
         self.bInit = True  # 第一次初始化窗口
         self.init_cmb_pixelType()  # 初始化pixel type下拉框
         self.cmb_pixelType.currentIndexChanged.connect(self.cmb_pixelType_changed)
@@ -404,7 +395,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     self.crawlTilesThread.crawlAndMerge.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
                                                              float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
                                                              float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']),
-                                                             str(paras['pixelType']), bCompression, tileFolder, api_token, subscription_token, imgFile)
+                                                             str(paras['pixelType']), bCompression, tileFolder,
+                                                             api_token, subscription_token, imgFile, log)
                 elif self.rbtn_onlySpider.isChecked():
                     if url not in self.paras:
                         log.error("{}地址错误".format(url))
@@ -426,7 +418,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     self.crawlTilesThread.crawl.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
                                                      float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
                                                      float(paras['ymax']), float(paras['resolution']), int(paras['tilesize']),
-                                                     api_token, subscription_token, tileFolder)
+                                                     api_token, subscription_token, tileFolder, log)
                 elif self.rbtn_onlyHandle.isChecked():
                     key = url + "_" + level
                     if key not in self.paras:
@@ -443,7 +435,7 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     self.crawlTilesThread.merge.emit(url, int(paras['origin_x']), int(paras['origin_y']),
                                                      float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
                                                      float(paras['ymax']), float(paras['resolution']),
-                                                     int(paras['tilesize']), str(paras['pixelType']), bCompression, imgFile)
+                                                     int(paras['tilesize']), str(paras['pixelType']), bCompression, imgFile, log)
             except:
                 log.error("错误发生在第{}行, 错误原因:\n {}".format(str(irow), traceback.format_exc()))
 
