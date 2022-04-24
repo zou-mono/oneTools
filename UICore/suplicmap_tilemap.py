@@ -131,8 +131,9 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
         asyncio.set_event_loop(loop)
         # loop = asyncio.get_event_loop()
         total_count = (max_row - min_row) * (max_col - min_col)
-
+        iprogress = 0
         iloop = 0
+
         for i in range(min_row, max_row + 1):
             for j in range(min_col, max_col + 1):
                 iloop += 1
@@ -151,8 +152,10 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
                     loop.run_until_complete(asyncio.wait(tasks))
                     tasks = []
                     # iloop += 1
-                    log.info("{:.0%}".format(iloop / total_count))
-                    continue
+                    # log.info("{:.0%}".format(iloop / total_count))
+                    if int(iloop * 100 / total_count) != iprogress:
+                        iprogress = int(iloop * 100 / total_count)
+                        log.info("{:.0%}已处理完成...".format(iloop / total_count))
                 else:
                     tasks.append(asyncio.ensure_future(output_img_asyc(tile_url, output_path, i, j)))
 
@@ -182,7 +185,10 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
                     tasks.append(asyncio.ensure_future(output_img_asyc(furl[0], output_path, furl[1], furl[2])))
                     loop.run_until_complete(asyncio.wait(tasks))
                     tasks = []
-                    log.info("{:.0%}".format(iloop / total_count))
+                    if int(iloop * 100 / total_count) != iprogress:
+                        iprogress = int(iloop * 100 / total_count)
+                        log.info("{:.0%}已处理完成...".format(iloop / total_count))
+                    # log.info("{:.0%}".format(iloop / total_count))
                     delta_count = start_failed_count - len(failed_urls)
                     start_failed_count = len(failed_urls)
                     iloop = total_count - len(failed_urls)
