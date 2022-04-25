@@ -154,8 +154,8 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
                     # iloop += 1
                     # log.info("{:.0%}".format(iloop / total_count))
                     if int(iloop * 100 / total_count) != iprogress:
+                        log.info("{}%已处理完成...".format(int(iloop * 100 / total_count)))
                         iprogress = int(iloop * 100 / total_count)
-                        log.info("{:.0%}已处理完成...".format(iloop / total_count))
                 else:
                     tasks.append(asyncio.ensure_future(output_img_asyc(tile_url, output_path, i, j)))
 
@@ -186,8 +186,8 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
                     loop.run_until_complete(asyncio.wait(tasks))
                     tasks = []
                     if int(iloop * 100 / total_count) != iprogress:
+                        log.info("{}%已处理完成...".format(int(iloop * 100 / total_count)))
                         iprogress = int(iloop * 100 / total_count)
-                        log.info("{:.0%}已处理完成...".format(iloop / total_count))
                     # log.info("{:.0%}".format(iloop / total_count))
                     delta_count = start_failed_count - len(failed_urls)
                     start_failed_count = len(failed_urls)

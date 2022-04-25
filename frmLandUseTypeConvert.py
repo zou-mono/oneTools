@@ -326,6 +326,9 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                     elif len(lst_names) == 1:
                         selected_name = [lst_names[0]]
 
+                    if selected_name is None:
+                        return
+
                     layerName = selected_name[0]
                     layer = datasource.GetLayerByName(layerName)
                     address_txt = os.path.join(fileName, layerName)

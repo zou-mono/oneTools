@@ -6,6 +6,7 @@ from UICore.log4p import Log
 import xml.etree.ElementTree as ET
 from enum import Enum
 from datetime import datetime
+from osgeo import ogr
 
 log = Log(__name__)
 
@@ -24,6 +25,32 @@ class FieldType(Enum):
     fieldTypeGUID = 10
     fieldTypeGlobalID = 11
     fieldTypeXML = 12
+
+class ShapeType(Enum):
+    shapeNull               =  0
+    shapePoint              =  1
+    shapePointM             = 21
+    shapePointZM            = 11
+    shapePointZ             =  9
+    shapeMultipoint         =  8
+    shapeMultipointM        = 28
+    shapeMultipointZM       = 18
+    shapeMultipointZ        = 20
+    shapePolyline           =  3
+    shapePolylineM          = 23
+    shapePolylineZM         = 13
+    shapePolylineZ          = 10
+    shapePolygon            =  5
+    shapePolygonM           = 25
+    shapePolygonZM          = 15
+    shapePolygonZ           = 19
+    shapeMultiPatchM        = 31
+    shapeMultiPatch         = 32
+    shapeGeneralPolyline    = 50
+    shapeGeneralPolygon     = 51
+    shapeGeneralPoint       = 52
+    shapeGeneralMultipoint  = 53
+    shapeGeneralMultiPatch  = 54
 
 
 class GeoDatabase(filegdbapi.Geodatabase):
@@ -200,6 +227,11 @@ class Table(filegdbapi.Table):
 class Row(filegdbapi.Row):
     def __init__(self):
         super(Row, self).__init__()
+
+    # 输入ogr的Geometry
+    def SetGeometry(self, ogrGeometry):
+        nOGRType = ogr.GT_Flatten(ogrGeometry.getGeometryType())
+        print(nOGRType)
 
     def GetFieldIndex(self, get_field_name):
         try:

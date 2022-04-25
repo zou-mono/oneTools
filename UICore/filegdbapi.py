@@ -1651,6 +1651,36 @@ def fieldtypep_assign(obj, value):
 def fieldtypep_value(obj):
     return _filegdbapi.fieldtypep_value(obj)
 
+def new_shapetypep():
+    return _filegdbapi.new_shapetypep()
+
+def copy_shapetypep(value):
+    return _filegdbapi.copy_shapetypep(value)
+
+def delete_shapetypep(obj):
+    return _filegdbapi.delete_shapetypep(obj)
+
+def shapetypep_assign(obj, value):
+    return _filegdbapi.shapetypep_assign(obj, value)
+
+def shapetypep_value(obj):
+    return _filegdbapi.shapetypep_value(obj)
+
+def new_pointp():
+    return _filegdbapi.new_pointp()
+
+def copy_pointp(value):
+    return _filegdbapi.copy_pointp(value)
+
+def delete_pointp(obj):
+    return _filegdbapi.delete_pointp(obj)
+
+def pointp_assign(obj, value):
+    return _filegdbapi.pointp_assign(obj, value)
+
+def pointp_value(obj):
+    return _filegdbapi.pointp_value(obj)
+
 def new_tmp():
     return _filegdbapi.new_tmp()
 
