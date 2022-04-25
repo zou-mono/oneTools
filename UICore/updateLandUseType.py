@@ -2,7 +2,7 @@ import sys
 import time
 import traceback
 
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font, Side, Border, NamedStyle, PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.cell_range import CellRange
@@ -220,6 +220,7 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
                 nReport += 1
 
             log.info("所有报表都已统计完成，结果保存至路径{}".format(report_file_name), color=step_log_color)
+            os.startfile(report_file_name)
             return True
     except:
         log.error(traceback.format_exc())
