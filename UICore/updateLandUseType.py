@@ -171,6 +171,7 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
 
         if dataSource is not None:
             wb = Workbook()
+            wb = delete_all_sheets(wb)
 
             nReport = 0
             for bReport in bReports:
@@ -231,6 +232,14 @@ def update_and_stat(file_type, in_path, layer_name, right_header, rel_tables, MC
         # elif file_type == DataType.shapefile:
         remove_temp_sqliteDB(temp_sqliteDB_path, temp_sqliteDB_name)
 
+
+def delete_all_sheets(workbook):
+    all_names = workbook.get_sheet_names()
+    for sheet_name in all_names:
+        std = workbook.get_sheet_by_name(sheet_name)
+        workbook.remove_sheet(std)
+
+    return workbook
 
 # 创建用于统计的临时数据库
 def create_temp_sqliteDB(temp_sqliteDB_path, temp_sqliteDB_name, in_path, layer_name):
