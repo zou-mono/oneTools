@@ -805,7 +805,7 @@ def output_stat_report1(wb, dataSource, layer_name, MC_tables):
     try:
         # check_report_need_fields(1, dataSource, layer_name)
 
-        ws = wb.create_sheet('表2 各区现状分类面积汇总表')
+        ws = wb.create_sheet('表1 各区现状分类面积汇总表')
 
         region_names = ['深圳市', '罗湖区', '福田区', '南山区', '宝安区', '龙岗区', '盐田区', '龙华区', '坪山区', '光明区', '大鹏新区']
         region_codes = ['4403', '440303', '440304', '440305', '440306', '440307', '440308', '440309', '440310',
@@ -1004,7 +1004,7 @@ def output_stat_report2(wb, dataSource, layer_name):
         # if all_field_names is None:
         #     return
 
-        ws = wb.create_sheet('表3 规划分类面积汇总表')
+        ws = wb.create_sheet('表2 规划分类面积汇总表')
 
         # if file_type == DataType.shapefile:
         layer_name = "[{}]".format(layer_name)
@@ -1271,7 +1271,7 @@ def output_stat_report3(wb, dataSource, layer_name):
         # if all_field_names is None:
         #     return
 
-        ws = wb.create_sheet('表4 规划分类三大类面积汇总表')
+        ws = wb.create_sheet('表3 规划分类三大类面积汇总表')
 
         # if file_type == DataType.shapefile:
         layer_name = "[{}]".format(layer_name)
@@ -1304,8 +1304,14 @@ def output_stat_report3(wb, dataSource, layer_name):
             ws.cell(i, 1).style = cell_common_style
             GHFLSDL = str(ws.cell(i, 1).value).strip()
             exec_str = "SELECT SUM(TBDLMJ) FROM {} WHERE GHFLSDL=='{}'".format(layer_name, GHFLSDL)
-            MJ = stat_mj_by_sql(dataSource, exec_str)
-            ws.cell(i, 2).value = MJ
+            TBDLMJ = stat_mj_by_sql(dataSource, exec_str)
+
+            if i == 4:
+                exec_str = "SELECT SUM(KCMJ) FROM {}".format(layer_name)
+                KCMJ = stat_mj_by_sql(dataSource, exec_str)
+            else:
+                KCMJ = 0
+            ws.cell(i, 2).value = TBDLMJ + KCMJ
             ws.cell(i, 2).style = cell_common_style
 
         ws.column_dimensions[get_column_letter(1)].width = 15
@@ -1330,7 +1336,7 @@ def output_stat_report4(wb, dataSource, layer_name):
         # if all_field_names is None:
         #     return
 
-        ws = wb.create_sheet('表5 规划结构分类面积汇总表')
+        ws = wb.create_sheet('表4 规划结构分类面积汇总表')
 
         # if file_type == DataType.shapefile:
         layer_name = "[{}]".format(layer_name)
@@ -1388,8 +1394,13 @@ def output_stat_report4(wb, dataSource, layer_name):
             ws.cell(i, 1).style = cell_common_style
             GHJGFLDM = str(ws.cell(i, 1).value).strip()
             exec_str = "SELECT SUM(TBDLMJ) FROM {} WHERE GHJGFLDM=='{}'".format(layer_name, GHJGFLDM)
-            MJ = stat_mj_by_sql(dataSource, exec_str)
-            ws.cell(i, 3).value = MJ
+            TBDLMJ = stat_mj_by_sql(dataSource, exec_str)
+            if i == 14:  # 其他土地
+                exec_str = "SELECT SUM(KCMJ) FROM {}".format(layer_name)
+                KCMJ = stat_mj_by_sql(dataSource, exec_str)
+            else:
+                KCMJ = 0
+            ws.cell(i, 3).value = TBDLMJ + KCMJ
             ws.cell(i, 3).style = cell_common_style
 
         ws.column_dimensions[get_column_letter(1)].width = 20
