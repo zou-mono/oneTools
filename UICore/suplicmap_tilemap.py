@@ -200,7 +200,7 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
                 loop.run_until_complete(asyncio.wait(tasks))
             loop.close()
 
-            if len(failed_urls) > 3000:
+            if len(failed_urls) > 0.1 * total_count:
                 log.error("抓取失败的url数量太多，请检查网络状态并重新抓取.")
                 if lock.locked():
                     lock.release()
