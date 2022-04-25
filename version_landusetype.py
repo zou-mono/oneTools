@@ -31,12 +31,12 @@ VSVersionInfo(
         u'000004b0',
         [StringStruct(u'CompanyName', u''),
         StringStruct(u'FileDescription', u'国土空间规划基数转换工具'),
-        StringStruct(u'FileVersion', u'1.2.0'),
+        StringStruct(u'FileVersion', u'1.3.1'),
         StringStruct(u'InternalName', u''),
         StringStruct(u'LegalCopyright', u'MIT'),
         StringStruct(u'OriginalFilename', u'国土空间规划基数转换工具.exe'),
         StringStruct(u'ProductName', u'国土空间规划基数转换工具'),
-        StringStruct(u'ProductVersion', u'1.2.0')])
+        StringStruct(u'ProductVersion', u'1.3.1')])
       ]), 
     VarFileInfo([VarStruct(u'Translation', [0, 1200])])
   ]

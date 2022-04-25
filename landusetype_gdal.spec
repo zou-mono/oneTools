@@ -9,7 +9,7 @@ a = Analysis(['frmLandUseTypeConvert.py', 'icons_rc.py',
               'UICore\\common.py',
               'UICore\\fgdb.py',
               'UICore\\fgdberror.py',
-              'UICore\\filegdbapi.py'
+              'UICore\\filegdbapi.py',
               'UICore\\DataFactory.py',
               'UICore\\updateLandUseType.py',
               'UICore\\Gv.py',

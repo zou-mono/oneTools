@@ -824,7 +824,7 @@ def output_stat_report1(wb, dataSource, layer_name, MC_tables):
 
         log.info("第1步：创建表头...")
         # 注意： 要先设置样式再合并，否则边框会出问题，这是openpyxl的Bug， 相关讨论见https://foss.heptapod.net/openpyxl/openpyxl/-/issues/365
-        ws.cell(1, 1).value = "表2 各区现状分类面积汇总表"
+        ws.cell(1, 1).value = "表1 各区现状分类面积汇总表"
         ws.cell(1, 1).style = header_style
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=col_count)
 
@@ -1021,7 +1021,7 @@ def output_stat_report2(wb, dataSource, layer_name):
 
         log.info("第1步：创建表头...")
         # 注意： 要先设置样式再合并，否则边框会出问题，这是openpyxl的Bug， 相关讨论见https://foss.heptapod.net/openpyxl/openpyxl/-/issues/365
-        ws.cell(1, 1).value = "表3 各区现状分类面积汇总表"
+        ws.cell(1, 1).value = "表2 各区现状分类面积汇总表"
         ws.cell(1, 1).style = header_style
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=col_count)
 
@@ -1287,7 +1287,7 @@ def output_stat_report3(wb, dataSource, layer_name):
         layer_name = "[{}]".format(layer_name)
 
         log.info("第1步：创建表头...")
-        ws.cell(1, 1).value = "表4 规划分类三大类面积汇总表"
+        ws.cell(1, 1).value = "表3 规划分类三大类面积汇总表"
         ws.cell(1, 1).style = header_style
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=col_count)
 
@@ -1352,7 +1352,7 @@ def output_stat_report4(wb, dataSource, layer_name):
         layer_name = "[{}]".format(layer_name)
 
         log.info("第1步：创建表头...")
-        ws.cell(1, 1).value = "表5 规划结构分类面积汇总表"
+        ws.cell(1, 1).value = "表4 规划结构分类面积汇总表"
         ws.cell(1, 1).style = header_style
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=col_count)
 
