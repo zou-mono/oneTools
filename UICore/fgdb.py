@@ -1,7 +1,5 @@
 from UICore import filegdbapi
-from UICore.filegdbapi import new_wstringsp, wstringsp_value, new_stringp, stringp_value, FieldDef, new_intp, \
-    intp_value, EnumRows, FieldInfo, new_wstringp, wstringp_value, new_fieldtypep, fieldtypep_value, new_shortp, \
-    shortp_value, new_tmp, tmp_value, new_doublep, doublep_value, new_floatp, floatp_value
+from UICore.filegdbapi import FieldDef, EnumRows, FieldInfo
 from UICore.log4p import Log
 import xml.etree.ElementTree as ET
 from enum import Enum
@@ -78,33 +76,33 @@ class GeoDatabase(filegdbapi.Geodatabase):
 
     # 按层次打开所有table和feature class
     def __LoadLayers(self, root):
-        tables = new_wstringsp()
-        featureclasses = new_wstringsp()
-        featuredatasets = new_wstringsp()
+        tables = filegdbapi.wstringsp()
+        featureclasses = filegdbapi.wstringsp()
+        featuredatasets = filegdbapi.wstringsp()
 
         if self.datasource.GetChildDatasets(root, "Table", tables) < 0:
             del tables
             return False, "读取路径{}下的Table时发生错误".format(root)
-        tables = wstringsp_value(tables)
+        tables = tables.value()
         self.__OpenFGDBTables(tables)
 
         if self.datasource.GetChildDatasets(root, "Feature Class", featureclasses) < 0:
             del featureclasses
             return False, "读取路径{}下的Feature Class时发生错误".format(root)
-        featureclasses = wstringsp_value(featureclasses)
+        featureclasses = featureclasses.value()
         self.__OpenFGDBTables(featureclasses)
 
         if self.datasource.GetChildDatasets(root, "Feature Dataset", featuredatasets) < 0:
             del featuredatasets
             return False, "读取路径{}下的Feature Dataset时发生错误".format(root)
-        featuredatasets = wstringsp_value(featuredatasets)
+        featuredatasets = featuredatasets.value()
         for i in range(len(featuredatasets)):
             featuredataset = featuredatasets[i]
-            featureclasses = new_wstringsp()
+            featureclasses = filegdbapi.wstringsp()
             if self.datasource.GetChildDatasets(featuredataset, "Feature Class", featureclasses) < 0:
                 del featureclasses
                 return False, "读取Feature Dataset{}下的Feature Class时发生错误".format(featuredataset)
-            featureclasses = wstringsp_value(featureclasses)
+            featureclasses = featureclasses.value()
             self.__OpenFGDBTables(featureclasses)
         return True, ""
 
@@ -143,13 +141,13 @@ class Table(filegdbapi.Table):
         hr = self.Search("*", "1=1", True, self.m_enumRows)
 
     def GetLayerDefn(self):
-        tableDef = new_stringp()
+        tableDef = filegdbapi.stringp()
         hr = self.GetDefinition(tableDef)
         # if hr < 0:
         #     del tableDef
         #     log.error("获取GDB的元数据错误")
         #     return None
-        tableDef = stringp_value(tableDef)
+        tableDef = tableDef.value()
 
         root = ET.fromstring(tableDef)
         if root is None:
@@ -191,13 +189,13 @@ class Table(filegdbapi.Table):
             return True
 
     def GetFeatureCount(self):
-        count = new_intp()
+        count = filegdbapi.intp()
         hr = self.GetRowCount(count)
         if hr < 0:
             log.error("获取要素数量错误. 代码: {}".format(str(hr)))
             return -1
         else:
-            return intp_value(count)
+            return count.value()
 
     def GetNextFeature(self):
         row = Row()
@@ -241,19 +239,19 @@ class Row(filegdbapi.Row):
             if hr < 0:
                 raise Exception("获取要素字段元数据错误. 代码:{}".format(str(hr)))
 
-            field_count = new_intp()
+            field_count = filegdbapi.intp()
             hr = fieldInfo.GetFieldCount(field_count)
             if hr < 0:
                 raise Exception("获取要素字段元数据错误. 代码:{}".format(str(hr)))
-            field_count = intp_value(field_count)
+            field_count = field_count.value()
 
             for i in range(field_count):
-                field_name = new_wstringp()
+                field_name = filegdbapi.wstringp()
                 hr = fieldInfo.GetFieldName(i, field_name)
                 if hr < 0:
                     raise Exception("获取要素字段元数据错误. 代码:{}".format(str(hr)))
 
-                field_name = wstringp_value(field_name)
+                field_name = field_name.value()
                 if field_name == get_field_name:
                     return i
 
@@ -270,46 +268,47 @@ class Row(filegdbapi.Row):
         fld_type = self.GetFieldType(fld_index)
 
         if fld_type == FieldType.fieldTypeInteger.value:
-            value = new_intp()
+            value = filegdbapi.intp()
             self.GetInteger(fld_index, value)
-            value = intp_value(value)
+            value = value.value()
             return value
 
         if fld_type == FieldType.fieldTypeSmallInteger.value:
-            value = new_shortp()
+            value = filegdbapi.shortp()
             self.GetShort(fld_index, value)
-            value = shortp_value(value)
+            value = value.value()
             return value
 
         if fld_type == FieldType.fieldTypeOID.value:
-            value = new_intp()
+            value = filegdbapi.intp()
             self.GetOID(value)
-            value = intp_value(value)
+            value = value.value()
             return value
 
         if fld_type == FieldType.fieldTypeDate.value:
-            value = new_tmp()
+            value = filegdbapi.tmp()
             # self.GetDate(fld_index, value)
             value = filegdbapi.GetDate_string(self, fld_index, value)
-            value = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
-            return value
+            value2 = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+            del value
+            return value2
 
         if fld_type == FieldType.fieldTypeString.value:
-            value = new_wstringp()
+            value = filegdbapi.wstringp()
             self.GetString(fld_index, value)
-            value = wstringp_value(value)
+            value = value.value()
             return value
 
         if fld_type == FieldType.fieldTypeDouble.value:
-            value = new_doublep()
+            value = filegdbapi.doublep()
             self.GetDouble(fld_index, value)
-            value = doublep_value(value)
+            value = value.value()
             return value
 
         if fld_type == FieldType.fieldTypeSingle.value:
-            value = new_floatp()
+            value = filegdbapi.floatp()
             self.GetFloat(fld_index, value)
-            value = floatp_value(value)
+            value = value.value()
             return value
 
     def SetField(self, *args):
@@ -365,11 +364,11 @@ class Row(filegdbapi.Row):
         if hr < 0:
             raise Exception("获取要素字段元数据错误. 代码:{}".format(str(hr)))
 
-        fieldType = new_fieldtypep()
+        fieldType = filegdbapi.new_fieldtypep()
         hr = fieldInfo.GetFieldType(fld_index, fieldType)
         if hr < 0:
             raise Exception("获取要素字段元数据错误. 代码:{}".format(str(hr)))
-        fieldType = fieldtypep_value(fieldType)
+        fieldType = filegdbapi.fieldtypep_value(fieldType)
 
         return fieldType
 
@@ -380,14 +379,169 @@ class Row(filegdbapi.Row):
         if hr < 0:
             raise Exception("获取要素字段元数据错误. 代码:{}".format(str(hr)))
 
-        field_count = new_intp()
+        field_count = filegdbapi.intp()
         hr = fieldInfo.GetFieldCount(field_count)
         if hr < 0:
             raise Exception("获取要素字段元数据错误. 代码:{}".format(str(hr)))
-        field_count = intp_value(field_count)
+        field_count = field_count.value()
 
         return field_count
 
+    def SetGeometry(self, wkt):
+        hr = -10000
+        ogr_geometry = ogr.CreateGeometryFromWkt(wkt)
+        geomType = ogr_geometry.GetGeometryType()
+
+        pGeom = None
+
+        if geomType == ogr.wkbPoint or geomType == ogr.wkbPointZM or geomType == ogr.wkbPointM:
+            point = filegdbapi.Point()
+            point.x = ogr_geometry.GetX()
+            point.y = ogr_geometry.GetY()
+            pGeom = filegdbapi.PointShapeBuffer()
+
+            if geomType == ogr.wkbPoint:
+                hr = filegdbapi.SetPoint(pGeom, point)
+            elif geomType == ogr.wkbPointZM:
+                z_value = ogr_geometry.GetZ()
+                m_value = ogr_geometry.GetM()
+                hr = filegdbapi.SetPoint(pGeom, point, z_value, m_value)
+            elif geomType == ogr.wkbPointM:
+                m_value = ogr_geometry.GetM()
+                hr = filegdbapi.SetPoint(pGeom, point, None, m_value)
+
+        if geomType == ogr.wkbMultiPoint or geomType == ogr.wkbMultiPointZM or geomType == ogr.wkbMultiPointM:
+            ogr_points = ogr_geometry.GetPoints()
+            numPts = len(ogr_points)
+            pointArray = filegdbapi.pointArray(numPts)
+            mArray = filegdbapi.doubleArray(numPts)
+            zArray = filegdbapi.doubleArray(numPts)
+            i = 0
+            for ogr_point in ogr_points:
+                pointArray[i].x = ogr_point[0]
+                pointArray[i].y = ogr_point[1]
+                if len(ogr_point) >= 3:
+                    zArray[i] = ogr_point[2]
+                if len(ogr_point) == 4:
+                    mArray[i] = ogr_point[3]
+                i += 1
+            pGeom = filegdbapi.MultiPointShapeBuffer()
+
+            if geomType == ogr.wkbMultiPoint:
+                hr = filegdbapi.SetMultiPoint(pGeom, pointArray, numPts)
+            elif geomType == ogr.wkbMultiPointM:
+                hr = filegdbapi.SetMultiPoint(pGeom, pointArray, numPts, None, mArray)
+            elif geomType == ogr.wkbMultiPointZM:
+                hr = filegdbapi.SetMultiPoint(pGeom, pointArray, numPts, zArray, mArray)
+
+        if geomType == ogr.wkbLineString or geomType == ogr.wkbLineStringZM or geomType == ogr.wkbLineStringM:
+            ogr_points = ogr_geometry.GetPoints()
+            numPts = len(ogr_points)
+            pointArray = filegdbapi.pointArray(numPts)
+            mArray = filegdbapi.doubleArray(numPts)
+            zArray = filegdbapi.doubleArray(numPts)
+            i = 0
+            for ogr_point in ogr_points:
+                pointArray[i].x = ogr_point[0]
+                pointArray[i].y = ogr_point[1]
+                if len(ogr_point) >= 3:
+                    zArray[i] = ogr_point[2]
+                if len(ogr_point) == 4:
+                    mArray[i] = ogr_point[3]
+                i += 1
+            pGeom = filegdbapi.MultiPartShapeBuffer()
+
+            if geomType == ogr.wkbLineString:
+                hr = filegdbapi.SetPolyline(pGeom, pointArray, numPts, [0], 1)
+            elif geomType == ogr.wkbLineStringM:
+                hr = filegdbapi.SetPolyline(pGeom, pointArray, numPts, [0], 1, None, mArray)
+            elif geomType == ogr.wkbLineStringZM:
+                hr = filegdbapi.SetPolyline(pGeom, pointArray, numPts, [0], 1, zArray, mArray)
+
+        if geomType == ogr.wkbMultiLineString or geomType == ogr.wkbMultiLineStringZM or geomType == ogr.wkbMultiLineStringM or \
+            geomType == ogr.wkbPolygon or geomType == ogr.wkbPolygonZM or geomType == ogr.wkbPolygonM:
+            ogr_points = []
+            ogr_parts = [0]
+            numPts = 0
+            numParts = 0
+            for part in ogr_geometry:
+                points = part.GetPoints()
+                ogr_numPts = part.GetPointCount()
+                ogr_points.extend(points)
+                numPts = numPts + ogr_numPts
+                numParts += 1
+                ogr_parts.append(numPts)
+            ogr_parts = ogr_parts[:-1]
+
+            pointArray, partArray, mArray, zArray = self.ogrWriteToArray(geomType, ogr_points, numPts, ogr_parts, numParts)
+
+            pGeom = filegdbapi.MultiPartShapeBuffer()
+
+            if geomType == ogr.wkbMultiLineString:
+                hr = filegdbapi.SetPolyline(pGeom, pointArray, numPts, partArray, numParts)
+            elif geomType == ogr.wkbMultiLineStringM:
+                hr = filegdbapi.SetPolyline(pGeom, pointArray, numPts, partArray, numParts, None, mArray)
+            elif geomType == ogr.wkbMultiLineStringZM:
+                hr = filegdbapi.SetPolyline(pGeom, pointArray, numPts, partArray, numParts, zArray, mArray)
+            elif geomType == ogr.wkbPolygon:
+                hr = filegdbapi.SetPolygon(pGeom, pointArray, numPts, partArray, numParts)
+            elif geomType == ogr.wkbPolygonM:
+                hr = filegdbapi.SetPolygon(pGeom, pointArray, numPts, partArray, numParts, None, mArray)
+            elif geomType == ogr.wkbPolygonZM:
+                hr = filegdbapi.SetPolygon(pGeom, pointArray, numPts, partArray, numParts, zArray, mArray)
+
+        if geomType == ogr.wkbMultiPolygon or geomType == ogr.wkbMultiPolygonZM or geomType == ogr.wkbMultiPolygonM:
+            ogr_points = []
+            ogr_parts = [0]
+            numPts = 0
+            numParts = 0
+            for part in ogr_geometry:
+                for ring in part:
+                    points = ring.GetPoints()
+                    ogr_numPts = ring.GetPointCount()
+                    ogr_points.extend(points)
+                    numPts = numPts + ogr_numPts
+                numParts += 1
+                ogr_parts.append(numPts)
+            ogr_parts = ogr_parts[:-1]
+
+            pointArray, partArray, mArray, zArray = self.ogrWriteToArray(geomType, ogr_points, numPts, ogr_parts, numParts)
+
+            pGeom = filegdbapi.MultiPartShapeBuffer()
+            if geomType == ogr.wkbMultiPolygon:
+                hr = filegdbapi.SetPolygon(pGeom, pointArray, numPts, partArray, numParts)
+            elif geomType == ogr.wkbMultiPolygonM:
+                hr = filegdbapi.SetPolygon(pGeom, pointArray, numPts, partArray, numParts, None, mArray)
+            elif geomType == ogr.wkbMultiPolygonZM:
+                hr = filegdbapi.SetPolygon(pGeom, pointArray, numPts, partArray, numParts, zArray, mArray)
+
+        if hr == 0 and pGeom is not None:
+            hr = self.SetGeometry(pGeom)
+
+        return hr
+
+    def ogrWriteToArray(self, geomType, ogr_points, numPts, ogr_parts, numParts):
+        pointArray = filegdbapi.pointArray(numPts)
+        partArray = filegdbapi.intArray(numParts)
+        mArray = filegdbapi.doubleArray(numPts)
+        zArray = filegdbapi.doubleArray(numPts)
+
+        i = 0
+        for ogr_point in ogr_points:
+            pointArray[i].x = ogr_point[0]
+            pointArray[i].y = ogr_point[1]
+            if ogr.GT_HasM(geomType):
+                mArray[i] = ogr_point[3]
+            if ogr.GT_HasZ(geomType):
+                zArray[i] = ogr_point[2]
+            i += 1
+
+        i = 0
+        for ogr_part in ogr_parts:
+            partArray[i] = ogr_part
+            i += 1
+
+        return pointArray, partArray, mArray, zArray
 
 class FeatureDefn(list):
     def __init__(self):

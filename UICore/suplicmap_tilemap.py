@@ -120,7 +120,7 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
             global api_token
             api_token = _api_token
 
-        log.info('\n开始使用协程抓取, 行数：{}, 列数:{}...'.format(max_col - min_col + 1, max_row - min_row + 1))
+        log.info('\n开始使用协程抓取{}, 行数：{}, 列数:{}...'.format(url, max_col - min_col + 1, max_row - min_row + 1))
         # for i in range(min_row, max_row):
         #     for j in range(min_col, max_col):
         #         tile_url = f'{url}/tile/{level}/{i}/{j}'
@@ -186,7 +186,7 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
                     loop.run_until_complete(asyncio.wait(tasks))
                     tasks = []
                     if int(iloop * 100 / total_count) != iprogress:
-                        log.info("{}%已处理完成...".format(int(iloop * 100 / total_count)))
+                        log.info("{}%...".format(int(iloop * 100 / total_count)))
                         iprogress = int(iloop * 100 / total_count)
                     # log.info("{:.0%}".format(iloop / total_count))
                     delta_count = start_failed_count - len(failed_urls)
@@ -210,7 +210,7 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
             while len(failed_urls) > 0:
                 furl = failed_urls.pop()
                 if not output_img2(furl[0], output_path, furl[1], furl[2]):
-                    log.error('url:{} error:{}'.format(url, traceback.format_exc()))
+                    log.debug('url:{} error:{}'.format(furl[0], traceback.format_exc()))
                     dead_link += 1
 
         end = time.time()
@@ -251,18 +251,20 @@ def get_tile(url, reqheaders=None):
             # req = urllib.request.Request(url=url)
             # r = urllib.request.urlopen(req)
             # respData = r.read()
-            respData = requests.get(url, headers=reqheaders).content
+            req = requests.get(url, headers=reqheaders)
+            error_code = req.status_code
+            respData = req.content
             if len(respData) > 0:
-                return respData
+                return respData, error_code
             else:
                 raise Exception("传回数据为空")
         except:
             # log.debug('{}请求失败！重新尝试...'.format(url))
             trytime += 1
 
-        time.sleep(1)
+        time.sleep(0.2)
         continue
-    return None
+    return None, -10000
 
 
 def output_img(url, output_path, i, j):
@@ -283,8 +285,10 @@ def output_img(url, output_path, i, j):
 
 def output_img2(url, output_path, i, j):
     try:
-        img = get_tile(url)
-        if img is not None:
+        img, error_code = get_tile(url)
+        if img is not None and error_code != 404:
+            return True
+        elif img is not None and error_code == 200:
             with open(f'{output_path}/{i}/{j}.png', "wb") as f:
                 f.write(img)
             return True
@@ -330,7 +334,7 @@ async def output_img_asyc(url, output_path, i, j):
         async with lock:
             failed_urls.append([url, i, j])
         if not bSkip:
-            log.error('url:{} error:{}'.format(url, traceback.format_exc()))
+            log.debug('url:{} error:{}'.format(url, traceback.format_exc()))
 
 
 def get_lod(lods, level):
