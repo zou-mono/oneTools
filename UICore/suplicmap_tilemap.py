@@ -246,16 +246,17 @@ def launderPath(path):
 
 def get_tile(url, reqheaders=None):
     trytime = 0
+    status_code = -10000
     while trytime < try_num:
         try:
             # req = urllib.request.Request(url=url)
             # r = urllib.request.urlopen(req)
             # respData = r.read()
             req = requests.get(url, headers=reqheaders)
-            error_code = req.status_code
+            status_code = req.status_code
             respData = req.content
-            if len(respData) > 0:
-                return respData, error_code
+            if status_code == 200 or status_code == 404:
+                return respData, status_code
             else:
                 raise Exception("传回数据为空")
         except:
@@ -264,7 +265,7 @@ def get_tile(url, reqheaders=None):
 
         time.sleep(0.2)
         continue
-    return None, -10000
+    return None, status_code
 
 
 def output_img(url, output_path, i, j):
@@ -285,12 +286,14 @@ def output_img(url, output_path, i, j):
 
 def output_img2(url, output_path, i, j):
     try:
-        img, error_code = get_tile(url)
-        if img is not None and error_code != 404:
-            return True
-        elif img is not None and error_code == 200:
+        img, status_code = get_tile(url)
+        if img is None and status_code != 404:
+            return False
+        elif img is not None and status_code == 200:
             with open(f'{output_path}/{i}/{j}.png', "wb") as f:
                 f.write(img)
+            return True
+        elif status_code == 404:
             return True
         else:
             return False
@@ -298,33 +301,33 @@ def output_img2(url, output_path, i, j):
         return False
 
 async def get_tile_async(url, output_path, i, j):
-    error_code = -1
+    status_code = -10000
     async with aiohttp.ClientSession() as session:
         try:
-            respData, error_code = await send_http(session, method="get", headers=reqheaders,
+            respData, status_code = await send_http(session, method="get", headers=reqheaders,
                                                    respond_Type="content", read_timeout=10, url=url, retries=0)
             # response = await session.post(url, data=data, headers=reqheaders)
             if len(respData) > 0:
                 return respData, 200, url, output_path, i, j
             else:
-                # return None, error_code, url, output_path, i, j
+                # return None, status_code, url, output_path, i, j
                 raise Exception("传回数据为空")
         except:
             # log.error('url:{} error:{}'.format(url, traceback.format_exc()))
-            return None, error_code, url, output_path, i, j
+            return None, status_code, url, output_path, i, j
 
 
 async def output_img_asyc(url, output_path, i, j):
     bSkip = False
     try:
-        img, error_code, url, output_path, i, j = await get_tile_async(url, output_path, i, j)
+        img, status_code, url, output_path, i, j = await get_tile_async(url, output_path, i, j)
         # log.info('任务载入完成.')
         # log.info('开始抓取...')
-        if img is None and error_code != 404:
+        if img is None and status_code != 404:
             bSkip = True
             async with lock:
                 failed_urls.append([url, i, j])
-        elif img is not None and error_code == 200:
+        elif img is not None and status_code == 200:
             with open(f'{output_path}/{i}/{j}.png', "wb") as f:
                 f.write(img)
     except:
