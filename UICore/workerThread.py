@@ -15,7 +15,7 @@ class crawlTilesWorker(QtCore.QObject):
     crawl = pyqtSignal(str, int, int, int, float, float, float, float, float, int, str, str, str, object)
     crawlAndMerge = pyqtSignal(str, int, int, int, float, float, float, float, float, int, str, bool, str, str, str, str, object)
     merge = pyqtSignal(str, int, int, float, float, float, float, float, int, str, bool, str, object)
-    finished = pyqtSignal()
+    finished = pyqtSignal(bool)
 
     def __init__(self):
         super(crawlTilesWorker, self).__init__()
@@ -27,9 +27,9 @@ class crawlTilesWorker(QtCore.QObject):
         #     time.sleep(1)
         #     print("B Increasing")
         #     count += 1
-        crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size,
+        bflag = crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size,
                       api_token, subscription_token, output_path, log)
-        self.finished.emit()
+        self.finished.emit(bflag)
 
     def crawlAndMergeTiles(self, url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, pixelType, bCompression,
                            output_path, api_token, subscription_token, merged_file, log):

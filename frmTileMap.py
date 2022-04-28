@@ -2,7 +2,7 @@ import base64
 import time
 import traceback
 
-from PyQt5.QtCore import QRect, Qt, QPersistentModelIndex, QItemSelectionModel, QModelIndex, QThread
+from PyQt5.QtCore import QRect, Qt, QPersistentModelIndex, QItemSelectionModel, QModelIndex, QThread, QVariant
 from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
 from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QErrorMessage, QDialogButtonBox, QStyleFactory, \
     QAbstractItemView, QHeaderView, QComboBox, QAbstractButton, QFileDialog, QLineEdit
@@ -131,8 +131,11 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
         except:
             return
 
-    def threadStop(self):
-        self.thread.quit()
+    def threadStop(self, bFlag=True):
+        if bFlag:
+            self.thread.quit()
+        else:
+            self.threadTerminate()
 
     def init_cmb_pixelType(self):
         for value in pixelType_dict.values():
@@ -167,6 +170,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 }
         else:
             url_index, level_index, url, level = self.return_url_and_level(self.selIndex.row())
+            if isinstance(url, QVariant):
+                return
             if url in self.paras:
                 if level in self.paras[url]['paras']:
                     self.paras[url]['paras'][level][key] = value
