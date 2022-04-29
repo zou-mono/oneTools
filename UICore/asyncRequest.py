@@ -130,7 +130,8 @@ async def send_http(session, method, url, *,
                 code = exc.status
             except AttributeError:
                 code = ''
-            log.debug('code:{} url={} message={} raised={}'.format(code, url, exc, exc.__class__.__name__))
+            raise Exception('code:{} url={} raised={}'.format(code, url, exc.__class__.__name__))
+            # log.debug('code:{} url={} message={} raised={}'.format(code, url, exc, exc.__class__.__name__))
             # raised_exc = FailedRequest(code=code, message=exc, url=url,
             #                            raised=exc.__class__.__name__)
         else:

@@ -334,24 +334,27 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     @Slot(QAbstractButton)
     def buttonBox_clicked(self, button: QAbstractButton):
-        if button == self.buttonBox.button(QDialogButtonBox.Ok):
-            if not self.check_paras():
-                return
+        try:
+            if button == self.buttonBox.button(QDialogButtonBox.Ok):
+                if not self.check_paras():
+                    return
 
-            #  最后运算过程放至到另一个线程避免GUI卡住
-            self.thread = QThread()
-            self.crawlTilesThread = crawlTilesWorker()
-            self.crawlTilesThread.moveToThread(self.thread)
-            self.crawlTilesThread.crawl.connect(self.crawlTilesThread.crawlTiles)
-            self.crawlTilesThread.crawlAndMerge.connect(self.crawlTilesThread.crawlAndMergeTiles)
-            self.crawlTilesThread.finished.connect(self.threadStop)
-            self.crawlTilesThread.merge.connect(self.crawlTilesThread.mergeTiles)
+                #  最后运算过程放至到另一个线程避免GUI卡住
+                self.thread = QThread()
+                self.crawlTilesThread = crawlTilesWorker()
+                self.crawlTilesThread.moveToThread(self.thread)
+                self.crawlTilesThread.crawl.connect(self.crawlTilesThread.crawlTiles)
+                self.crawlTilesThread.crawlAndMerge.connect(self.crawlTilesThread.crawlAndMergeTiles)
+                self.crawlTilesThread.finished.connect(self.threadStop)
+                self.crawlTilesThread.merge.connect(self.crawlTilesThread.mergeTiles)
 
-            self.thread.start()
-            self.run_process()
-        elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
-            self.threadTerminate()
-            self.close()
+                self.thread.start()
+                self.run_process()
+            elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
+                    self.threadTerminate()
+                    self.close()
+        except:
+            return
 
     def run_process(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))

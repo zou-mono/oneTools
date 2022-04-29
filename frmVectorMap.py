@@ -106,7 +106,7 @@ class Ui_Window(QDialog, Ui_Dialog):
             if self.thread.isRunning():
                 self.thread.terminate()
                 self.thread.wait()
-                del self.thread
+                del self.thread,
             else:
                 self.thread.quit()
                 self.thread.wait()
@@ -118,23 +118,26 @@ class Ui_Window(QDialog, Ui_Dialog):
 
     @Slot(QAbstractButton)
     def buttonBox_clicked(self, button: QAbstractButton):
-        if button == self.buttonBox.button(QDialogButtonBox.Ok):
-            if not self.check_paras():
-                return
+        try:
+            if button == self.buttonBox.button(QDialogButtonBox.Ok):
+                if not self.check_paras():
+                    return
 
-            #  最后运算过程放至到另一个线程避免GUI卡住
-            self.thread = QThread()
-            self.crawlVectorThread = crawlVectorWorker()
-            self.crawlVectorThread.moveToThread(self.thread)
-            self.crawlVectorThread.crawl.connect(self.crawlVectorThread.crawlVector)
-            self.crawlVectorThread.crawlBatch.connect(self.crawlVectorThread.crawlVectorBatch)
-            self.crawlVectorThread.finished.connect(self.threadStop)
+                #  最后运算过程放至到另一个线程避免GUI卡住
+                self.thread = QThread()
+                self.crawlVectorThread = crawlVectorWorker()
+                self.crawlVectorThread.moveToThread(self.thread)
+                self.crawlVectorThread.crawl.connect(self.crawlVectorThread.crawlVector)
+                self.crawlVectorThread.crawlBatch.connect(self.crawlVectorThread.crawlVectorBatch)
+                self.crawlVectorThread.finished.connect(self.threadStop)
 
-            self.thread.start()
-            self.run_process()
-        elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
-            self.threadTerminate()
-            self.close()
+                self.thread.start()
+                self.run_process()
+            elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
+                self.threadTerminate()
+                self.close()
+        except:
+            return
 
     def run_process(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))

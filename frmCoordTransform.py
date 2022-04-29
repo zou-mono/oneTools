@@ -411,22 +411,26 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
 
     @Slot(QAbstractButton)
     def buttonBox_clicked(self, button: QAbstractButton):
-        if button == self.buttonBox.button(QDialogButtonBox.Ok):
-            if not self.check_paras():
-                return
+        try:
+            if button == self.buttonBox.button(QDialogButtonBox.Ok):
+                if not self.check_paras():
+                    return
 
-            self.thread = QThread(self)
-            self.coordTransformThread = coordTransformWorker()
-            self.coordTransformThread.moveToThread(self.thread)
-            self.coordTransformThread.transform.connect(self.coordTransformThread.coordTransform)
-            self.coordTransformThread.transform_tbl.connect(self.coordTransformThread.tableTransform)
-            self.coordTransformThread.finished.connect(self.threadStop)
+                self.thread = QThread(self)
+                self.coordTransformThread = coordTransformWorker()
+                self.coordTransformThread.moveToThread(self.thread)
+                self.coordTransformThread.transform.connect(self.coordTransformThread.coordTransform)
+                self.coordTransformThread.transform_tbl.connect(self.coordTransformThread.tableTransform)
+                self.coordTransformThread.finished.connect(self.threadStop)
 
-            self.thread.start()
-            self.run_process()
-        elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
-            self.threadTerminate()
-            self.close()
+                self.thread.start()
+                self.run_process()
+            elif button == self.buttonBox.button(QDialogButtonBox.Cancel):
+
+                    self.threadTerminate()
+                    self.close()
+        except:
+            return
 
     def check_paras(self):
         rows = range(0, self.tbl_address.model().rowCount(QModelIndex()))

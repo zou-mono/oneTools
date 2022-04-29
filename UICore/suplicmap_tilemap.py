@@ -336,8 +336,8 @@ async def output_img_asyc(url, output_path, i, j):
         # lock.release()
         async with lock:
             failed_urls.append([url, i, j])
-        if not bSkip:
-            log.debug('url:{} error:{}'.format(url, traceback.format_exc()))
+        # if not bSkip:
+        #     log.debug('url:{} error:{}'.format(url, traceback.format_exc()))
 
 
 def get_lod(lods, level):
