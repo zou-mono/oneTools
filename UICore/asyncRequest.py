@@ -89,19 +89,19 @@ async def send_http(session, method, url, *,
                     return data, response.status
 
                 elif response.status in http_status_codes_to_retry:
-                    log.error(
+                    raise Exception(
                         'received invalid response code:{} url:{} error:{}'
                         ' response:{}'.format(response.status, url, '',
                         response.reason)
                     )
                     # raised_exc = FailedRequest(code=response.status, message=response.reason, url=url,
                     #                            raised='')
-                    raise aiohttp.ClientError
+                    # raise aiohttp.ClientError
                     # raise aiohttp.errors.HttpProcessingError(
                     #     code=response.status, message=response.reason)
                 elif response.status == 404:
-                    log.warning('received empty data for {}.'.format(url))
                     raised_exc = None
+                    # log.warning('received empty data for {}.'.format(url))
                     return None, response.status
                 else:
                     try:
@@ -120,7 +120,7 @@ async def send_http(session, method, url, *,
                             code=response.status, message=exc,
                             raised=exc.__class__.__name__, url=url)
                     else:
-                        log.warning('received {} for {}'.format(data, url))
+                        raise Exception('received {} for {}'.format(data, url))
                         # print(data['errors'][0]['detail'])
                         raised_exc = None
                 response.close()
@@ -139,8 +139,8 @@ async def send_http(session, method, url, *,
             break
 
         attempt -= 1
-        if attempt > 0:
-            log.warning('HTTP请求失败! 尝试重新发送... method:{} url:{} '.format(method.upper(), url))
+        # if attempt > 0:
+        #     log.warning('HTTP请求失败! 尝试重新发送... method:{} url:{} '.format(method.upper(), url))
 
     if raised_exc:
         raise raised_exc

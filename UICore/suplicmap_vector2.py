@@ -139,6 +139,7 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr,
         tasks = []
         loop = asyncio.ProactorEventLoop()
         asyncio.set_event_loop(loop)
+        failed_urls = []
 
         # wks = workspaceFactory().get_factory(DataType.FGDBAPI)
         # gdb = wks.openFromFile(output_path, 1)

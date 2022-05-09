@@ -33,19 +33,20 @@ class crawlTilesWorker(QtCore.QObject):
 
     def crawlAndMergeTiles(self, url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size, pixelType, bCompression,
                            output_path, api_token, subscription_token, merged_file, log):
-        crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size,
+        bflag1 = crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size,
                       api_token, subscription_token, output_path, log)
-        merge_tiles(output_path, [xmin, xmax, ymin, ymax], [x0, y0], resolution, tile_size, pixelType,
+        bflag2 = merge_tiles(output_path, [xmin, xmax, ymin, ymax], [x0, y0], resolution, tile_size, pixelType,
                     bCompression, merged_file, log)
 
-        self.finished.emit()
+        bflag = bflag1 and bflag2
+        self.finished.emit(bflag)
 
     def mergeTiles(self, output_path, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_size,
                    pixelType, bCompression, merged_file, log):
-        merge_tiles(output_path, [xmin, xmax, ymin, ymax], [x0, y0], resolution, tile_size,
+        bflag = merge_tiles(output_path, [xmin, xmax, ymin, ymax], [x0, y0], resolution, tile_size,
                     pixelType, bCompression, merged_file, log)
 
-        self.finished.emit()
+        self.finished.emit(bflag)
 
 
 class crawlVectorWorker(QtCore.QObject):
