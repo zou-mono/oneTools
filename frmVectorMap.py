@@ -2,7 +2,6 @@ import json
 import os
 import sys
 import traceback
-import urllib.parse
 
 from PyQt5.QtGui import QFont, QPalette, QShowEvent, QResizeEvent
 from UI.UIVectorMap import Ui_Dialog

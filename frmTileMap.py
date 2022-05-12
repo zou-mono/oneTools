@@ -380,12 +380,15 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
             try:
                 if self.rbtn_spiderAndHandle.isChecked():
                     paras = self.paras[url]['paras'][level]
-                    tileFolder = paras['tileFolder']
-                    imgFile = paras['imgFile']
-                    # tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
-                    # imgFile_index = self.tbl_address.model().index(row, 3, QModelIndex())
-                    # tileFolder = str(self.tbl_address.model().data(tileFolder_index, Qt.DisplayRole)).strip()
-                    # imgFile = str(self.tbl_address.model().data(imgFile_index, Qt.DisplayRole)).strip()
+                    tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
+                    imgFile_index = self.tbl_address.model().index(row, 3, QModelIndex())
+                    tileFolder = str(self.tbl_address.model().data(tileFolder_index, Qt.DisplayRole)).strip()
+                    imgFile = str(self.tbl_address.model().data(imgFile_index, Qt.DisplayRole)).strip()
+
+                    if paras['tileFolder'] != "":
+                        tileFolder = paras['tileFolder']
+                    if paras['imgFile'] != "":
+                        imgFile = paras['imgFile']
 
                     self.crawlTilesThread.crawlAndMerge.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
                                                              float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
@@ -394,9 +397,11 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                                                              api_token, subscription_token, imgFile, log)
                 elif self.rbtn_onlySpider.isChecked():
                     paras = self.paras[url]['paras'][level]
-                    # tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
-                    # tileFolder = str(self.tbl_address.model().data(tileFolder_index, Qt.DisplayRole)).strip()
-                    tileFolder = paras['tileFolder']
+                    tileFolder_index = self.tbl_address.model().index(row, 2, QModelIndex())
+                    tileFolder = str(self.tbl_address.model().data(tileFolder_index, Qt.DisplayRole)).strip()
+
+                    if paras['tileFolder'] != "":
+                        tileFolder = paras['tileFolder']
 
                     self.crawlTilesThread.crawl.emit(url, int(level), int(paras['origin_x']), int(paras['origin_y']),
                                                      float(paras['xmin']), float(paras['xmax']), float(paras['ymin']),
@@ -409,7 +414,10 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                         continue
 
                     paras = self.paras[key]
-                    imgFile = paras['imgFile']
+
+                    if paras['imgFile'] != "":
+                        imgFile = paras['imgFile']
+
                     # imgFile_index = self.tbl_address.model().index(row, 1, QModelIndex())
                     # imgFile = str(self.tbl_address.model().data(imgFile_index, Qt.DisplayRole)).strip()
 
@@ -445,19 +453,21 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 if tileFolder == "":
                     tileFolder = defaultTileFolder(url, level)
                     log.warning('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认值"{}".'.format(row + 1, tileFolder))
-                    self.paras[url]['paras'][level]['tileFolder'] = tileFolder
+                    # self.paras[url]['paras'][level]['tileFolder'] = tileFolder
                 else:
                     # url_encodeStr = urlEncodeToFileName(url)
                     # tileFolder = os.path.join(tileFolder, url_encodeStr, str(level))
                     tileFolder = os.path.join(tileFolder, str(level))
                     if not os.path.exists(tileFolder):
                         os.makedirs(tileFolder)
-                        self.paras[url]['paras'][level]['tileFolder'] = tileFolder
+
+                self.paras[url]['paras'][level]['tileFolder'] = tileFolder
 
                 if imgFile == "":
                     imgFile = defaultImageFile(url, level)
                     log.warning('第{}行参数缺失非必要参数"输出影像文件"，将使用默认值"{}".'.format(row + 1, imgFile))
-                    self.paras[url]['paras'][level]['imgFile'] = imgFile
+
+                self.paras[url]['paras'][level]['imgFile'] = imgFile
 
             elif self.rbtn_onlySpider.isChecked():
                 if url == "":
@@ -476,12 +486,13 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 if tileFolder == "":
                     tileFolder = defaultTileFolder(url, level)
                     log.warning('第{}行参数缺失非必要参数"瓦片文件夹"，将使用默认值"{}".'.format(row + 1, tileFolder))
-                    self.paras[url]['paras'][level]['tileFolder'] = tileFolder
+                    # self.paras[url]['paras'][level]['tileFolder'] = tileFolder
                 else:
                     tileFolder = os.path.join(tileFolder, str(level))
                     if not os.path.exists(tileFolder):
                         os.makedirs(tileFolder)
-                        self.paras['tileFolder'] = tileFolder
+
+                self.paras[url]['paras'][level]['tileFolder'] = tileFolder
 
             elif self.rbtn_onlyHandle.isChecked():
                 if url == "":
@@ -498,7 +509,8 @@ class Ui_Window(QtWidgets.QDialog, Ui_Dialog):
                 if imgFile == "":
                     imgFile = defaultImageFile(url, level)
                     log.warning('第{}行参数缺失非必要参数"输出影像文件"，将使用默认值"{}".'.format(row + 1, imgFile))
-                    self.paras[key]['imgFile'] = imgFile
+
+                self.paras[key]['imgFile'] = imgFile
 
         return True
 
