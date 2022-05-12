@@ -76,6 +76,8 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
     if url[-1] == "/":
         url = url[:-1]
 
+    failed_urls.clear()
+
     try:
         # if not os.path.exists(output_path):
         #     os.makedirs(output_path)
@@ -133,8 +135,6 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
         total_count = (max_row - min_row) * (max_col - min_col)
         iprogress = 0
         iloop = 0
-
-        failed_urls = []
 
         for i in range(min_row, max_row + 1):
             for j in range(min_col, max_col + 1):
