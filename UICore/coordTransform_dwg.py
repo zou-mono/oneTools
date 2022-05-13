@@ -136,11 +136,17 @@ def transform_dwg(input, type, output, logClass=None):
         while icount < total_count:
             entity = msp.Item(icount)
             try:
+                icount = icount + 1
+
+                if entity.ObjectName == "AcDbZombieEntity":
+                    isuccess_num = isuccess_num + 1
+                    trytime = 0
+                    continue
+
                 entity.TransformBy(mat)
                 # if icount % 1000 == 0 and icount > 0:
                 #     log.debug("{}个entities 转换成功.".format(icount))
 
-                icount = icount + 1
                 if int(icount * 100 / total_count) == iprop * 20:
                     log.info("{:.0%}".format(icount / total_count))
                     iprop += 1
@@ -152,7 +158,7 @@ def transform_dwg(input, type, output, logClass=None):
                 if trytime < 5:
                     trytime = trytime + 1
                 else:
-                    log.error("handle{}发生错误.".format(entity.Handle) + os.linesep + traceback.format_exc())
+                    log.error("句柄{}发生错误.".format(entity.Handle) + os.linesep + traceback.format_exc())
                     ierror_num = ierror_num + 1
                     icount = icount + 1
                 continue
