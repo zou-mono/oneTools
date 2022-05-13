@@ -142,7 +142,7 @@ def transform_dwg(input, type, output, logClass=None):
 
                 icount = icount + 1
                 if int(icount * 100 / total_count) == iprop * 20:
-                    log.debug("{:.0%}".format(icount / total_count))
+                    log.info("{:.0%}".format(icount / total_count))
                     iprop += 1
 
                 isuccess_num = isuccess_num + 1
