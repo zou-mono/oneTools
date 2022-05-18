@@ -211,8 +211,9 @@ def crawl_tilemap(url, level, x0, y0, xmin, xmax, ymin, ymax, resolution, tile_s
             log.info('开始用单线程抓取失败的url...')
             while len(failed_urls) > 0:
                 furl = failed_urls.pop()
-                if not output_img2(furl[0], output_path, furl[1], furl[2]):
-                    log.debug('url:{} error:{}'.format(furl[0], traceback.format_exc()))
+                bflag, msg = output_img2(furl[0], output_path, furl[1], furl[2])
+                if not bflag:
+                    log.debug('url:{} error:{}'.format(furl[0], msg))
                     dead_link += 1
 
         end = time.time()
@@ -291,17 +292,17 @@ def output_img2(url, output_path, i, j):
     try:
         img, status_code = get_tile(url)
         if img is None and status_code != 404:
-            return False
+            return False, str(status_code)
         elif img is not None and status_code == 200:
             with open(f'{output_path}/{i}/{j}.png', "wb") as f:
                 f.write(img)
-            return True
+            return True, ""
         elif status_code == 404:
-            return True
+            return True, ""
         else:
-            return False
+            return False, str(status_code)
     except:
-        return False
+        return False, traceback.format_exc()
 
 
 async def get_tile_async(url, output_path, i, j):
