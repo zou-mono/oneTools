@@ -268,6 +268,8 @@ class Transformer(object):
                 res = self.gcj02_to_pcs_2000()
             elif srcSRS == SpatialReference.bd09 and dstSRS == SpatialReference.pcs_2000:
                 res = self.bd09_to_pcs_2000()
+            elif srcSRS == SpatialReference.pcs_hk80 and dstSRS == SpatialReference.pcs_2000:
+                res = self.hk_grid80_to_pcs_2000()
             else:
                 log.error("不支持从{}到{}的转换!".format(srs_dict[srcSRS], srs_dict[dstSRS]))
                 return False
@@ -533,6 +535,13 @@ class Transformer(object):
         [tmp_out_path, tmp_out_layername] = self.pcs_xian80_zone_to_pcs_2000(inpath, tmp_outpath,
                                                                              "temp_layer_4547", DataType.geojson)
         [out_path, out_layername] = self.transform_direct(4547, 4326, tmp_out_path, outpath, outlayername, outformat)
+
+        return [out_path, out_layername] if out_path is not None and out_layername is not None else None
+
+    def hk_grid80_to_pcs_2000(self, inpath=None, outpath=None, outlayername=None, outformat=None):
+        para_hk80_to_pcs_2000 = helmert_para_dict(SpatialReference.pcs_hk80, SpatialReference.pcs_2000)
+        [out_path, out_layername] = self.transform_direct(2326, 4547, inpath, outpath,
+                                                          outlayername, outformat, helmert_para=para_hk80_to_pcs_2000)
 
         return [out_path, out_layername] if out_path is not None and out_layername is not None else None
 

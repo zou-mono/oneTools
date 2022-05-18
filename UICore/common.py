@@ -187,6 +187,13 @@ def helmert_para_dict(insrs, outsrs, first_order="NORTH"):
         else:
             return "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
                 -433097.707045, -2465659.407210, 1.000009894628, 3518.45262840)
+    elif insrs == SpatialReference.pcs_hk80 and outsrs == SpatialReference.pcs_2000:
+        if first_order == "NORTH":
+            return "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
+                1648139.631877, -317071.960254, 1.000003006266, 245.06699577)
+        else:
+            return "+proj=helmert +convention=position_vector +x={} +y={} +s={} +theta={}".format(
+                -317071.960254, 1648139.631877, 1.000003006266, -245.06699577)
     else:
         return None
 
