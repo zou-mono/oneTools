@@ -15,7 +15,7 @@ from UICore.Gv import DataType, DataType_dict, srs_dict
 from UICore.common import launderName, overwrite_cpg_file, is_already_opened_in_write_mode, \
     helmert_para_dict, get_suffix, is_number, text_line_count
 from UICore.coordTransform_web import gcj02_to_wgs84_acc, wgs84_to_gcj02, bd09_to_wgs84_acc, wgs84_to_bd09, \
-    gcj02_to_wgs84_acc_list, wgs84_to_gcj02_list, bd09_to_wgs84_acc_list, wgs84_to_bd09_list
+    gcj02_to_wgs84_acc_list, wgs84_to_gcj02_list, bd09_to_wgs84_acc_list, wgs84_to_bd09_list, webMercator_to_wgs84, webMercator_to_wgs84_list
 from UICore.log4p import Log
 from UICore.Gv import SpatialReference
 
@@ -178,6 +178,8 @@ class Transformer(object):
             res = export_func(self.gcj02_to_pcs_2000)
         elif srcSRS == SpatialReference.bd09 and dstSRS == SpatialReference.pcs_2000:
             res = export_func(self.bd09_to_pcs_2000)
+        elif srcSRS == SpatialReference.web_mercator and dstSRS == SpatialReference.wgs84:
+            res = export_func(self.webMercator_to_wgs84)
         else:
             log.error("不支持从{}到{}的转换!".format(srs_dict[srcSRS], srs_dict[dstSRS]))
             return False
@@ -470,6 +472,9 @@ class Transformer(object):
         points = self.wgs84_to_pcs_2000(points)
         return points
 
+    def webMercator_to_wgs84(self, points):
+        points = list(map(webMercator_to_wgs84_list, points))
+        return points
 
 def launderLayerName(path):
     if is_already_opened_in_write_mode(path):
@@ -486,6 +491,8 @@ def get_axis_order(srs):
 
 
 if __name__ == '__main__':
+    l = webMercator_to_wgs84(12688911.21600000000, 2577275.41211000000)
+
     ogr.UseExceptions()
     gdal.SetConfigOption("OGR_CT_FORCE_TRADITIONAL_GIS_ORDER", "YES")
     main()

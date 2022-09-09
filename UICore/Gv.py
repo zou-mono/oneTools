@@ -32,10 +32,11 @@ class SpatialReference:
     pcs_xian80 = 2383
     pcs_xian80_zone = 2362
     pcs_hk80 = 2326
+    web_mercator = 3857
 
     @staticmethod
     def lst():
-        return [2435, 4490, 4547, 4526, 4326, -1, -2, 4610, 2383, 2362, 2326]
+        return [2435, 4490, 4547, 4526, 4326, -1, -2, 4610, 2383, 2362, 2326, 3857]
 
 
 class DataType(Enum):
@@ -71,7 +72,8 @@ srs_dict = {
     SpatialReference.gcs_xian80: "西安80地理",
     SpatialReference.pcs_xian80: "西安80投影",
     SpatialReference.pcs_xian80_zone: "西安80投影(包含带号)",
-    SpatialReference.pcs_hk80: "香港80"
+    SpatialReference.pcs_hk80: "香港80",
+    SpatialReference.web_mercator: "web墨卡托"
 }
 
 
