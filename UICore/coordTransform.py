@@ -289,7 +289,7 @@ class Transformer(object):
             log.error("坐标转换失败!可能原因：1.输出图层数据正在被占用导致无法覆盖 2.输入图层字符编码问题\n")
 
     # 一次转换
-    def transform_direct(self, srcSRS, dstSRS, inpath=None, outpath=None, outlayername=None,
+    def transform_direct(self, srcSRS, dstSRS, inpath=None, outpath=None, inlayername=None, outlayername=None,
                          outformat=None, layerCreationOptions=None, helmert_para=None):
         in_srs = osr.SpatialReference()
         in_srs.ImportFromEPSG(srcSRS)
@@ -298,6 +298,7 @@ class Transformer(object):
 
         if inpath is None: inpath = self.in_path
         if outpath is None: outpath = self.out_path
+        if inlayername is None: inlayername = self.in_layername
         if outlayername is None: outlayername = self.out_layername
         if outformat is None: outformat = self.out_format
         if layerCreationOptions is None: layerCreationOptions = self.lco
@@ -308,11 +309,11 @@ class Transformer(object):
 
         if outformat == DataType.geojson:
             translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=in_srs, dstSRS=out_srs,
-                                                           coordinateOperation=helmert_para,
+                                                           coordinateOperation=helmert_para, layers=[inlayername],
                                                            layerName=outlayername, callback=progress_callback)
         else:
             translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=in_srs, dstSRS=out_srs,
-                                                           coordinateOperation=helmert_para,
+                                                           coordinateOperation=helmert_para, layers=[inlayername],
                                                            accessMode="overwrite", layerName=outlayername,
                                                            layerCreationOptions=layerCreationOptions,
                                                            callback=progress_callback)
