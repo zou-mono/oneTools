@@ -126,10 +126,15 @@ def get_col_row(x0, y0, x, y, size, resolution):
 
 
 def check_layer_name(name):
-    p1 = r'[-!&<>"\'?@=$~^`#%*()/\\:;{}\[\]|+.]'
+    p1 = r'[-!&<>"\'?@=$~^`#%*()/\\:;{}\[\]|+.]'  # 不允许出现非法字符
     res = re.sub(p1, '_', name)
-    p2 = r'( +)'
-    return re.sub(p2, '', res)
+    p2 = r'( +)'  # 去除空格
+    res = re.sub(p2, '', res)
+    p3 = r'^[0-9]'  # 不允许以数字开头
+    bExist = re.match(p3, name)
+    if bExist is not None:
+        res = "_" + res
+    return res
 # def get_srs_desc_by_epsg(name: str):
 #     if name == "2435":
 #         return srs_dict[SpatialReference.sz_Local]
