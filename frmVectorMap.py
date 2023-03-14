@@ -238,14 +238,32 @@ class Ui_Window(QDialog, Ui_Dialog):
                         log.error("{}地址填写错误.".format(url))
                         return False
             else:
-                filepath, filename = os.path.split(output)
                 key_all = url + "_*"
-                # if os.path.splitext(filename)[1] != '.gdb':
                 if out_format != DataType.fileGDB:
+                    gdb_name = urlEncodeToFileName(url) + ".gdb"
+                    if output == "":
+                        if not os.path.exists("res"):
+                            os.makedirs("res")
+                        output = os.path.abspath("res")
+                        self.paras[key_all]['output'] = output
+                        log.warning('第{}行缺失非必要参数"输出路径"，将使用默认值"{}".'.format(row + 1, output))
+                    else:
+                        self.paras[key_all]['output'] = output
+                        log.warning('第{}行"输出路径"参数缺失输出gdb数据库名，将使用默认值"{}".'.format(row + 1, gdb_name))
+
                     gdb_name = urlEncodeToFileName(url) + ".gdb"
                     output = os.path.join(output, gdb_name)
                     self.paras[key_all]['output'] = output
                     log.warning('第{}行缺失非必要参数"输出路径"，将使用默认值"{}".'.format(row + 1, output))
+
+
+                # filepath, filename = os.path.split(output)
+                # key_all = url + "_*"
+                # if out_format != DataType.fileGDB:
+                #     gdb_name = urlEncodeToFileName(url) + ".gdb"
+                #     output = os.path.join(output, gdb_name)
+                #     self.paras[key_all]['output'] = output
+                #     log.warning('第{}行缺失非必要参数"输出路径"，将使用默认值"{}".'.format(row + 1, output))
         return True
 
     @Slot(int)
