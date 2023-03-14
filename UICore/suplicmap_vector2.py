@@ -210,26 +210,29 @@ def crawl_vector_batch(url, key, output, api_token, subscription_token, paras, l
     if logClass is not None:
         log = logClass
 
-    services = paras[key]['services']
-    for service in services:
-        if service != "*":
-            new_key = url + "_" + str(service)
-            sr = paras[new_key]['spatialReference']
-            url_lst = url.split(r'/')
-            if url_lst[-1] == "":
-                service_name = url_lst[-3]
-                res_url = url + str(service)
-            else:
-                service_name = url_lst[-2]
-                res_url = url + "/" + str(service)
+    try:
+        services = paras[key]['services']
+        for service in services:
+            if service != "*":
+                new_key = url + "_" + str(service)
+                sr = paras[new_key]['spatialReference']
+                url_lst = url.split(r'/')
+                if url_lst[-1] == "":
+                    service_name = url_lst[-3]
+                    res_url = url + str(service)
+                else:
+                    service_name = url_lst[-2]
+                    res_url = url + "/" + str(service)
 
-            layername = paras[new_key]['old_layername']
+                layername = paras[new_key]['old_layername']
 
-            if layername == "":
-                layername = None
+                if layername == "":
+                    layername = None
 
-            crawl_vector(res_url, service_name=service_name, layer_order=service, layer_name=layername,
-                         output_path=output, api_token=api_token, subscription_token=subscription_token, sr=sr)
+                crawl_vector(res_url, service_name=service_name, layer_order=service, layer_name=layername,
+                             output_path=output, _api_token=api_token, _subscription_token=subscription_token, sr=sr)
+    except:
+        log.error("crawl_vector_batch失败！{}".format(traceback.format_exc()))
 
 
 def getIds(query_url, loop_pos):

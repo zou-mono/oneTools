@@ -74,6 +74,7 @@ class Ui_Window(QDialog, Ui_Dialog):
         self.tbl_address.verticalHeader().sectionClicked.connect(self.table_section_clicked)
 
         self.txt_subscriptionToken.setText('0d6325d440f14ee8847f7551c686f19c')
+        # self.txt_apiToken.setText('eyJpc3N1Y2Nlc3MiOiJ0cnVlIiwiZmFpbHJlc29uIjoiIiwiYWNjb3VudCI6InpvdWhhaXgiLCJ0b2tlbiI6IjY1ZTBlYmI1ZWYyMTRlNjhhNDA5NWU5MDA1ZWYyYzIyIn0=.Eg4DFhERDQ==')
         self.txt_apiToken.setText('eyJpc3N1Y2Nlc3MiOiJ0cnVlIiwiZmFpbHJlc29uIjoiIiwiYWNjb3VudCI6InpvdWhhaXgiLCJ0b2tlbiI6IjFmMGVkMTM2MWY3ZjRiZTJhMGJkMjMzYjAzYmQwYjhlIn0%3D.Eg4DFhERDQ%3D%3D')
         self.txt_subscriptionToken.home(False)
         self.txt_apiToken.home(False)

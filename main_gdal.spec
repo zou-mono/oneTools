@@ -36,7 +36,7 @@ a = Analysis(['frmMain.py', 'frmCoordTransform.py', 'frmLandUseTypeConvert.py',
                        ('C:\\Program Files\\GDAL\\FileGDBAPI.dll', '.'),
                        ('D:\\Codes\\oneTools\\UICore\\_filegdbapi.pyd', 'UICore')],
              datas=[('C:\\Program Files\\GDAL\\projlib', 'Library\\share\\proj'),
-                    ('C:\\Users\\mono-office-laptop\\miniconda3\\envs\\test_python3.7'
+                    ('C:\\Users\\mono_ws\\miniconda3\\envs\\test_python3.7'
                      '\\Lib\\site-packages\\PyQt5\\Qt\\plugins\\styles\\qwindowsvistastyle.dll', 'Library\\styles\\qwindowsvistastyle.dll')],
              hiddenimports=['osgeo', 'filegdbapi'],
              hookspath=[],
