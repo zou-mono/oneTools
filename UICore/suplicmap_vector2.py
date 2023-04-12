@@ -498,7 +498,8 @@ def get_json_by_query(url, query_clause):
             # r = urllib.request.urlopen(req)
             # respData = r.read().decode('utf-8')
             # res = respData.json()
-            respData = requests.get(url, params=body_value, headers=reqheaders)
+            respData = requests.get(url, params=body_value, headers=reqheaders).json()
+            # respData = respData.decode('utf-8')
             return respData
         except:
             log.error('HTTP请求失败！正在准备重发...')
@@ -547,11 +548,20 @@ async def output_data_async(url, query_clause, out_layer, startID, endID):
 def output_data(url, query_clause, out_layer):
     try:
         respData = get_json_by_query(url, query_clause)
-        respData = respData.decode('utf-8')
-        respData = json.loads(respData)
-        if 'fields' not in respData:
-            respData['fields'] = m_fields
-        esri_json = ogr.GetDriverByName('ESRIJSON')
+        # respData = respData.decode('utf-8')
+        if respData is not None:
+            # respData = respData.decode('utf-8')
+            # respData = json.loads(respData)
+            if 'fields' not in respData:
+                respData['fields'] = m_fields
+            esri_json = ogr.GetDriverByName('ESRIJSON')
+            # respData = str(respData, encoding='utf-8')
+            respData = json.dumps(respData, ensure_ascii=False)
+            # if not isinstance(respData, str):
+            #     raise Exception("返回数据类型不是str！")
+        else:
+            raise Exception("返回数据为None！")
+
         geoObjs = esri_json.Open(respData, 0)
         if geoObjs is not None:
             json_Layer = geoObjs.GetLayer()
@@ -561,7 +571,21 @@ def output_data(url, query_clause, out_layer):
                 addField(feature, defn, OID_NAME, out_layer)
             return True
         else:
-            return False
+            raise Exception("要素为空!")
+
+        # if 'fields' not in respData:
+        #     respData['fields'] = m_fields
+        # esri_json = ogr.GetDriverByName('ESRIJSON')
+        # geoObjs = esri_json.Open(respData, 0)
+        # if geoObjs is not None:
+        #     json_Layer = geoObjs.GetLayer()
+        #
+        #     defn = json_Layer.GetLayerDefn()
+        #     for feature in json_Layer:  # 将json要素拷贝到gdb中
+        #         addField(feature, defn, OID_NAME, out_layer)
+        #     return True
+        # else:
+        #     return False
     except:
         return False
 
