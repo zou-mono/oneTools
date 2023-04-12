@@ -139,6 +139,7 @@ def crawl_vector(url, service_name, layer_order, layer_name, output_path, sr,
         tasks = []
         loop = asyncio.ProactorEventLoop()
         asyncio.set_event_loop(loop)
+        global failed_urls
         failed_urls = []
 
         # wks = workspaceFactory().get_factory(DataType.FGDBAPI)
@@ -509,6 +510,8 @@ def get_json_by_query(url, query_clause):
 
 
 async def output_data_async(url, query_clause, out_layer, startID, endID):
+    global failed_urls
+
     try:
         respData = await get_json_by_query_async(url, query_clause)
         if respData is not None:
@@ -537,6 +540,7 @@ async def output_data_async(url, query_clause, out_layer, startID, endID):
         await lock.acquire()
         failed_urls.append([url, query_clause, startID, endID])
         lock.release()
+        # log.debug(len(failed_urls))
         # log.error('url:{} data:{} error:{}'.format(url, query_clause, err))
 
 
