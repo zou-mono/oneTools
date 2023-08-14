@@ -286,7 +286,7 @@ class Transformer(object):
             log.info("坐标转换完成! 共耗时{}秒. 输出数据源:{},输出图层名:{}.\n"
                      .format("{:.2f}".format(end-start), res[0], res[1]))
         else:
-            log.error("坐标转换失败!可能原因：1.输出图层数据正在被占用导致无法覆盖 2.输入图层字符编码问题\n")
+            log.error("坐标转换失败!可能原因：1.缺失数据引擎 2.输出图层数据正在被占用导致无法覆盖 3.输入图层字符编码问题\n")
 
     # 一次转换
     def transform_direct(self, srcSRS, dstSRS, inpath=None, outpath=None, inlayername=None, outlayername=None,
