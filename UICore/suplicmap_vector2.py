@@ -511,7 +511,7 @@ def get_json_by_query(url, query_clause):
 
 
 async def output_data_async(url, query_clause, out_layer, startID, endID):
-    global failed_urls
+    # global failed_urls
 
     try:
         respData = await get_json_by_query_async(url, query_clause)
