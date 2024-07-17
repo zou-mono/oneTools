@@ -286,7 +286,7 @@ class Transformer(object):
             log.info("坐标转换完成! 共耗时{}秒. 输出数据源:{},输出图层名:{}.\n"
                      .format("{:.2f}".format(end-start), res[0], res[1]))
         else:
-            log.error("坐标转换失败!可能原因：1.缺失数据引擎 2.输出图层数据正在被占用导致无法覆盖 3.输入图层字符编码问题\n")
+            log.error("坐标转换失败!可能原因：1.缺失数据引擎 2.输出图层数据正在被占用导致无法覆盖 3.输入图层字符编码问题 4.输入图层包含Z值或者M值\n")
 
     # 一次转换
     def transform_direct(self, srcSRS, dstSRS, inpath=None, outpath=None, inlayername=None, outlayername=None,
@@ -308,11 +308,11 @@ class Transformer(object):
         out_format = DataType_dict[outformat]
 
         if outformat == DataType.geojson:
-            translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=in_srs, dstSRS=out_srs,
+            translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=in_srs, dstSRS=out_srs, dim='XY',
                                                            coordinateOperation=helmert_para, layers=[inlayername],
                                                            layerName=outlayername, callback=progress_callback)
         else:
-            translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=in_srs, dstSRS=out_srs,
+            translateOptions = gdal.VectorTranslateOptions(format=out_format, srcSRS=in_srs, dstSRS=out_srs, dim='XY',
                                                            coordinateOperation=helmert_para, layers=[inlayername],
                                                            accessMode="overwrite", layerName=outlayername,
                                                            layerCreationOptions=layerCreationOptions,
@@ -770,6 +770,7 @@ class Transformer(object):
         except:
             log.error("错误发生在第{}个要素.\n{}".format(icount, traceback.format_exc()))
             return -10000
+
 
 def progress_callback(complete, message, unknown):
     # Calculate percent by integer values (1, 2, ..., 100)
