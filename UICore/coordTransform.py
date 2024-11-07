@@ -349,8 +349,8 @@ class Transformer(object):
 
         helmert_para = helmert_para_dict(midSRS, dstSRS)
 
-        [out_path, out_layername] = self.transform_direct(midSRS, dstSRS, midpath, outpath, outlayername, outformat,
-                                                        helmert_para=helmert_para)
+        [out_path, out_layername] = self.transform_direct(midSRS, dstSRS, midpath, outpath, inlayername=out_layername, outlayername=outlayername,
+                                                          outformat=outformat, helmert_para=helmert_para)
 
         return [out_path, out_layername] if out_path is not None and out_layername is not None else None
 
