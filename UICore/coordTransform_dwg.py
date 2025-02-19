@@ -134,8 +134,8 @@ def transform_dwg(input, type, output, logClass=None):
         isuccess_num = 0
         trytime = 0
         while icount < total_count:
-            entity = msp.Item(icount)
             try:
+                entity = msp.Item(icount)
                 icount = icount + 1
 
                 if entity.ObjectName == "AcDbZombieEntity":
@@ -154,8 +154,8 @@ def transform_dwg(input, type, output, logClass=None):
                 isuccess_num = isuccess_num + 1
                 trytime = 0
             except:
-                time.sleep(0.5)
-                if trytime < 5:
+                time.sleep(1)
+                if trytime < 10:
                     trytime = trytime + 1
                 else:
                     log.error("句柄{}发生错误.".format(entity.Handle) + os.linesep + traceback.format_exc())
